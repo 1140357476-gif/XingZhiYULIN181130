@@ -1,0 +1,43 @@
+### uVision2 Project, (C) Keil Software
+### Do not modify !
+
+ cExt (*.c)
+ aExt (*.s*; *.src; *.a*)
+ oExt (*.obj)
+ lExt (*.lib)
+ tExt (*.txt; *.h; *.inc)
+ pExt (*.plm)
+ CppX (*.cpp)
+ DaveTm { 0,0,0,0,0,0,0,0 }
+
+Target (hdmi), 0x0000 // Tools: 'MCS-51'
+GRPOPT 1,(main),1,0,0
+
+OPTFFF 1,1,1,738197504,0,0,0,0,<.\EP952SettingsData.c><EP952SettingsData.c> 
+OPTFFF 1,2,1,0,0,0,0,0,<.\EP952_If.c><EP952_If.c> 
+OPTFFF 1,3,1,536870912,0,0,0,0,<.\EP952api.c><EP952api.c> 
+OPTFFF 1,4,1,369098752,0,0,0,0,<.\EP952Controller.c><EP952Controller.c> 
+OPTFFF 1,5,1,369098752,0,0,0,0,<.\DDC_If_EP952.c><DDC_If_EP952.c> 
+OPTFFF 1,6,1,335544320,0,0,0,0,<.\Edid_EP952.c><Edid_EP952.c> 
+OPTFFF 1,7,1,520093696,0,0,0,0,<.\HDCP_EP952.c><HDCP_EP952.c> 
+
+
+TARGOPT 1, (hdmi)
+ CLK51=18000000
+  OPTTT 1,1,1,0
+  OPTHX 0,65535,0,0,0
+  OPTLX 120,65,8,<.\obj\>
+  OPTOX 16
+  OPTLT 0,0,0,0,1,1,0,1,0,0,0,0
+  OPTXL 1,1,1,1,1,1,1,0,0
+  OPTFL 1,0,1
+  OPTAX 255
+  OPTBL 0,(Data Sheet)<DATASHTS\DALLAS\DS80C32X.PDF>
+  OPTBL 1,(High-Speed User's Guide)<DATASHTS\DALLAS\HIGHSPEED_UG.PDF>
+  OPTDL (S8051.DLL)()(DP51.DLL)(-p320)(S8051.DLL)()(TP51.DLL)(-p320)
+  OPTDBG 48125,-1,()()()()()()()()()() ()()()()
+  OPTDF 0x2
+  OPTLE <>
+  OPTLC <>
+EndOpt
+

@@ -1,0 +1,7 @@
+TRANSFER
+".\obj\dos_rw.obj",
+".\obj\dos_support.obj",
+".\obj\fat_rw.obj",
+".\obj\vfs_api.obj",
+".\obj\dosA_ver.obj" 
+TO ".\obj\libDos32_A.LIB"

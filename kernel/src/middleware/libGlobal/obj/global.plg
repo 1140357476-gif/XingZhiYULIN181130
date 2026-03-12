@@ -1,0 +1,29 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+E:\WORK\SuoDa\220614 新板 按键 屏显\CDAF\kernel\src\middleware\libGlobal\global.uv2
+Project File Date:  07/04/2018
+
+<h2>Output:</h2>
+Build target 'global'
+compiling device.c...
+compiling infodata.c...
+compiling initio.c...
+compiling global_ver.c...
+compiling global_init.c...
+creating library .\obj\global.LIB...
+TRANSFER
+".\obj\device.obj",
+".\obj\infodata.obj",
+".\obj\initio.obj",
+".\obj\global_ver.obj",
+".\obj\global_init.obj" 
+TO ".\obj\global.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\postLib.bat
+E:\WORK\SuoDa\220614 新板 按键 屏显\CDAF\kernel\src\middleware\libGlobal>copy .\obj\global.lib ..\..\..\lib\libSysGlobal.LIB 
+已复制         1 个文件。
+".\obj\global.LIB" - 0 Error(s), 0 Warning(s).

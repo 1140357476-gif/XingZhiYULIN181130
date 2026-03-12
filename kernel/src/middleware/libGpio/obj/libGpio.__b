@@ -1,0 +1,5 @@
+TRANSFER
+".\obj\gpio_byte.obj",
+".\obj\gpio.obj",
+".\obj\gpio_ver.obj" 
+TO ".\obj\libGpio.LIB"

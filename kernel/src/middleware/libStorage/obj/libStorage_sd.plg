@@ -1,0 +1,35 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libStorage\libStorage.uv2
+Project File Date:  06/18/2014
+
+<h2>Output:</h2>
+Build target 'libStorage_sd'
+compiling sd_bgrw.c...
+\1626_CODE\NEW1626\FW\RELEASE_V2.2.0\KERNEL\INC\HAL\HAL_DEVICE.H(42): warning C317: attempt to redefine macro 'DISK_DRV_CARD'
+compiling sd_core.c...
+\1626_CODE\NEW1626\FW\RELEASE_V2.2.0\KERNEL\INC\HAL\HAL_DEVICE.H(42): warning C317: attempt to redefine macro 'DISK_DRV_CARD'
+compiling sd_hw.c...
+\1626_CODE\NEW1626\FW\RELEASE_V2.2.0\KERNEL\INC\HAL\HAL_DEVICE.H(42): warning C317: attempt to redefine macro 'DISK_DRV_CARD'
+compiling sd_rw.c...
+..\..\..\INC\HAL\HAL_DEVICE.H(42): warning C317: attempt to redefine macro 'DISK_DRV_CARD'
+compiling sd_ver.c...
+compiling sd_bg.c...
+\1626_CODE\NEW1626\FW\RELEASE_V2.2.0\KERNEL\INC\HAL\HAL_DEVICE.H(42): warning C317: attempt to redefine macro 'DISK_DRV_CARD'
+creating library .\obj\libStorage_sd.LIB...
+TRANSFER
+".\obj\sd_bgrw.obj",
+".\obj\sd_core.obj",
+".\obj\sd_hw.obj",
+".\obj\sd_rw.obj",
+".\obj\sd_ver.obj",
+".\obj\sd_bg.obj" 
+TO ".\obj\libStorage_sd.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat sd
+已复制         1 个文件。
+".\obj\libStorage_sd.LIB" - 0 Error(s), 5 Warning(s).

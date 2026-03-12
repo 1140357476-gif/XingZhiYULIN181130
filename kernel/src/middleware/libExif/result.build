@@ -1,0 +1,21 @@
+Build target 'libexif'
+compiling exif_ver.c...
+compiling exif_entry.c...
+compiling exif_fun.c...
+compiling exifcon.c...
+creating library .\obj\libexif.LIB...
+TRANSFER
+".\obj\exif_ver.obj",
+".\obj\exif_entry.obj",
+".\obj\exif_fun.obj",
+".\obj\exifcon.obj" 
+TO ".\obj\libexif.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\libexif_post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libExif>copy obj\libexif.LIB ..\..\..\lib\libExif.LIB 
+已复制         1 个文件。
+".\obj\libexif.LIB" - 0 Error(s), 0 Warning(s).

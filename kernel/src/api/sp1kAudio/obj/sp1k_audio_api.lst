@@ -1,0 +1,199 @@
+C51 COMPILER V8.12   SP1K_AUDIO_API                                                        12/29/2014 15:19:23 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE SP1K_AUDIO_API
+OBJECT MODULE PLACED IN .\obj\sp1k_audio_api.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE sp1k_audio_api.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..
+                    -\..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\c
+                    -ustomization) DEFINE(LIB_RELEASE) PRINT(.\obj\sp1k_audio_api.lst) OBJECT(.\obj\sp1k_audio_api.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2008-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           **************************************************************************/
+  22           
+  23          /**
+  24           * @file                sp1k_audio_api.c
+  25           * @brief               
+  26           * @author              Phil Lin
+  27           * @since               2009-11-25
+  28           * @date                2009-11-25
+  29           */
+  30          
+  31          /**************************************************************************
+  32           *                            H E A D E R   F I L E S
+  33           **************************************************************************/
+  34           #include "general.h"
+  35           #include "sp1k_aud_api.h"
+  36          
+  37          /**************************************************************************
+  38           *                           C O N S T A N T S                            *
+  39           **************************************************************************/
+  40          
+  41          /**************************************************************************
+  42           *                              M A C R O S                               *
+  43           **************************************************************************/
+  44          
+  45          /**************************************************************************
+  46           *                          D A T A    T Y P E S                          *
+  47           **************************************************************************/
+  48          
+  49          /**************************************************************************
+  50           *                         G L O B A L    D A T A                         *
+  51           **************************************************************************/
+  52          
+  53          /**************************************************************************
+C51 COMPILER V8.12   SP1K_AUDIO_API                                                        12/29/2014 15:19:23 PAGE 2   
+
+  54           *                 E X T E R N A L    R E F E R E N C E S                 *
+  55           **************************************************************************/
+  56          extern xdata UINT8 alc_state;
+  57          
+  58          extern void audioAlcInit();
+  59          
+  60          /**************************************************************************
+  61           *               F U N C T I O N    D E C L A R A T I O N S               *
+  62           **************************************************************************/
+  63           
+  64          //-----------------------------------------------------------------------------
+  65          // sp1kAudParamSet
+  66          //-----------------------------------------------------------------------------
+  67          #if TAG_TODO
+              UINT8 sp1kAudParamSet(
+                      UINT8 attrId,
+                      UINT8 value
+              )
+              {
+                      UINT8 temp;
+                      temp = attrId;
+              
+                      if ( attrId > SP1K_AUD_PARAM_ALC_MAX ) {
+                              return FAIL;
+                      };
+              
+                      switch (attrId) {       
+                              case SP1K_AUD_PARAM_ALC_OPT:
+                                      if (value == 1) {
+                                              audioAlcInit();
+                                      };
+                                      if (value == 0) {
+                                              XBYTE[REG_Audio_AgcFuncEN] = 0x00;
+                                              XBYTE[REG_Audio_VolumeIntEn] = 0x00;
+                                              alc_state = 0xff;
+                                      };
+                                      break;
+                              case SP1K_AUD_PARAM_ALC_GAIN_SET:
+                                      if(value >= ALC_VOLUME_TBL_MAX_INDEX) value = ALC_VOLUME_TBL_MAX_INDEX;
+                                      XBYTE[REG_Audio_AgcFuncEN] = 0x00;
+                                      XBYTE[REG_Audio_AmplifierGain] = alc_volume_tbl[value-1];
+                                      break;
+                              case SP1K_AUD_PARAM_ALC_MAX_GAIN_IDX:
+                                      if (value < ALC_VOLUME_TBL_MAX_INDEX) {
+                                              alc_vol_max_gain_index = value;
+                                      }
+                                      else {
+                                              alc_vol_max_gain_index = ALC_VOLUME_TBL_MAX_INDEX - 1;
+                                      }
+                                      break;
+                              case SP1K_AUD_PARAM_ALC_MIN_GAIN_IDX:
+                                      if (value >= 0) {
+                                              alc_vol_min_gain_index = value;
+                                      }
+                                      else {
+                                              alc_vol_min_gain_index = 0;
+                                      };
+                                      break;
+                              case SP1K_AUD_PARAM_ALC_MAX_VOL:
+                                      alc_converge_high = value;
+                                      break;
+                              case SP1K_AUD_PARAM_ALC_MIN_VOL:
+C51 COMPILER V8.12   SP1K_AUDIO_API                                                        12/29/2014 15:19:23 PAGE 3   
+
+                                      alc_converge_low = value;
+                                      break;
+                              case SP1K_AUD_PARAM_ALC_DEFAULT_GAIN_IDX:
+                                      alc_default_gain_index = value;
+                                      break;
+                              case SP1K_AUD_PARAM_ALC_GAIN_UP_SPEED:
+                                      alc_hold_fram_cnt_max_gain_up = value;
+                                      break;
+                              case SP1K_AUD_PARAM_ALC_GAIN_DOWN_SPEED:
+                                      alc_hold_frame_cnt_max_gain_down = value;
+                                      break;
+                              case SP1K_AUD_PARAM_ALC_DIGITAL_VOL:
+                                      HAL_AudVolumeSet(value, 6 );
+                                      break;
+                              default:break;
+                      };
+              //TAG_TODO      
+                      value = value;
+                              
+                      return 0;
+              }
+              #endif 
+ 138          #if TAG_TODO
+              UINT8 sp1kAudParamGet(
+                      UINT8 attrId
+              )
+              {
+                      UINT8 temp;
+                      temp = attrId;
+              
+                      if ( attrId > SP1K_AUD_PARAM_ALC_MAX ) {
+                              return FAIL;
+                      };
+              
+                      switch (attrId) {
+                              case SP1K_AUD_PARAM_ALC_OPT:
+                                      if(alc_state == 0xff) {
+                                              return 0;
+                                      }
+                                      else {
+                                              return 1;
+                                      }               
+                                      break;
+                              default:break;
+                      };
+                                      
+                      return 0xff;
+              }
+              #endif //TAG_TODO
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+C51 COMPILER V8.12   SP1K_AUDIO_API                                                        12/29/2014 15:19:23 PAGE 4   
+
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

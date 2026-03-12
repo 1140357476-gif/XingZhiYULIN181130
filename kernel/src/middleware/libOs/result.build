@@ -1,0 +1,21 @@
+Build target 'os'
+compiling os_main.c...
+compiling os_msg.c...
+compiling os_mutex.c...
+compiling os_ver.c...
+creating library .\obj\libOs.LIB...
+TRANSFER
+".\obj\os_main.obj",
+".\obj\os_msg.obj",
+".\obj\os_mutex.obj",
+".\obj\os_ver.obj" 
+TO ".\obj\libOs.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\postLib.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libOs>copy .\obj\libOs.lib ..\..\..\lib\ 
+已复制         1 个文件。
+".\obj\libOs.LIB" - 0 Error(s), 0 Warning(s).

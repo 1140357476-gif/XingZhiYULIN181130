@@ -1,0 +1,15 @@
+TRANSFER
+".\obj\dir_lookup.obj",
+".\obj\dir_op.obj",
+".\obj\dos_debug.obj",
+".\obj\dos_del.obj",
+".\obj\dos_file.obj",
+".\obj\dos_filerw.obj",
+".\obj\dos_format.obj",
+".\obj\dos_joint.obj",
+".\obj\dos_misc.obj",
+".\obj\dos_mount.obj",
+".\obj\dos_open.obj",
+".\obj\dos_seek.obj",
+".\obj\dosB_ver.obj" 
+TO ".\obj\libDos32_B.LIB"

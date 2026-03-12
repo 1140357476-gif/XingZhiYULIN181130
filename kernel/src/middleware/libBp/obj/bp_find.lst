@@ -1,0 +1,2130 @@
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE BP_FIND
+OBJECT MODULE PLACED IN .\obj\bp_find.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE bp_find.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\
+                    -inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiz
+                    -ation) DEFINE(LIB_RELEASE) PRINT(.\obj\bp_find.lst) OBJECT(.\obj\bp_find.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2008-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           **************************************************************************/
+  22          
+  23          /**
+  24           * @file                bp_find.c
+  25           * @brief               badpixel find function
+  26           * @author      Phil Lin
+  27           * @since               2008-11-19
+  28           * @date                2008-11-18
+  29           */
+  30           
+  31          /**************************************************************************
+  32          *                                                  H E A D E R   F I L E S
+  33          **************************************************************************/
+  34          #include "general.h" 
+  35          #include "initio.h"
+  36          #include "main.h" 
+  37          #include "hal.h" 
+  38          #include "doslink.h"
+  39          #include "dbg_def.h"
+  40          
+  41          #include "bp_private.h" 
+  42          #include "bp_api.h"
+  43          
+  44          #include "sp1k_rsvblk_api.h"
+  45          #include "hal_dram.h"
+  46          #include "hal_gprm.h"
+  47          
+  48          #include "utility.h"
+  49          
+  50          #if BP_USE_MOE
+  51          #include "Hal_Moe.h"
+  52          #include "sp1k_util_api.h"
+  53          #include "sp1k_ae_api.h"
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 2   
+
+  54          #include "sp1k_awb_api.h"
+  55          #endif
+  56          
+  57          #if MODULE_BP_OPT
+  58          /**************************************************************************
+  59           *                                               C O N S T A N T S                                                *
+  60           **************************************************************************/
+  61          #define __FILE  __FILE_ID_BP_FIND__
+  62          
+  63          #define DBG_BP_EN       0
+  64          /**************************************************************************
+  65           *                                                      M A C R O S                                                       *
+  66           **************************************************************************/
+  67          #define ABS(x,y)  ((x)>(y)) ? ((x)-(y)) : ((y)-(x)) 
+  68                  
+  69          #if BP_CMP_BY_FW /* little endian */
+  70          
+  71          #if BP_USE_MOE
+  72                  
+  73          #define bpBadPixelAddrSet(A,B)\
+  74                  BP_DRAM_SetStartAddress(A, B);
+  75          
+  76          #define bpBadPixelSave(X, Y) \
+  77                  if(g_badPixelCnt != *gp_bpNumMax){\
+  78                          g_badPixelCnt ++;       \
+  79                          BP_DRAM_WriteWord(READ8(X, 0), READ8(X, 1));\
+  80                          BP_DRAM_WriteWord(READ8(Y, 0), READ8(Y, 1));\
+  81                  }
+  82                  
+  83          #else
+              
+              #define bpBadPixelAddrSet(A,B)\
+                      HAL_DramStartAddrSet((UINT32)A, B);     
+              
+              #define bpBadPixelSave(X, Y) \
+                      if(g_badPixelCnt != *gp_bpNumMax){\
+                              g_badPixelCnt ++;       \
+                              HAL_DramWordDataWrite((UINT8)((X)>>8), (UINT8)(X)); \
+                              HAL_DramWordDataWrite((UINT8)((Y)>>8), (UINT8)(Y)); \
+                      }
+                      
+              #endif
+  96                  
+  97          #else /* big endian */
+              #define bpBadPixelSave(X, Y) \
+                      if(g_badPixelCnt != *gp_bpNumMax){\
+                              g_badPixelCnt ++;       \
+                              HAL_DramWordDataWrite((UINT8)(X), (UINT8)((X)>>8)); \
+                              HAL_DramWordDataWrite((UINT8)(Y), (UINT8)((Y)>>8)); \
+                      }
+              #endif
+ 105          
+ 106          /**************************************************************************
+ 107           *                                              D A T A    T Y P E S                                              *
+ 108           **************************************************************************/
+ 109          
+ 110          /**************************************************************************
+ 111           *                                         G L O B A L    D A T A                                         *
+ 112           **************************************************************************/
+ 113          static UINT32 s_bpBadpixelAddr;
+ 114          static UINT32 s_bpBadpixelFlagAddr;
+ 115          static UINT16 s_bpRawWidth, s_bpRawHeight;
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 3   
+
+ 116          static UINT32 s_bpRawSize;
+ 117          
+ 118          #if BP_USE_MOE
+ 119          static UINT32 g_bpMoeQueueAddr; //buffer for Moe queue and Moe result
+ 120          static UINT32 g_bpMoeRawAddr; //buffer for store the RAW Moe need
+ 121          static UINT32 g_bpMoeResAddr;
+ 122          
+ 123          static UINT8 g_w7HighByte,g_w7LowByte;
+ 124          static UINT16 g_bpMoeRoiWidth; 
+ 125          
+ 126          static UINT32 g_bpMoeRawBlk1Addr;
+ 127          static UINT32 g_bpMoeRawBlk2Addr;
+ 128          
+ 129          static UINT32 g_bpPreBlkAvg1;
+ 130          static UINT32 g_bpPreBlkAvg2;
+ 131          static UINT32 g_bpPreBlkAvg;
+ 132          UINT8 testSaveFlag;
+ 133          #endif
+ 134          
+ 135          /**************************************************************************
+ 136           *                         E X T E R N A L    R E F E R E N C E S                         *
+ 137           **************************************************************************/
+ 138          
+ 139          /**************************************************************************
+ 140           *                       F U N C T I O N        D E C L A R A T I O N S                           *
+ 141           **************************************************************************/
+ 142          static void bpStripRead(UINT32 srcAddr, UINT32 dmaOff);
+ 143          static void bpStripAvgs(UINT8* pAvg, UINT8 cnt);
+ 144          static void bpStripSearch(UINT16 startX, UINT16 startY, UINT8* avgBuf,UINT8 mode);
+ 145          
+ 146          static UINT8 bpDataSortProc(UINT32 srcAddr, UINT32 tmpAddr, UINT16 rawW, UINT16 rawH);
+ 147          static UINT8 bpDataSort_Fill(UINT32 srcAddr, UINT32 tmpAddr, UINT16 rawW, UINT16 rawH);
+ 148          static UINT8 bpDataSort_Strip(UINT32 srcAddr, UINT32 tmpAddr);
+ 149          
+ 150          static void bpBadPixelFlagSave(UINT8 flagVal, UINT16 X, UINT16 Y,UINT32 bpflgAddr);
+ 151          static void bpBadPixelDirSet(UINT32 BadpixelAddr);
+ 152          static UINT8 bpBadPixelFlagValGet(UINT16 X, UINT16 Y);
+ 153          
+ 154          #if BP_USE_MOE
+ 155          static UINT32  bpMoeInit(UINT32 rawAddr,UINT32 moeAddr,UINT16 roiWidth)
+ 156          {       
+ 157   1              UINT32 bpMoeSrc1Addr ;  /*RAW Addr*/
+ 158   1              UINT32 bpMoeDstAddr;
+ 159   1              UINT32 bpMoeQueueAddr;
+ 160   1              
+ 161   1              moe_cmd_t cmd;
+ 162   1              UINT8 buf[48];
+ 163   1              moe_queue_t xdata* queue = (moe_queue_t xdata*)buf;
+ 164   1              UINT16 size;    
+ 165   1              UINT8 idx;
+ 166   1              UINT8 winLength = roiWidth;
+ 167   1              UINT8 bitn;
+ 168   1      #if 0
+                      {
+                              UINT32 sum = 0;
+                              UINT16 i;
+                              UINT8 LowByteData,HighByteData;
+                              HAL_DramStartAddrSet(rawAddr,1);
+                              for(i = 0; i < roiWidth ;i++){
+                                      HAL_DramWordDataRead(&LowByteData,&HighByteData);
+                                      sum += HighByteData;
+                              }
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 4   
+
+                              printf("sum = %#lx\n",sum);
+                      }
+              #endif
+ 181   1              bpMoeSrc1Addr = rawAddr;
+ 182   1              bpMoeQueueAddr = moeAddr; 
+ 183   1              bpMoeDstAddr = bpMoeQueueAddr + 24/*(UINT32)(sizeof(buf)>>1)*/;
+ 184   1              
+ 185   1      //      printf("\033[32mbpMoeQueueAddr = %#lx ,  bpMoeDstAddr =%#lx\033[0m\n",bpMoeQueueAddr,bpMoeDstAddr);
+ 186   1      //      printf("\033[32mbpMoeSrc1Addr = %#lx ,  bpMoeDstAddr =%#lx\033[0m\n",bpMoeSrc1Addr,bpMoeDstAddr);
+ 187   1                      
+ 188   1              bitn = 1;               /*16Bits*/
+ 189   1      
+ 190   1              HAL_MoeDefCmd(&cmd);
+ 191   1              cmd.ROIWidth = winLength;
+ 192   1              cmd.equation = MOE_EQUATION_Summation;
+ 193   1              cmd.func = MOE_FUNC_PointWithCommon;    
+ 194   1              
+ 195   1              cmd.sum = 0;
+ 196   1              cmd.max = 0xffffffff;   
+ 197   1              cmd.min = 0x00; 
+ 198   1              
+ 199   1              cmd.src1Bit = bitn; 
+ 200   1              cmd.src1Shift = 0;
+ 201   1              cmd.src1Sign = 0;
+ 202   1              cmd.src1= bpMoeSrc1Addr;
+ 203   1              
+ 204   1      /*      cmd.src2Bit = 0;
+ 205   1      
+ 206   1              cmd.src2Shift = 0;
+ 207   1              cmd.src2Sign = 0;
+ 208   1              cmd.src2 = bpMoeSrc2Addr;*/
+ 209   1              
+ 210   1              cmd.cp = 1;
+ 211   1              
+ 212   1              cmd.dstBit = 1;
+ 213   1              cmd.dstSign = 0;
+ 214   1              cmd.dstShift = 8;
+ 215   1              cmd.dst = bpMoeDstAddr;
+ 216   1              
+ 217   1              cmd.CmdQueueEnd = 1;
+ 218   1              HAL_MoeConvertToQueue(&cmd, queue++);
+ 219   1              
+ 220   1              size = (UINT16)((UINT8 xdata*)queue) - (UINT16)buf; 
+ 221   1              idx = size/sizeof(moe_queue_t) -1;
+ 222   1      
+ 223   1              //printf("\033[32msize = %u ,  idx =%bu\033[0m\n",size,idx);
+ 224   1              
+ 225   1              HAL_MoeSetQueueEnd((moe_queue_t *) buf, idx);
+ 226   1              HAL_DramWriteBytesAddr(bpMoeQueueAddr, buf,48, 0);
+ 227   1                      
+ 228   1              //dramFileSave("MOE", bpMoeQueueAddr, (UINT16)((UINT8*)queue) - (UINT16)buf);
+ 229   1      
+ 230   1              /*MOE trigger*/
+ 231   1              //HAL_MoeRunQueue(bpMoeQueueAddr , MOE_Trigger_Other);
+ 232   1              
+ 233   1              HAL_DramStartAddrSet(bpMoeQueueAddr+7,1);
+ 234   1              HAL_DramWordDataRead(&g_w7LowByte,&g_w7HighByte);       
+ 235   1              
+ 236   1              HAL_MoeReset();
+ 237   1              HAL_MoeEnable();
+ 238   1              //printf("L7=%#bx , H7 = %#bx\n",g_w7LowByte,g_w7HighByte);
+ 239   1              
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 5   
+
+ 240   1              /*printf("\n0x[2E18] = %#bx\n",XBYTE[0x2E18]);
+ 241   1              printf("0x[2E19] = %#bx\n",XBYTE[0x2E19]);
+ 242   1              printf("0x[2E1A] = %#bx\n",XBYTE[0x2E1A]);
+ 243   1              printf("0x[2E1B] = %#bx\n",XBYTE[0x2E1B]);
+ 244   1              printf("0x[2E1C] = %#bx\n",XBYTE[0x2E1C]);
+ 245   1              printf("0x[2E1D] = %#bx\n",XBYTE[0x2E1D]);
+ 246   1              printf("0x[2E1E] = %#bx\n",XBYTE[0x2E1E]);
+ 247   1              printf("0x[2E1F] = %#bx\n",XBYTE[0x2E1F]);*/
+ 248   1              
+ 249   1              //dramFileSave("TESTSAVEBIN",bpMoeSrc1Addr,winLength*2);
+ 250   1      
+ 251   1              return bpMoeDstAddr;
+ 252   1      }
+ 253          
+ 254          
+ 255          static void bpMoeTrigger(void)
+ 256          {
+ 257   1              /*MOE trigger*/
+ 258   1              //UINT32 str,end;
+ 259   1              //UINT32 i;
+ 260   1              //UINT8 w6LowByte,w6HighByte,w7LowByte,w7HighByte;
+ 261   1              UINT32 bpMoeQueueSrc1Addr,bpMoeQueueRoiWidthAddr;
+ 262   1              //UINT8 bpMoeRoiWidthLow,bpMoeRoiWidthHigh;
+ 263   1      
+ 264   1              bpMoeQueueSrc1Addr = g_bpMoeQueueAddr + 6;
+ 265   1              bpMoeQueueRoiWidthAddr = g_bpMoeQueueAddr +1;
+ 266   1              
+ 267   1              //dbgWdtFeed(10000000); /* give 10s counter value to  watch dog */
+ 268   1              //HAL_GlobalReadGTimer(&str);
+ 269   1              //printf("g_bpMoeRawAddr = %#lx\n",g_bpMoeRawAddr);
+ 270   1              /*for(i =0 ; i<(UINT32)78732;i++)*/{
+ 271   2                      //printf("g_bpMoeRawAddr = %#lx\n",g_bpMoeRawAddr);
+ 272   2                      //printf("g_bpMoeRoiWidth = %u\n",g_bpMoeRoiWidth);
+ 273   2                      //w6LowByte = READ8(g_bpMoeRawAddr,3);
+ 274   2                      //w6HighByte = READ8(g_bpMoeRawAddr,2);
+ 275   2                      //w7LowByte = READ8(g_bpMoeRawAddr,1);
+ 276   2                      //w7HighByte =  (g_w7HighByte & 0xfe) |((READ8(g_bpMoeRawAddr,0))&0x01);
+ 277   2                      
+ 278   2                      //printf("L1=%#bx , H1 = %#bx\n",w6LowByte,w6HighByte);
+ 279   2                      //printf("L2=%#bx , H2 = %#bx\n",w7LowByte,w7HighByte);
+ 280   2      
+ 281   2                      /*modify src1 Addr*/
+ 282   2                      M_DRAM_WaitReady;  /*MUST wait for DRAM ready , else will write to the error  DRAM Addr*/
+ 283   2                      BP_DRAM_SetStartAddress(bpMoeQueueSrc1Addr,0);
+ 284   2                      BP_DRAM_WriteWord(READ8(g_bpMoeRawAddr,3), READ8(g_bpMoeRawAddr,2));
+ 285   2                      BP_DRAM_WriteWord(READ8(g_bpMoeRawAddr,1), (g_w7HighByte & 0xfe) |((READ8(g_bpMoeRawAddr,0))&0x01)); 
+ 286   2      
+ 287   2                      /*modify src1 Roi Width*/       
+ 288   2                      //bpMoeRoiWidthLow = (UINT8)(g_bpMoeRoiWidth&0xff);
+ 289   2                      //bpMoeRoiWidthHigh= (UINT8)((g_bpMoeRoiWidth>>8)&0xff);
+ 290   2                      M_DRAM_WaitReady;  /*MUST wait for DRAM ready , else will write to the error  DRAM Addr*/
+ 291   2                      BP_DRAM_SetStartAddress(bpMoeQueueRoiWidthAddr,0);      
+ 292   2                      BP_DRAM_WriteWord(READ8(g_bpMoeRoiWidth, 1), READ8(g_bpMoeRoiWidth, 0));
+ 293   2                      
+ 294   2                      //dramFileSave("MOE1", g_bpMoeQueueAddr,24);
+ 295   2                      M_DRAM_WaitReady;  /*MUST wait for DRAM ready , else will write to the error  DRAM Addr*/               
+ 296   2                      
+ 297   2                      #if 1
+ 298   2                      HAL_MoeRunQueue(g_bpMoeQueueAddr , MOE_Trigger_Other);
+ 299   2                      #else
+                              if(HAL_MoeRunQueue(g_bpMoeQueueAddr , MOE_Trigger_Other) == 0){
+                                      dramFileSave("MOEQUEUE", g_bpMoeQueueAddr,24);
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 6   
+
+                                      printf("g_bpMoeQueueAddr = %#lx,g_bpMoeRawAddr=%#lx,g_bpMoeRoiWidth=%#x",g_bpMoeQueueAddr,g_bpMoeRawAdd
+             -r,g_bpMoeRoiWidth);
+                                      printf("bpMoeQueueRoiWidthAddr = %#lx",bpMoeQueueRoiWidthAddr);
+                                      printf("bpMoeRoiWidthLow = %#bx,bpMoeRoiWidthHigh=%#bx",bpMoeRoiWidthLow,bpMoeRoiWidthHigh);
+                                      while(1);
+                              }
+                              #endif
+ 308   2                      /*printf("\n0x[2E18] = %#bx\n",XBYTE[0x2E18]);
+ 309   2                      printf("0x[2E19] = %#bx\n",XBYTE[0x2E19]);
+ 310   2                      printf("0x[2E1A] = %#bx\n",XBYTE[0x2E1A]);
+ 311   2                      printf("0x[2E1B] = %#bx\n",XBYTE[0x2E1B]);
+ 312   2                      printf("0x[2E1C] = %#bx\n",XBYTE[0x2E1C]);
+ 313   2                      printf("0x[2E1D] = %#bx\n",XBYTE[0x2E1D]);
+ 314   2                      printf("0x[2E1E] = %#bx\n",XBYTE[0x2E1E]);
+ 315   2                      printf("0x[2E1F] = %#bx\n",XBYTE[0x2E1F]);*/
+ 316   2              }
+ 317   1              //HAL_GlobalReadGTimer(&end);   
+ 318   1              //printf("time MOE : %lu\n",end-str);
+ 319   1      }
+ 320          
+ 321          /******************************************
+ 322           * @fn        void bpMoeResGet(UINT32 resAddr, resAddr,UINT32 *sum, *sum,UINT8 *max, *max,UINT8 *min)
+ 323           * @brief        bpMoeResGet
+ 324           * @param     [in] resAddr
+ 325           * @param     [in] sum
+ 326           * @param     [in] max
+ 327           * @param     [in] min
+ 328           * @retval      NONE
+ 329           * @see         NULL
+ 330           * @author     fan.xiao
+ 331           * @since       2011-10-08 , 17:18:48
+ 332           * @todo        N/A
+ 333           * @bug         N/A
+ 334          *******************************************/
+ 335          void bpMoeResGet(UINT32 resAddr,UINT16 *sum,UINT8 *max,UINT8 *min)
+ 336          {
+ 337   1              UINT8 LowByteData,HighByteData;
+ 338   1              
+ 339   1              BP_DRAM_SetStartAddress(resAddr,1);
+ 340   1              
+ 341   1              BP_DRAM_Readword(LowByteData,HighByteData);
+ 342   1              //printf("L1=%#bx , H1 = %#bx\n",LowByteData,HighByteData);
+ 343   1              //*sum |= (UINT32)LowByteData + ((UINT32)HighByteData<<8);
+ 344   1              //WRITEP8(sum, 3, LowByteData);
+ 345   1              //WRITEP8(sum, 3, HighByteData);
+ 346   1              WRITEP8(sum, 1, LowByteData);
+ 347   1              WRITEP8(sum, 0, HighByteData);
+ 348   1              BP_DRAM_Readword(LowByteData,HighByteData);/*High 16bits is not used*/
+ 349   1              //printf("L2=%#bx , H2 = %#bx\n",LowByteData,HighByteData);
+ 350   1              //*sum |= ((UINT32)LowByteData<<16) + ((UINT32)HighByteData<<24);
+ 351   1              //WRITEP8(sum, 1, LowByteData);
+ 352   1              //WRITEP8(sum, 0, HighByteData);
+ 353   1              
+ 354   1              BP_DRAM_Readword(LowByteData,HighByteData);
+ 355   1              //printf("L3=%#bx , H3 = %#bx\n",LowByteData,HighByteData);
+ 356   1              *min = HighByteData;
+ 357   1              
+ 358   1              BP_DRAM_Readword(LowByteData,HighByteData);
+ 359   1              //printf("L4=%#bx , H4 = %#bx\n",LowByteData,HighByteData);
+ 360   1              *max = HighByteData;
+ 361   1      
+ 362   1      #if 0
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 7   
+
+                      {
+                              UINT16 sum1 = 0;
+                              UINT16 i;
+                              UINT8 LowByteData,HighByteData;
+                              HAL_DramStartAddrSet(g_bpMoeRawAddr,1);
+                              for(i = 0; i < g_bpMoeRoiWidth ;i++){
+                                      HAL_DramWordDataRead(&LowByteData,&HighByteData);
+                                      sum1 += HighByteData;
+                              }
+                              //printf("sum = %#x\n",sum1);
+                              //*sum = sum1;
+                              if(ABS(sum1, *sum) > 64){
+                                      printf("ERR SUM!\n");
+                                      while(1);
+                              }
+                      }
+              #endif
+ 380   1      
+ 381   1              //printf("sum(%#lx),max(%#bx),min(%#bx)\n",*sum,*max,*min); 
+ 382   1      }
+ 383          
+ 384          /******************************************
+ 385           * @fn        void bpBlockRead(UINT32 srcAddr, srcAddr,UINT32 dstAddr, UINT32 dmaOff)
+ 386           * @brief        bpBlockRead  : read 8x8 black
+ 387           * @param     [in] srcAddr : word
+ 388           * @param     [in] dstAddr : word
+ 389           * @param     [in] dmaOff  : word
+ 390           * @retval      NONE
+ 391           * @see         NULL
+ 392           * @author     fan.xiao
+ 393           * @since       2011-10-08 , 17:06:43
+ 394           * @todo        N/A
+ 395           * @bug         N/A
+ 396          *******************************************/
+ 397          static void bpBlockMoeRead(
+ 398                  UINT32 srcAddr,
+ 399                  UINT16 rawSizeH,
+ 400                  UINT16 rawSizeV,
+ 401                  UINT16 rawOffH,
+ 402                  UINT16 rawOffV,
+ 403                  UINT32 dstBlk1Addr, 
+ 404                  UINT32 dstBlk2Addr,
+ 405                  UINT16 blkSizeH,
+ 406                  UINT16 blkSizeV
+ 407          )
+ 408          {
+ 409   1              #if 0
+                      UINT8 stripW = /*g_stripWidth*/16;
+                      UINT8 stripH = /*g_stripHeight*/8;
+                      
+                      while (stripH--) {
+                              HAL_GprmDramDma((srcAddr<<1) , (dstAddr<<1) , stripW, 1);
+                              srcAddr += dmaOff;
+                              dstAddr += stripW>>1;
+                      }
+                      #endif
+ 419   1              #if 1
+ 420   1              HAL_GprmCopy(
+ 421   1                      srcAddr,  rawSizeH, rawSizeV,
+ 422   1                      rawOffH, rawOffV,
+ 423   1                      dstBlk1Addr,  blkSizeH,  blkSizeV,
+ 424   1                      0 , 0,
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 8   
+
+ 425   1                      blkSizeH,  blkSizeV,
+ 426   1                      0, 1
+ 427   1              );
+ 428   1              if(testSaveFlag){
+ 429   2                      sp1kDramFileSave("11111111RAW",dstBlk1Addr,(UINT32)blkSizeH*blkSizeV<<1);
+ 430   2              }
+ 431   1              
+ 432   1              /*Blk2*/
+ 433   1              HAL_GprmCopy(
+ 434   1                      dstBlk1Addr,  blkSizeH<<1, blkSizeV>>1,
+ 435   1                      blkSizeH , 0,
+ 436   1                      dstBlk2Addr,  blkSizeH,  blkSizeV>>1,
+ 437   1                      0 , 0,
+ 438   1                      blkSizeH,blkSizeV>>1,
+ 439   1                      0, 1
+ 440   1              );
+ 441   1              
+ 442   1              if(testSaveFlag){
+ 443   2              sp1kDramFileSave("22222222RAW",dstBlk2Addr,(UINT32)blkSizeH*blkSizeV);
+ 444   2              }
+ 445   1              /*Blk1*/
+ 446   1              HAL_GprmCopy(
+ 447   1                      dstBlk1Addr,  blkSizeH<<1, blkSizeV>>1,
+ 448   1                      0 , 0,
+ 449   1                      dstBlk1Addr,  blkSizeH,  blkSizeV>>1,
+ 450   1                      0 , 0,
+ 451   1                      blkSizeH,blkSizeV>>1,
+ 452   1                      0, 1
+ 453   1              );
+ 454   1              
+ 455   1              if(testSaveFlag){
+ 456   2              sp1kDramFileSave("33333333RAW",dstBlk1Addr,(UINT32)blkSizeH*blkSizeV);
+ 457   2              }
+ 458   1              //while(1);
+ 459   1              #endif
+ 460   1              
+ 461   1      }
+ 462          
+ 463          /******************************************
+ 464           * @fn        UINT8 bpBlockMoeSearch(UINT16 blkPixelSum, UINT8 *avg)
+ 465           * @brief        bpBlockMoeSearch
+ 466           * @param     [in] blkPixelSum : pixel sum of this block 
+ 467           * @param     [in] avg : the avg of this block
+ 468           * @retval      return : 1: this block has bad pixel
+ 469           * @see         NULL
+ 470           * @author     fan.xiao
+ 471           * @since       2011-10-09 , 11:01:01
+ 472           * @todo        N/A
+ 473           * @bug         N/A
+ 474          *******************************************/
+ 475          static UINT8 bpBlockMoeSearch(UINT16 blkPixelSum , UINT8 *avg)
+ 476          {
+ 477   1              UINT16 sum,blkAvgTmp16;
+ 478   1              UINT8 max,min,diff1,diff2;
+ 479   1              UINT8 blkAvg;
+ 480   1              UINT8 ret;
+ 481   1      
+ 482   1              sum = max = min = ret = 0;
+ 483   1              
+ 484   1              bpMoeTrigger();
+ 485   1              bpMoeResGet(g_bpMoeResAddr , &sum , &max , &min);
+ 486   1      
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 9   
+
+ 487   1              blkAvgTmp16 = sum/blkPixelSum;
+ 488   1              blkAvg = (UINT8)(blkAvgTmp16 > 0xff ? 0xff : blkAvgTmp16);
+ 489   1              
+ 490   1              //blkAvg =  (UINT8)((sum/blkPixelSum)&0xff);
+ 491   1              
+ 492   1              //printf("sum = %lu,blkSum = %u,blkAvg = %bu\n",sum,blkPixelSum,blkAvg);
+ 493   1              
+ 494   1              //g_bpPreBlkAvg = 0;  //1 only for test
+ 495   1              
+ 496   1              if(g_bpPreBlkAvg){
+ 497   2                      *avg = (UINT8)(((UINT16)blkAvg + g_bpPreBlkAvg)>>1);
+ 498   2              }
+ 499   1              else{
+ 500   2                      *avg = blkAvg;
+ 501   2              }
+ 502   1      
+ 503   1              blkAvg = *avg;
+ 504   1              g_bpPreBlkAvg = blkAvg;
+ 505   1              
+ 506   1              //printf("Avg = %bu\n",blkAvg);
+ 507   1              
+ 508   1              //printf("Avg = %bu ,g_threshold = %bu\n",blkAvg,g_threshold);
+ 509   1              diff1 = ABS(blkAvg, max); 
+ 510   1              diff2 = ABS(blkAvg, min); 
+ 511   1              //printf("d1=%bu,d2=%bu\n",diff1,diff2);
+ 512   1              if (diff1 > g_threshold || diff2 > g_threshold) {
+ 513   2                      ret = 1;
+ 514   2              }
+ 515   1              
+ 516   1              //printf("ret=%bu\n",ret);
+ 517   1              return ret;
+ 518   1      }
+ 519          
+ 520          
+ 521          /******************************************
+ 522           * @fn        void bpBlockRead(UINT32 srcAddr, UINT32 dmaSize)
+ 523           * @brief        bpBlockRead : read the block to SRAM
+ 524           * @param     [in] srcAddr : the data in DRAM Addr
+ 525           * @param     [in] dmaSize
+ 526           * @retval      NONE
+ 527           * @see         NULL
+ 528           * @author     fan.xiao
+ 529           * @since       2011-10-09 , 11:04:18
+ 530           * @todo        N/A
+ 531           * @bug         N/A
+ 532          *******************************************/
+ 533          static void bpBlockRead(UINT32 srcAddr, UINT32 dmaSize) 
+ 534          {
+ 535   1              //UINT16 dstAddr = 0x0000;
+ 536   1      
+ 537   1              HAL_DmaSetSramAddr(0x0000);
+ 538   1              HAL_DmaSetDramAddr(srcAddr);
+ 539   1              HAL_DmaDo(0, 1, dmaSize, 0, 0);
+ 540   1      }
+ 541          
+ 542          /******************************************
+ 543           * @fn        void bpBlockSearch(UINT16 startX, UINT16 startY, UINT8 avg)
+ 544           * @brief        bpBlockSearch ,search bad pixel in the block
+ 545           * @param     [in] startX
+ 546           * @param     [in] startY
+ 547           * @param     [in] avg
+ 548           * @retval      NONE
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 10  
+
+ 549           * @see         NULL
+ 550           * @author     fan.xiao
+ 551           * @since       2011-10-09 , 11:05:21
+ 552           * @todo        N/A
+ 553           * @bug         N/A
+ 554          *******************************************/
+ 555          #pragma OT(8, SPEED)
+ 556          
+ 557          static void bpBlockSearch(UINT16 startX, UINT16 startY, UINT8 avg)
+ 558          {
+ 559   1              UINT8 diff;
+ 560   1              UINT8 i,j;
+ 561   1              UINT8 val,off;
+ 562   1              UINT8 planeHeightW = g_planeHeight << 1;
+ 563   1              UINT8 planeWidthW = g_planeWidth << 1;
+ 564   1              //printf("g_planeWidth = %bu,g_planeHeight = %bu\n",g_planeWidth,g_planeHeight);
+ 565   1      
+ 566   1              //printf("startX = %u,startY=%u\n",startX,startY);
+ 567   1              off = 1;
+ 568   1              for(j = 0 ; j < planeHeightW ; j+=2){
+ 569   2                      for (i = 0; i < planeWidthW; i+=2) {
+ 570   3                              val = G_ucStorData[off];                
+ 571   3                              //printf("VAL = %bu\n",val);
+ 572   3                              diff = ABS(val, avg); 
+ 573   3                              if (diff > g_threshold) {
+ 574   4                                      bpBadPixelFlagSave(0x01, startX, startY, s_bpBadpixelFlagAddr);
+ 575   4                                      //type=bpTypeGet(startX,off-1,mode);
+ 576   4                                      bpBadPixelAddrSet(s_bpBadpixelAddr, 0); 
+ 577   4                                      bpBadPixelSave(startX, startY);
+ 578   4                                      s_bpBadpixelAddr +=2;
+ 579   4                              #if 0
+                                              printf("X(%u), Y(%u)\n", (startX + (i << 1)), (startY + (j << 1)));
+                                              printf("avg(%bu),val(%bu)\n", avg,val);
+                                      #endif 
+ 583   4                              }
+ 584   3                              startX += 2;
+ 585   3                              off += 2;
+ 586   3                      }
+ 587   2                      startY += 2;
+ 588   2                      startX -= planeWidthW;
+ 589   2              }
+ 590   1      }
+ 591          
+ 592          
+ 593          /******************************************
+ 594           * @fn        void bpRawShift(UINT32 srcAddr, srcAddr,UINT32 dstAddr, UINT32 dmaOff)
+ 595           * @brief        bpRawShift  : shift the RAW data by one byte
+ 596           * @param     [in] srcAddr
+ 597           * @param     [in] dstAddr
+ 598           * @param     [in] dmaOff
+ 599           * @retval      NONE
+ 600           * @see         NULL
+ 601           * @author     fan.xiao
+ 602           * @since       2011-10-09 , 11:06:04
+ 603           * @todo        N/A
+ 604           * @bug         N/A
+ 605          *******************************************/
+ 606          static void bpRawShift(UINT32 srcAddr,UINT32 dstAddr, UINT32 dmaSize)
+ 607          {
+ 608   1              HAL_GprmDramDma((srcAddr<<1) , (dstAddr<<1) + 1 , dmaSize, 1);
+ 609   1              
+ 610   1              //sp1kDramFileSave("SHIF1111RAW",dstAddr,dmaSize);
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 11  
+
+ 611   1      }
+ 612          
+ 613          #else
+              //-----------------------------------------------------------------------------
+              //bpStripRead
+              //-----------------------------------------------------------------------------
+              /**
+               * @brief               read specified strip of raw data
+               * @param       srcAddr: raw data source address
+                                      dmaOff: the offset between every two strip of raw data
+               * @retval      none
+               * @see         none
+               * @author      Phil Lin
+               * @since               2008-11-19
+               * @todo                Something need to be done.
+               * @bug         a bug need to be resolved.
+              */
+              static void bpStripRead(UINT32 srcAddr, UINT32 dmaOff)
+              {
+                      //dma read to sram, stripW < 1024
+                      //r gr r gr ... 128 pixles
+                      //r gr r gr ...
+                      
+                      UINT8 stripH = g_stripHeight;
+                      UINT16 dstAddr = 0x0000;
+              
+                      while (stripH--) {
+                              HAL_DmaSetSramAddr(dstAddr);
+                              HAL_DmaSetDramAddr(srcAddr);
+                              HAL_DmaDo(0, 1, g_stripWidth, 0, 0);
+                              srcAddr += dmaOff;
+                              dstAddr += g_stripWidth;
+                      }
+              }
+              
+              
+              //-----------------------------------------------------------------------------
+              //bpStripAvgs
+              //-----------------------------------------------------------------------------
+              /**
+               * @brief               caculate the avgs for specified plane
+               * @param       pAvg: pointer target avgs array
+                                      cnt: the count of plane
+               * @retval      none
+               * @see         none
+               * @author      Phil Lin
+               * @since               2008-11-19
+               * @todo                Something need to be done.
+               * @bug         a bug need to be resolved.
+              */
+              static void bpStripAvgs(UINT8* pAvg, UINT8 cnt)
+              {
+                      UINT16 off;
+                      UINT8 i, j, k,t;
+                      UINT16 avg1, avg2;
+                      UINT8 start, width;
+                      UINT16 t_val;
+                      bpPara_t *pPara;
+              
+                      bpCfgGet(&pPara);
+                      
+                      start = 0;
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 12  
+
+                      width = g_planeWidth << 1;
+                      for (k = 0; k < cnt;) {
+                              off = (UINT16) start;
+                              avg1 = 0;
+                              avg2 = 0;
+                              j = g_planeHeight;
+                              do {
+                                      i = g_planeWidth;
+                                      do {
+                                              avg1 += G_ucStorData[off++];
+                                              avg2 += G_ucStorData[off++];
+                                      } while (--i);
+                              } while (--j);
+                              if(pPara->preAvg){
+                                      t=k;
+                                      pAvg[k++] = (UINT8) (((avg1 / (g_planeHeight * g_planeWidth))+pPara->preAvg*63)>>6);
+                                      t_val = pAvg[t];
+                                      t=k;
+                                      pAvg[k++] = (UINT8) (((avg2 / (g_planeHeight * g_planeWidth))+pPara->preAvg*63)>>6);
+                                      t_val += pAvg[t];
+                              }else{
+                                      t=k;
+                                      pAvg[k++] = (UINT8) (avg1 / (g_planeHeight * g_planeWidth));
+                                      t_val = pAvg[t];
+                                      t=k;                            
+                                      pAvg[k++] = (UINT8) (avg2 / (g_planeHeight * g_planeWidth));
+                                      t_val += pAvg[t];
+                              }
+                              pPara->preAvg = t_val/2;
+                              start += width;
+                      }
+              }
+              
+              
+              
+              /**
+               * @fn        UINT16 bpTypeGet(UINT16 startX, startX,UINT16 off)
+               * @brief     bpTypeGet
+               * @param     [in] startX
+               * @param     [in] off
+               * @retval    return = SUCCESS / FAIL
+               * @see       NULL
+               * @author    dongdong.wang
+               * @since     2010-5-24
+               * @todo      N/A
+               * @bug       N/A
+              */
+              static UINT16 bpTypeGet(UINT16 startX,UINT16 off,UINT8 mode)
+              {
+                      UINT16 type;
+                      if(mode)
+                      {
+                              if((startX==0)&&(off % g_stripWidth < 2))
+                              {
+                                      type = BP_TYPE_RIGHT;
+                              }
+                              else
+                              {
+                                      type = BP_TYPE_LEFT;
+                              }
+              
+                      }
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 13  
+
+                      else
+                      {
+                              type = BP_TYPE_LEFT;
+                      }
+              
+                      return type;
+              }
+              
+              
+              
+              
+              
+              
+              //-----------------------------------------------------------------------------
+              //bpStripSearch
+              //-----------------------------------------------------------------------------
+              /**
+               * @brief               search the badpixel in specified plane
+               * @param       startX: the horizontal offset of the raw image
+                                      startY: the vertical offset of raw image
+                                      avgBuf: point to the avg buffer
+               * @retval      none
+               * @see         none
+               * @author      Phil Lin
+               * @since               2008-11-19
+               * @todo                Something need to be done.
+               * @bug         a bug need to be resolved.
+              */
+              static void bpStripSearch(UINT16 startX, UINT16 startY, UINT8* avgBuf,UINT8 mode)
+              {
+                      UINT16 off;
+                      UINT8 val, diff, avg1, avg2;
+                      UINT8 cnt;
+                      UINT8 i, j, k;
+                      UINT16 type;
+                      cnt = g_stripWidth / g_planeWidth;
+                      bpStripAvgs(avgBuf, cnt);
+              
+                      off = 0;
+                      for (k = 0; k < g_stripHeight; k ++) {
+                              for (j = 0; j < cnt;) {
+                                      avg1 = (UINT8) (avgBuf[j++]);
+                                      avg2 = (UINT8) (avgBuf[j++]);
+                                      for (i = 0; i < g_planeWidth; i ++) {
+                                              val = G_ucStorData[off++];
+                                              diff = ABS(val, avg1); 
+                                              if (diff > g_threshold) {
+                                                      bpBadPixelFlagSave(0x01, startX + (j - 2) * g_planeWidth + (i << 1), (startY + (k << 1)), s_bpBadpixe
+             -lFlagAddr);
+                                                      type=bpTypeGet(startX,off-1,mode);
+                                                      bpBadPixelAddrSet(s_bpBadpixelAddr, 0); 
+                                                      bpBadPixelSave(startX + (j - 2) * g_planeWidth + (i << 1), (startY + (k << 1)));
+                                                      
+                                                      s_bpBadpixelAddr +=2;
+              #if DBG_BP_EN
+                                                      printf("X(%u), Y(%u)\n", startX + (j-2)*g_planeWidth + (i<<1), (startY + (k << 1)));
+              #endif //DBG_BP_EN
+                                              }
+                                              //else {
+                                              //      bpBadPixelFlagSave(0x00,startX + (j - 2) * g_planeWidth + (i << 1), (startY + (k << 1)) ,s_bpBadpix
+             -elFlagAddr);
+                                              //}
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 14  
+
+                                              
+                                              val = G_ucStorData[off++];
+                                              diff = ABS(val, avg2); 
+                                              if (diff > g_threshold) {
+                                                      bpBadPixelFlagSave(0x01,startX + (j - 2) * g_planeWidth + (i << 1) + 1, (startY + (k << 1)) ,s_bpBadp
+             -ixelFlagAddr);
+                                                      type=bpTypeGet(startX,off-1,mode);
+                                                      bpBadPixelAddrSet(s_bpBadpixelAddr, 0);                                 
+                                                      bpBadPixelSave(startX + (j - 2) * g_planeWidth + (i << 1) + 1, (startY + (k << 1)));            
+                                                      s_bpBadpixelAddr +=2;
+              #if DBG_BP_EN                                   
+                                                      printf("X(%u), Y(%u)\n", startX + (j-2)*g_planeWidth + (i<<1) + 1, (startY + (k << 1)));                                        
+              #endif //DBG_BP_EN                              
+                                              }
+                                              
+                                              //else {
+                                              //      bpBadPixelFlagSave(0x00,startX + (j - 2) * g_planeWidth + (i << 1) + 1, (startY + (k << 1)) ,s_bpBa
+             -dpixelFlagAddr);
+                                              //}
+                                      }
+                              }
+                      }
+              }
+              #endif
+ 817          
+ 818          #if 0
+              #include "sp1k_bp_api.h"
+              
+              extern/*static */UINT8 appCalBpCapDataArrange(void);
+              extern UINT8 appCalBpPro(void);
+              
+              #define RAW_X_SIZE 2272
+              #define RAW_Y_SIZE 1704
+              
+              #define CAL_BP_BAD_BUF K_SDRAM_CommonEndAddr
+              #define CAL_BP_RAW_BUF (CAL_BP_BAD_BUF + K_SDRAM_BadPixelCoordBufSize)
+              
+              
+                static bpPara_t code sBpPara = {
+                       1280, /* preview HD raw image width */
+                       720,  /* preview HD raw image height */
+               
+                       560,//640,  /* preview raw image width */
+                       420,//480,  /* preview raw image width */
+                       
+                       2272,//2592, /* capture raw image width */
+                       1704,//1944, /* capture raw image height */
+               
+                       18,//20,//20, /* threshold */
+                       10,//9,//30, /* black badPixel threshold */
+               
+                       BADPIXEL_PV_NUM_MAX,//4096, /* preview badpixel max number */
+                       BADPIXEL_PV_NUM_MAX,//4096, /* preview badpixel max number */
+                       BADPIXEL_CAP_NUM_MAX -4,//8000, /* capture badpixel max number */
+                       0,
+                       0,
+               
+                       0x55aa, /* EOF */
+               };
+              
+              void bpMoeTest(void)
+              {
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 15  
+
+                      UINT32 rawSize,strTime,endTime;
+                      UINT8 ret;
+                      UINT32 badTotal;
+                      
+                      UINT8 sts;
+              
+                      UINT32 rawAddr = (UINT32)CAL_BP_RAW_BUF;
+                      UINT32 badAddr = (UINT32)CAL_BP_BAD_BUF;
+              
+                      dbgWdtSet(0);
+                      sp1kAeSetModeEn(0);
+                      sp1kAwbDisable();
+              
+                      ENTER_CRITICAL(sts);
+                      HAL_GlobalReadGTimer(&strTime);
+              
+                      /*read RAW*/
+                      ret = sp1kDramFileLoad(/*"SUNPBLAKRAW SUNPWITERAW"*/"SUNPWITERAW", rawAddr, &rawSize);
+                      if(ret != TRUE){
+                              printf("SUNPBLAKRAW not found!\n");
+                              return;
+                      }
+                      printf("SUNPBLAKRAW  found!\n");
+                      
+                      sp1kBpCfg(&sBpPara);
+                      g_threshold = 10;
+                      
+                      g_bpNumMaxCap = g_bpNumMaxPrv_HD = g_bpNumMaxPrv= 8000;
+                      printf("g_badPixelCnt1 = %lu\n",g_badPixelCnt);
+                      sp1kBpFind(2, rawAddr, RAW_X_SIZE, RAW_Y_SIZE, badAddr, &badTotal);
+                      HAL_GlobalReadGTimer(&endTime);
+                      printf("All time : %lu\n",endTime-strTime);
+                      
+                      EXIT_CRITICAL(sts);//wangjg++ disable ie when set moe reg, otherwise reg maybe error
+              }
+              #endif
+ 891          
+ 892          #if BP_USE_MOE
+ 893          //-----------------------------------------------------------------------------
+ 894          //bpFind
+ 895          //-----------------------------------------------------------------------------
+ 896          /**
+ 897           * @brief               badpixel find process
+ 898           * @param       mode: 0:preview mode, 1: capture mode
+ 899                                  rawAddr: raw image source address(word)
+ 900                                  rawWidth: the width of raw image
+ 901                                  rawHeight: the height of raw image
+ 902                                  badPixAddr: badpixel description data destination address
+ 903                                  badPixNum: badpixel total number
+ 904           * @retval      0: success
+ 905                                  1: fail
+ 906           * @see         see
+ 907           * @author      Phil Lin
+ 908           * @since               2008-11-20
+ 909           * @todo                Something need to be done.
+ 910           * @bug         a bug need to be resolved.
+ 911          */
+ 912          UINT8 
+ 913          bpFind(
+ 914                  bpMode_t mode,
+ 915                  UINT32 rawAddr,
+ 916                  UINT16 rawWidth,
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 16  
+
+ 917                  UINT16 rawHeight,
+ 918                  UINT32 badPixAddr,
+ 919                  UINT32* badPixNum
+ 920          )
+ 921          {
+ 922   1              UINT8 ret;
+ 923   1              UINT16 startX, startY;
+ 924   1              //UINT16 g_stripWidthSv,g_stripHeightSv;   //add 20091124
+ 925   1              
+ 926   1              UINT8 g_planeWidthSv,g_planeHeightSv;   //add 20091124
+ 927   1              UINT32 rsvSize;
+ 928   1              UINT32 tagSize;
+ 929   1              resBpCb_t* pResBp;
+ 930   1              UINT32 resAddr, bpAddrtemp;//bpFlagAddrtemp;
+ 931   1              static UINT8 preMode_HD =0;  //add 20110309
+ 932   1              static UINT8 preMode=0; //add 20091124
+ 933   1              static UINT8 capMode=0; //add 20091124
+ 934   1      
+ 935   1              UINT16 moeRoiSize,moeRoiSizeSv;
+ 936   1              UINT8 blkAvg;
+ 937   1              UINT8 badFlag,i;
+ 938   1              UINT32 bpRawAddr;
+ 939   1              UINT32 allBlk;
+ 940   1              //UINT32 badBlk;
+ 941   1              UINT8 sts , saveResFlag;
+ 942   1              UINT16 rawHeight_half = rawHeight >> 1;
+ 943   1              //UINT32 strTime,endTime;
+ 944   1              
+ 945   1              saveResFlag = 0;
+ 946   1              allBlk = 0;
+ 947   1              //badBlk = 0;
+ 948   1              testSaveFlag = 0;
+ 949   1              printf("\033[32mrawAddr = %#lx , badPixAddr = %#lx\033[0m\n",rawAddr , badPixAddr);
+ 950   1      
+ 951   1              ENTER_CRITICAL(sts);//wangjg++ disable ie when set moe reg, otherwise reg maybe error
+ 952   1              if ( mode >= BP_MODE_MAX ) {
+ 953   2                      return FAIL;
+ 954   2              } else if ( mode == BP_MODE_PRV_HD) {
+ 955   2                      gp_bpNumMax = &g_bpNumMaxPrv_HD;
+ 956   2              } else if ( mode == BP_MODE_PRV_VGA){
+ 957   2                      gp_bpNumMax = &g_bpNumMaxPrv;
+ 958   2              } else {
+ 959   2                      gp_bpNumMax = &g_bpNumMaxCap;
+ 960   2              }
+ 961   1                      
+ 962   1              moeRoiSize = (UINT16)g_planeHeight*g_planeWidth;
+ 963   1              moeRoiSizeSv = moeRoiSize;
+ 964   1      
+ 965   1              g_planeWidthSv = g_planeWidth;
+ 966   1              g_planeHeightSv = g_planeHeight;
+ 967   1              
+ 968   1              /* buffer init */
+ 969   1              //HAL_GprmDramFill(badPixAddr, K_SDRAM_BadPixel_CapBufSize << 1, 0xff);
+ 970   1              s_bpRawWidth = rawWidth;
+ 971   1              s_bpRawHeight = rawHeight;
+ 972   1              s_bpBadpixelAddr = badPixAddr;
+ 973   1              s_bpRawSize =(UINT32) rawWidth *rawHeight;
+ 974   1      
+ 975   1              bpRawAddr = rawAddr;
+ 976   1              
+ 977   1              g_bpMoeRawBlk1Addr = rawAddr + (s_bpRawSize>>1);
+ 978   1              g_bpMoeRawBlk2Addr = g_bpMoeRawBlk1Addr + ((UINT32)g_planeWidth*rawHeight);
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 17  
+
+ 979   1              g_bpMoeQueueAddr = g_bpMoeRawBlk2Addr + (((UINT32)g_planeWidth*rawHeight)>>1);
+ 980   1              
+ 981   1              g_bpMoeRawAddr = g_bpMoeRawBlk1Addr;
+ 982   1              //s_bpBadpixelFlagAddr = rawAddr + (s_bpRawSize>>1);
+ 983   1              s_bpBadpixelFlagAddr = g_bpMoeQueueAddr + 28;  /* MOE queue : 24 word (2 queue) + MOE reslut buffer : 4 w
+             -ord = 28 word*/
+ 984   1      
+ 985   1              //printf("g_bpMoeRawAddr=%#lx,g_bpMoeTmpAddr=%#lx,s_bpBadpixelFlagAddr=%#lx\n",g_bpMoeRawAddr,g_bpMoeTmpA
+             -ddr,s_bpBadpixelFlagAddr);
+ 986   1              //bpFlagAddrtemp = s_bpBadpixelFlagAddr; /*save bpflag address*/
+ 987   1              bpAddrtemp = s_bpBadpixelAddr;
+ 988   1              //HAL_DramStartAddrSet(badPixAddr, 0);
+ 989   1                      
+ 990   1              s_bpRawSize >>=3; /*every bit stand for one pixel*/
+ 991   1              //printf("s_bpRawSize=%lu\n",s_bpRawSize);
+ 992   1              
+ 993   1              #if 0  /*it need 4500ms , when RAW size is 5M , GPRM fill function only need 15ms*/   
+                      BP_DRAM_SetStartAddress(s_bpBadpixelFlagAddr,0);
+                      while (s_bpRawSize--) {         
+                              BP_DRAM_WriteWord(0,0);
+                      }       
+                      #else
+ 999   1              //HAL_GlobalReadGTimer(&strTime);
+1000   1              HAL_GprmDramFill(s_bpBadpixelFlagAddr,s_bpRawSize,0x00);
+1001   1              //HAL_GlobalReadGTimer(&endTime);
+1002   1              #endif
+1003   1              
+1004   1              //sp1kDramFileSave("FLAGYYYYBIN",s_bpBadpixelFlagAddr,s_bpRawSize);
+1005   1              //printf("bpaddr0=%lx\n",badPixAddr);
+1006   1      
+1007   1              g_bpMoeResAddr = bpMoeInit(g_bpMoeRawAddr,g_bpMoeQueueAddr,moeRoiSize);
+1008   1              
+1009   1              //printf("\033[32mg_bpMoeRawAddr1 = %#lx , g_bpMoeRawAddr2 = %#lx\033[0m\n",g_bpMoeRawBlk1Addr,g_bpMoeRaw
+             -Blk2Addr);
+1010   1      
+1011   1              for(i = 0 ; i < 2 ; i++){
+1012   2                      UINT8 offX;
+1013   2                      switch(i){
+1014   3                              case 0:                 
+1015   3                                      offX = 1;
+1016   3                                      bpRawAddr = rawAddr;
+1017   3                              break;                  
+1018   3                              case 1:
+1019   3                                      offX = 0;
+1020   3                                      bpRawShift(rawAddr , rawAddr -1,(UINT32) rawWidth *rawHeight);
+1021   3                                      bpRawAddr = rawAddr -1;
+1022   3                              break;
+1023   3                      }
+1024   2                      
+1025   2                      g_bpPreBlkAvg = g_bpPreBlkAvg1 = g_bpPreBlkAvg2 = 0;
+1026   2                      for (startX= 0 ; startX < rawWidth; startX += (g_planeWidth<<1)) {
+1027   3                              //printf("\033[34mstartX = %u\033[0m\n",startX);
+1028   3                              g_planeWidth = g_planeWidthSv;
+1029   3                              g_planeHeight = g_planeHeightSv;
+1030   3                              moeRoiSize = moeRoiSizeSv;      
+1031   3                              g_bpMoeRawAddr = g_bpMoeRawBlk1Addr;
+1032   3                              g_bpPreBlkAvg = g_bpPreBlkAvg1; /*restore block 1 Avg*/
+1033   3                              testSaveFlag = 0;
+1034   3                              if(rawWidth - startX < (g_planeWidth<<1)){
+1035   4                                      g_planeWidth = (rawWidth - startX)>>1;
+1036   4                                      moeRoiSize = (UINT16)g_planeWidth* g_planeHeight;
+1037   4                              }
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 18  
+
+1038   3                              /*if( i == 1 && startX == (UINT16)2576 ){
+1039   3                                      testSaveFlag = 1;
+1040   3                                      printf("moeRoiSize = %u\n",moeRoiSize);
+1041   3                              }*/
+1042   3                              bpBlockMoeRead(bpRawAddr,
+1043   3                                      rawWidth>>1 , rawHeight,
+1044   3                                      startX>>1 , 0,
+1045   3                                      g_bpMoeRawBlk1Addr , g_bpMoeRawBlk2Addr,
+1046   3                                      g_planeWidth , rawHeight);
+1047   3                                      
+1048   3                              /*1st block*/
+1049   3                              for(startY = 0 ; startY < rawHeight_half; startY += g_planeHeight){
+1050   4                                      //printf("\033[32mstartY = %u\033[0m\n",startY);
+1051   4                                      if(rawHeight_half < g_planeHeight + startY){
+1052   5                                              g_planeHeight = rawHeight_half - startY;
+1053   5                                              moeRoiSize = (UINT16)g_planeWidth* g_planeHeight;
+1054   5                                              //printf("g_planeHeight1 = %bu\n",g_planeHeight);
+1055   5                                      }
+1056   4                                      g_bpMoeRoiWidth = moeRoiSize;
+1057   4              
+1058   4                                      allBlk ++;
+1059   4                                      badFlag = bpBlockMoeSearch(moeRoiSize,&blkAvg);
+1060   4                                      if(badFlag){
+1061   5                                              //badBlk++;
+1062   5                                              //printf("\033[32m+\033[0m\n");
+1063   5                                              if(g_badPixelCnt < *gp_bpNumMax){
+1064   6                                                      bpBlockRead(g_bpMoeRawAddr, (moeRoiSize<<1));   
+1065   6                                                      bpBlockSearch(startX+offX, (startY<<1), blkAvg);
+1066   6                                              }
+1067   5                                      }
+1068   4                                      g_bpMoeRawAddr += moeRoiSize;
+1069   4                                      
+1070   4                                      //printf("moeRoiSize = %u\n",moeRoiSize);
+1071   4                                      //printf("g_bpMoeRawAddr1 = %#lx\n",g_bpMoeRawAddr);
+1072   4                              }
+1073   3                              
+1074   3                              /*2nd block*/
+1075   3                              g_planeHeight = g_planeHeightSv;
+1076   3                              moeRoiSize = (UINT16)g_planeWidth* g_planeHeight;
+1077   3                              g_bpMoeRawAddr = g_bpMoeRawBlk2Addr;
+1078   3                              g_bpPreBlkAvg1 = g_bpPreBlkAvg; /*Save block 1 Avg*/
+1079   3                              g_bpPreBlkAvg = g_bpPreBlkAvg2; /*restore block 2 Avg*/
+1080   3                              
+1081   3                              for(startY = 0 ; startY < rawHeight_half; startY += g_planeHeight){
+1082   4                                      //printf("\033[33mstartY1 = %u\033[0m\n",startY);
+1083   4                                      if(rawHeight_half < g_planeHeight + startY){
+1084   5                                              g_planeHeight = rawHeight_half - startY;
+1085   5                                              moeRoiSize = (UINT16)g_planeWidth* g_planeHeight;
+1086   5                                              //printf("g_planeHeight2 = %bu\n",g_planeHeight);
+1087   5                                              /*if( i == 1 && startX == (UINT16)2576 ){
+1088   5                                                      //testSaveFlag = 1;
+1089   5                                                      sp1kDramFileSave("LASTBKKKRAW",g_bpMoeRawAddr,(moeRoiSize<<1));
+1090   5                                                      printf("moeRoiSize = %u\n",moeRoiSize);
+1091   5                                              }*/
+1092   5                                      }
+1093   4                                      g_bpMoeRoiWidth = moeRoiSize;
+1094   4                                      allBlk ++;
+1095   4                                      badFlag = bpBlockMoeSearch(moeRoiSize,&blkAvg);
+1096   4                                      if(badFlag){
+1097   5                                              //badBlk++;                             
+1098   5                                              //printf("\033[32m+\033[0m\n");
+1099   5                                              if(g_badPixelCnt < *gp_bpNumMax){
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 19  
+
+1100   6                                                      bpBlockRead(g_bpMoeRawAddr, (moeRoiSize<<1));   
+1101   6                                                      bpBlockSearch(startX+offX, (startY<<1)+1, blkAvg);
+1102   6                                              }
+1103   5                                      }
+1104   4                                      g_bpMoeRawAddr +=  moeRoiSize;
+1105   4                                      //printf("moeRoiSize = %u\n",moeRoiSize);
+1106   4                                      //printf("g_bpMoeRawAddr2 = %#lx\n",g_bpMoeRawAddr);
+1107   4                              }
+1108   3                              g_bpPreBlkAvg2 = g_bpPreBlkAvg;         /*Save block 2 Avg*/
+1109   3                      }
+1110   2              }
+1111   1              printf("allBlk = %lu , g_badPixelCnt = %lu\n",allBlk,g_badPixelCnt);
+1112   1              
+1113   1              //return 1;
+1114   1      //IMG_END:  //modify for bad pixel the last team small than sixteen
+1115   1              
+1116   1              //printf("Bad total:%lu\n", g_badPixelCnt);
+1117   1              if (g_badPixelCnt >= *gp_bpNumMax) {
+1118   2                      __ASSERT(__FILE, __LINE, 1);
+1119   2                      //printf("There're too much badpixel!\n");
+1120   2              }
+1121   1              
+1122   1              /* save EOF (It had already reserved memory for EOF saving in function bpCfg()) */
+1123   1              g_badPixelCnt--; /* for EOF write back */
+1124   1              bpBadPixelAddrSet(s_bpBadpixelAddr, 0); 
+1125   1      {
+1126   2              UINT16 eof = 0xffff;
+1127   2              bpBadPixelSave(eof, eof);
+1128   2      }
+1129   1      
+1130   1              /*recover address*/
+1131   1              //s_bpBadpixelFlagAddr = bpFlagAddrtemp;
+1132   1              s_bpBadpixelAddr = bpAddrtemp;
+1133   1              
+1134   1              /* return the badpixel total number */
+1135   1              *badPixNum = g_badPixelCnt;
+1136   1              
+1137   1              /* 4 bytes/pixel */
+1138   1              rsvSize = (g_badPixelCnt << 2) + 4;
+1139   1                      
+1140   1              /*L->U->R->D algorithm*/
+1141   1              bpBadPixelDirSet(badPixAddr);
+1142   1      
+1143   1              /* bp data in preview mode should be sorting and convert to specified format */
+1144   1          if (mode == BP_MODE_PRV_HD) {
+1145   2                      resAddr = badPixAddr + (rsvSize >> 1);  
+1146   2                      
+1147   2                      //suny add for preview bad pixel 
+1148   2                      if(preMode_HD ==0){
+1149   3                              preMode_HD = 1;
+1150   3                              dramFileSave("BPPREV01BIN", badPixAddr, rsvSize);
+1151   3                      }else if(preMode_HD==1){
+1152   3                              UINT16 rawX,rawY;
+1153   3                              UINT32 resAddr_temp=badPixAddr;
+1154   3                              UINT32 fstPreBpSize=0;
+1155   3      
+1156   3                              preMode_HD =0;
+1157   3                              saveResFlag = 1;
+1158   3                              //printf("bpaddr1=%lx\n",badPixAddr);
+1159   3                              dramFileSave("BPPREV02BIN", badPixAddr, rsvSize);
+1160   3                              while(1){
+1161   4                                      if(g_badPixelCnt==0)break;
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 20  
+
+1162   4                                      BP_DRAM_SetStartAddress(resAddr_temp, 1);
+1163   4                                      BP_DRAM_ReadPword((UINT8 *) &rawX + 0, (UINT8 *) &rawX + 1);
+1164   4                                      BP_DRAM_ReadPword((UINT8 *) &rawY + 0, (UINT8 *) &rawY + 1);    
+1165   4                                      if(rawX== 0xffff || rawY == 0xffff){
+1166   5                                              break;
+1167   5                                      }
+1168   4                                      resAddr_temp += 2; 
+1169   4                              }
+1170   3                              dramFileLoad("BPPREV01BIN", resAddr_temp, &fstPreBpSize);
+1171   3                              rsvSize += (fstPreBpSize-4);
+1172   3                              dramFileSave("BPPREV03BIN", badPixAddr, rsvSize);
+1173   3                              resAddr = badPixAddr + (rsvSize >> 1);  
+1174   3                      }
+1175   2                      //suny add for preview bad pixel 
+1176   2                      
+1177   2      #if DBG_BP_EN
+                              dramFileSave("SRC00000BIN", badPixAddr, rsvSize);
+              #endif /* DBG_BP_EN */
+1180   2                      bpDataSortProc(badPixAddr, resAddr, rawWidth, rawHeight);
+1181   2      #if DBG_BP_EN           
+                              dramFileSave("TEMP0000BIN", badPixAddr, rsvSize);
+              #endif /* DBG_BP_EN */
+1184   2                      
+1185   2                      tagSize = bpFmt_Cvt(badPixAddr, resAddr);
+1186   2                      
+1187   2                      resAddr = resAddr << 1;
+1188   2              }
+1189   1              else if ( mode == BP_MODE_PRV_VGA ) {
+1190   2                      resAddr = badPixAddr + (rsvSize >> 1);  
+1191   2                      
+1192   2                      //suny add for preview bad pixel 
+1193   2                      if(preMode ==0){
+1194   3                              preMode = 1;
+1195   3                              dramFileSave("BPPREV04BIN", badPixAddr, rsvSize);
+1196   3                      }else if(preMode ==1){
+1197   3                              UINT16 rawX,rawY;
+1198   3                              UINT32 resAddr_temp=badPixAddr;
+1199   3                              UINT32 fstPreBpSize=0;
+1200   3      
+1201   3                              preMode =0;
+1202   3                              saveResFlag = 1;
+1203   3                              //printf("bpaddr1=%lx\n",badPixAddr);
+1204   3                              dramFileSave("BPPREV05BIN", badPixAddr, rsvSize);
+1205   3                              while(1){
+1206   4                                      if(g_badPixelCnt==0)break;
+1207   4                                      BP_DRAM_SetStartAddress(resAddr_temp, 1);
+1208   4                                      BP_DRAM_ReadPword((UINT8 *) &rawX + 0, (UINT8 *) &rawX + 1);
+1209   4                                      BP_DRAM_ReadPword((UINT8 *) &rawY + 0, (UINT8 *) &rawY + 1);    
+1210   4                                      if(rawX== 0xffff || rawY == 0xffff){
+1211   5                                              break;
+1212   5                                      }
+1213   4                                      resAddr_temp += 2; 
+1214   4                              }
+1215   3                              dramFileLoad("BPPREV04BIN", resAddr_temp, &fstPreBpSize);
+1216   3                              rsvSize += (fstPreBpSize-4);
+1217   3                              dramFileSave("BPPREV06BIN", badPixAddr, rsvSize);
+1218   3                              resAddr = badPixAddr + (rsvSize >> 1);  
+1219   3                      }
+1220   2                      //suny add for preview bad pixel 
+1221   2                      
+1222   2      #if DBG_BP_EN
+                              dramFileSave("SRC00000BIN", badPixAddr, rsvSize);
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 21  
+
+              #endif /* DBG_BP_EN */
+1225   2                      bpDataSortProc(badPixAddr, resAddr, rawWidth, rawHeight);
+1226   2      #if DBG_BP_EN           
+                              dramFileSave("TEMP0000BIN", badPixAddr, rsvSize);
+              #endif /* DBG_BP_EN */
+1229   2                      
+1230   2                      tagSize = bpFmt_Cvt(badPixAddr, resAddr);
+1231   2                      
+1232   2                      resAddr = resAddr << 1;
+1233   2              } 
+1234   1              else {
+1235   2                      tagSize = rsvSize;
+1236   2                      resAddr = badPixAddr << 1;
+1237   2                      /*add for use only one resource file to make capture bad pixel*/
+1238   2                      if(capMode==0){
+1239   3                              printf("S C 0\n");
+1240   3                              dramFileSave("BPCAP000BIN",badPixAddr,rsvSize);
+1241   3                              capMode=1;
+1242   3                              }
+1243   2                      else{
+1244   3                              printf("S C 1\n");
+1245   3                              //printf("bpaddr1=%lx\n",badPixAddr);
+1246   3                              dramFileSave("BPCAP001BIN",badPixAddr,rsvSize);
+1247   3                              capMode=0;
+1248   3                              }
+1249   2                              /*add for use only one resource file to make capture bad pixel*/
+1250   2              }
+1251   1      
+1252   1              bpResInfoGet(mode, &pResBp);
+1253   1              
+1254   1      #if DBG_BP_EN
+                      printf("pResBp->resId: %lx\n", (UINT32)pResBp->resId);
+                      dramFileSave("TAG00000BIN", badPixAddr, tagSize);
+              #endif /* DBG_BP_EN */
+1258   1      
+1259   1              /* check the badpixel description data size */
+1260   1              sp1kDiskRsvSizeGet(pResBp->resId, NULL, &rsvSize);
+1261   1              if(mode == BP_MODE_CAP){
+1262   2                      rsvSize = rsvSize<<1;
+1263   2              }
+1264   1              if ( tagSize >= rsvSize ) {
+1265   2                      __ASSERT(__FILE, __LINE, 1);
+1266   2              }
+1267   1      
+1268   1              /* save the target resource file to disk */
+1269   1              //printf("saveId=%u\n",pResBp->resId);
+1270   1              if(pResBp->resId==0x05)
+1271   1              {
+1272   2                      dramFileSave("RESID005BIN", resAddr>>1, 0x4000);
+1273   2      
+1274   2              }
+1275   1              
+1276   1              ret = TRUE;
+1277   1      
+1278   1              if(saveResFlag){
+1279   2                      //printf("resId: %#lx ,rsvSize : %#lx\n", (UINT32)pResBp->resId , rsvSize);
+1280   2                      ret = sp1kDiskRsvWrite(pResBp->resId, resAddr);
+1281   2              }
+1282   1              
+1283   1              EXIT_CRITICAL(sts);
+1284   1              if ( ret != TRUE ) {
+1285   2                      return FAIL;
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 22  
+
+1286   2              } else {
+1287   2                      return SUCCESS;
+1288   2              }
+1289   1      }
+1290          #else
+              //-----------------------------------------------------------------------------
+              //bpFind
+              //-----------------------------------------------------------------------------
+              /**
+               * @brief               badpixel find process
+               * @param       mode: 0:preview mode, 1: capture mode
+                                      rawAddr: raw image source address(word)
+                                      rawWidth: the width of raw image
+                                      rawHeight: the height of raw image
+                                      badPixAddr: badpixel description data destination address
+                                      badPixNum: badpixel total number
+               * @retval      0: success
+                                      1: fail
+               * @see         see
+               * @author      Phil Lin
+               * @since               2008-11-20
+               * @todo                Something need to be done.
+               * @bug         a bug need to be resolved.
+              */
+              UINT8 
+              bpFind(
+                      bpMode_t mode,
+                      UINT32 rawAddr,
+                      UINT16 rawWidth,
+                      UINT16 rawHeight,
+                      UINT32 badPixAddr,
+                      UINT32* badPixNum
+              )
+              {
+                      UINT8 ret;
+                      UINT16 startX, startY, offY;
+                      UINT32 rawOff1, rawOff2, rawOff1Sv,rawOff2Sv;  //add 20091124
+                      UINT8 avgBuf[16];   //1024/(8*8)=16
+                      UINT16 g_stripWidthSv,g_stripHeightSv;   //add 20091124
+                      UINT32 rsvSize;
+                      UINT32 tagSize;
+                      resBpCb_t* pResBp;
+                      UINT32 resAddr, bpAddrtemp;//bpFlagAddrtemp;
+                      static UINT8 preMode_HD =0;  //add 20110309
+                      static UINT8 preMode=0; //add 20091124
+                      static UINT8 capMode=0; //add 20091124
+              
+                      UINT8 saveResFlag;
+                      
+                      saveResFlag = 0;
+                              
+                      if ( mode >= BP_MODE_MAX ) {
+                              return FAIL;
+                      } else if ( mode == BP_MODE_PRV_HD) {
+                              gp_bpNumMax = &g_bpNumMaxPrv_HD;
+                      } else if ( mode == BP_MODE_PRV_VGA){
+                              gp_bpNumMax = &g_bpNumMaxPrv;
+                      } else {
+                              gp_bpNumMax = &g_bpNumMaxCap;
+                      }
+                      
+                      rawOff1 = (UINT32) (g_stripWidth >> 1);
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 23  
+
+                      rawOff1Sv = rawOff1;
+                      rawOff2 = rawWidth * (g_stripHeight - 1);
+                      rawOff2Sv=rawOff2;//add 20091124
+                      offY = (g_stripHeight << 1) - 1;
+              
+                      /* buffer init */
+                      //HAL_GprmDramFill(badPixAddr, K_SDRAM_BadPixel_CapBufSize << 1, 0xff);
+                      s_bpRawWidth = rawWidth;
+                      s_bpRawHeight = rawHeight;
+                      s_bpBadpixelAddr = badPixAddr;
+                      s_bpRawSize =(UINT32) rawWidth *rawHeight;
+                      s_bpBadpixelFlagAddr = rawAddr + (s_bpRawSize>>1);
+                      //printf("rawaddr=%lx,flgaddr=%lx\n",rawAddr,s_bpBadpixelFlagAddr);
+                      //bpFlagAddrtemp = s_bpBadpixelFlagAddr; /*save bpflag address*/
+                      bpAddrtemp = s_bpBadpixelAddr;
+                      //HAL_DramStartAddrSet(badPixAddr, 0);
+                      g_stripWidthSv = g_stripWidth;
+                      g_stripHeightSv=g_stripHeight;//add 20091124
+                      s_bpRawSize >>=3; /*every bit stand for one pixel*/
+                      BP_DRAM_SetStartAddress(s_bpBadpixelFlagAddr,0);
+                      while (s_bpRawSize--) {         
+                              BP_DRAM_WriteWord(0,0);
+                      }       
+                      printf("bpaddr0=%lx\n",badPixAddr);
+                      for (startY = 0; startY < (rawHeight); /*startY += g_stripHeight*/) {
+                      //      putchar('.');
+                              for (startX = 0; startX < rawWidth; startX += g_stripWidth) {
+                                      if (rawWidth - startX < g_stripWidth) {
+                                              g_stripWidthSv = g_stripWidth;
+                                              g_stripWidth = rawWidth - startX;
+                                              rawOff1Sv = rawOff1;
+                                              rawOff1 = (UINT32) (g_stripWidth >> 1);
+                                      }
+                                      if (rawHeight - startY < (g_stripHeight << 1)) {
+                                              /*modify for bad pixel the last team small than sixteen*/
+                                              g_stripHeightSv=g_stripHeight;
+                                              g_stripHeight=((rawHeight-startY)>>1);
+                                              //printf("y: %u, h: %bu\n", startY, g_stripHeight);
+                                              //goto IMG_END;
+                                              /*modify for bad pixel the last team small than sixteen*/
+                                      }
+              
+                                      bpStripRead(rawAddr, rawWidth); //read 2 plane once                
+                                      bpStripSearch(startX, startY, avgBuf,mode);
+              
+                                      rawAddr += rawOff1;
+                              }
+                              g_stripWidth = g_stripWidthSv;
+                              rawOff1 = rawOff1Sv;
+                              g_stripHeight=g_stripHeightSv; //modify for bad pixel the last team small than sixteen
+                              startY ++;
+                              for (startX = 0; startX < rawWidth; startX += g_stripWidth) {
+                                      if (rawWidth - startX < g_stripWidth) {
+                                              g_stripWidthSv = g_stripWidth;
+                                              g_stripWidth = rawWidth - startX;
+                                              rawOff1Sv = rawOff1;
+                                              rawOff1 = (UINT32) (g_stripWidth >> 1);
+                                      }
+                                      if (rawHeight - startY < (g_stripHeight << 1)) {
+                                              /*modify for bad pixel the last team small than sixteen*/
+                                              g_stripHeightSv=g_stripHeight;
+                                              g_stripHeight=((rawHeight-startY)>>1);
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 24  
+
+                                              rawOff2Sv=rawOff2;
+                                              rawOff2= rawWidth*(g_stripHeight-1);
+                                              //goto IMG_END;
+                                              /*modify for bad pixel the last team small than sixteen*/
+                                      }
+              
+                                      bpStripRead(rawAddr, rawWidth); //read 2 plane once                
+                                      bpStripSearch(startX, startY, avgBuf,mode);
+              
+                                      rawAddr += rawOff1;
+                              }
+                              g_stripWidth = g_stripWidthSv;
+                              g_stripHeight=g_stripHeightSv; //modify for bad pixel the last team small than sixteen
+                              rawOff1 = rawOff1Sv;
+              
+                              startY += offY;
+                              rawAddr += rawOff2;
+                              rawOff2=rawOff2Sv;//modify for bad pixel the last team small than sixteen
+                      }
+              
+              //IMG_END:  //modify for bad pixel the last team small than sixteen
+                      
+                      //printf("Bad total:%lu\n", g_badPixelCnt);
+                      if (g_badPixelCnt >= *gp_bpNumMax) {
+                              __ASSERT(__FILE, __LINE, 1);
+                              //printf("There're too much badpixel!\n");
+                      }
+                      
+                      /* save EOF (It had already reserved memory for EOF saving in function bpCfg()) */
+                      g_badPixelCnt--; /* for EOF write back */
+                      bpBadPixelAddrSet(s_bpBadpixelAddr, 0); 
+                      bpBadPixelSave(0xffff, 0xffff);
+              
+                      /*recover address*/
+                      //s_bpBadpixelFlagAddr = bpFlagAddrtemp;
+                      s_bpBadpixelAddr = bpAddrtemp;
+                      
+                      /* return the badpixel total number */
+                      *badPixNum = g_badPixelCnt;
+              
+                      /* 4 bytes/pixel */
+                      rsvSize = (g_badPixelCnt << 2) + 4;
+                      
+                      /*L->U->R->D algorithm*/
+                      bpBadPixelDirSet(badPixAddr);
+              
+                      /* bp data in preview mode should be sorting and convert to specified format */
+                  if (mode == BP_MODE_PRV_HD) {
+                              resAddr = badPixAddr + (rsvSize >> 1);  
+                              
+                              //suny add for preview bad pixel 
+                              if(preMode_HD ==0){
+                                      preMode_HD = 1;
+                                      dramFileSave("BPPREV01BIN", badPixAddr, rsvSize);
+                              }else if(preMode_HD==1){
+                                      UINT16 rawX,rawY;
+                                      UINT32 resAddr_temp=badPixAddr;
+                                      UINT32 fstPreBpSize=0;
+              
+                                      saveResFlag =1;
+              
+                                      preMode_HD =0;
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 25  
+
+                                      //printf("bpaddr1=%lx\n",badPixAddr);
+                                      dramFileSave("BPPREV02BIN", badPixAddr, rsvSize);
+                                      while(1){
+                                              if(g_badPixelCnt==0)break;
+                                              BP_DRAM_SetStartAddress(resAddr_temp, 1);
+                                              BP_DRAM_ReadPword((UINT8 *) &rawX + 0, (UINT8 *) &rawX + 1);
+                                              BP_DRAM_ReadPword((UINT8 *) &rawY + 0, (UINT8 *) &rawY + 1);    
+                                              if(rawX== 0xffff || rawY == 0xffff){
+                                                      break;
+                                              }
+                                              resAddr_temp += 2; 
+                                      }
+                                      dramFileLoad("BPPREV01BIN", resAddr_temp, &fstPreBpSize);
+                                      rsvSize += (fstPreBpSize-4);
+                                      dramFileSave("BPPREV03BIN", badPixAddr, rsvSize);
+                                      resAddr = badPixAddr + (rsvSize >> 1);  
+                              }
+                              //suny add for preview bad pixel 
+                              
+              #if DBG_BP_EN
+                              dramFileSave("SRC00000BIN", badPixAddr, rsvSize);
+              #endif /* DBG_BP_EN */
+                              bpDataSortProc(badPixAddr, resAddr, rawWidth, rawHeight);
+              #if DBG_BP_EN           
+                              dramFileSave("TEMP0000BIN", badPixAddr, rsvSize);
+              #endif /* DBG_BP_EN */
+                              
+                              tagSize = bpFmt_Cvt(badPixAddr, resAddr);
+                              
+                              resAddr = resAddr << 1;
+                      }
+                      else if ( mode == BP_MODE_PRV_VGA ) {
+                              resAddr = badPixAddr + (rsvSize >> 1);  
+                              
+                              //suny add for preview bad pixel 
+                              if(preMode ==0){
+                                      preMode = 1;
+                                      dramFileSave("BPPREV04BIN", badPixAddr, rsvSize);
+                              }else if(preMode ==1){
+                                      UINT16 rawX,rawY;
+                                      UINT32 resAddr_temp=badPixAddr;
+                                      UINT32 fstPreBpSize=0;
+              
+                                      saveResFlag =1;
+              
+                                      preMode =0;
+                                      //printf("bpaddr1=%lx\n",badPixAddr);
+                                      dramFileSave("BPPREV05BIN", badPixAddr, rsvSize);
+                                      while(1){
+                                              if(g_badPixelCnt==0)break;
+                                              BP_DRAM_SetStartAddress(resAddr_temp, 1);
+                                              BP_DRAM_ReadPword((UINT8 *) &rawX + 0, (UINT8 *) &rawX + 1);
+                                              BP_DRAM_ReadPword((UINT8 *) &rawY + 0, (UINT8 *) &rawY + 1);    
+                                              if(rawX== 0xffff || rawY == 0xffff){
+                                                      break;
+                                              }
+                                              resAddr_temp += 2; 
+                                      }
+                                      dramFileLoad("BPPREV04BIN", resAddr_temp, &fstPreBpSize);
+                                      rsvSize += (fstPreBpSize-4);
+                                      dramFileSave("BPPREV06BIN", badPixAddr, rsvSize);
+                                      resAddr = badPixAddr + (rsvSize >> 1);  
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 26  
+
+                              }
+                              //suny add for preview bad pixel 
+                              
+              #if DBG_BP_EN
+                              dramFileSave("SRC00000BIN", badPixAddr, rsvSize);
+              #endif /* DBG_BP_EN */
+                              bpDataSortProc(badPixAddr, resAddr, rawWidth, rawHeight);
+              #if DBG_BP_EN           
+                              dramFileSave("TEMP0000BIN", badPixAddr, rsvSize);
+              #endif /* DBG_BP_EN */
+                              
+                              tagSize = bpFmt_Cvt(badPixAddr, resAddr);
+                              
+                              resAddr = resAddr << 1;
+                      } 
+                      else {
+                              tagSize = rsvSize;
+                              resAddr = badPixAddr << 1;
+                              /*add for use only one resource file to make capture bad pixel*/
+                              if(capMode==0){
+                                      dramFileSave("BPCAP000BIN",badPixAddr,rsvSize);
+                                      capMode=1;
+                                      }
+                              else{
+                                      //printf("bpaddr1=%lx\n",badPixAddr);
+                                      dramFileSave("BPCAP001BIN",badPixAddr,rsvSize);
+                                      capMode=0;
+                                      }
+                                      /*add for use only one resource file to make capture bad pixel*/
+                      }
+              
+                      bpResInfoGet(mode, &pResBp);
+                      
+              #if DBG_BP_EN
+                      printf("pResBp->resId: %lx\n", (UINT32)pResBp->resId);
+                      dramFileSave("TAG00000BIN", badPixAddr, tagSize);
+              #endif /* DBG_BP_EN */
+              
+                      /* check the badpixel description data size */
+                      sp1kDiskRsvSizeGet(pResBp->resId, NULL, &rsvSize);
+                      if(mode == BP_MODE_CAP){
+                              rsvSize = rsvSize<<1;
+                      }
+                      if ( tagSize >= rsvSize ) {
+                              __ASSERT(__FILE, __LINE, 1);
+                      }
+              
+                      /* save the target resource file to disk */
+                      //printf("saveId=%u\n",pResBp->resId);
+                      if(pResBp->resId==0x05)
+                      {
+                              dramFileSave("RESID005BIN", resAddr>>1, 0x4000);
+              
+                      }
+                      ret = TRUE;
+                      if(saveResFlag){
+                              ret = sp1kDiskRsvWrite(pResBp->resId, resAddr);
+                      }
+                      
+                      if ( ret != TRUE ) {
+                              return FAIL;
+                      } else {
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 27  
+
+                              return SUCCESS;
+                      }
+              }
+              #endif
+1600          //-----------------------------------------------------------------------------
+1601          //bpDataSortProc
+1602          //-----------------------------------------------------------------------------
+1603          /**
+1604           * @brief               sorting the bp data from small to large
+1605           * @param       srcAddr: the badpixel data start address
+1606                                  tmpAddr: the temp buffer start address
+1607                                  rawW: the width of raw image 
+1608                                  rawH: the height of raw image
+1609           * @retval      0: success
+1610                                  1: fail
+1611           * @see         none
+1612           * @author      Phil Lin
+1613           * @since               2008-11-19
+1614           * @todo                Something need to be done.
+1615           * @bug         a bug need to be resolved.
+1616          */
+1617          static UINT8 bpDataSortProc(UINT32 srcAddr, UINT32 tmpAddr, UINT16 rawW, UINT16 rawH)
+1618          {
+1619   1              const UINT8 bInitVal = 0xfe;
+1620   1              UINT32 tmpSize;
+1621   1      
+1622   1              tmpSize = ((UINT32) rawW * rawH) << 1;
+1623   1      
+1624   1              /* input param check */
+1625   1              if (tmpAddr + tmpSize > K_SDRAM_TotalSize) {
+1626   2                      __ASSERT(__FILE, __LINE, 1);
+1627   2                      return FAIL;
+1628   2              }
+1629   1      
+1630   1              /* buffer init */
+1631   1              HAL_GprmDramFill(tmpAddr, tmpSize << 1, bInitVal);
+1632   1      
+1633   1              /* fill the badpixel data to specified address */
+1634   1              bpDataSort_Fill(srcAddr, tmpAddr, rawW, rawH);
+1635   1                      
+1636   1              /* badpixel data sort strip */
+1637   1              bpDataSort_Strip(srcAddr, tmpAddr);
+1638   1              
+1639   1              /* finished */
+1640   1              return SUCCESS;
+1641   1      }
+1642          
+1643          //-----------------------------------------------------------------------------
+1644          //bpDataSort_Fill
+1645          //-----------------------------------------------------------------------------
+1646          /**
+1647           * @brief               fill the badpixel data to specified position
+1648           * @param       srcAddr: the badpixel data start address
+1649                                  tmpAddr: the temp buffer start address
+1650                                  rawW: the width of raw image 
+1651                                  rawH: the height of raw image
+1652           * @retval      0: success
+1653                                  1: fail
+1654           * @see         none
+1655           * @author      Phil Lin
+1656           * @since               2008-11-18
+1657           * @todo                Something need to be done.
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 28  
+
+1658           * @bug         a bug need to be resolved.
+1659          */
+1660          static UINT8 bpDataSort_Fill(UINT32 srcAddr, UINT32 tmpAddr, UINT16 rawW, UINT16 rawH)
+1661          {
+1662   1              const UINT8 bEof = 0xff;
+1663   1              const UINT16 wEof = 0xffff;
+1664   1              UINT32 dstAddr;
+1665   1              UINT16 rawX, rawY;      
+1666   1              
+1667   1              /* badpixel position sorting */
+1668   1              while (1) {
+1669   2                      /* source data read */
+1670   2                      BP_DRAM_SetStartAddress(srcAddr, 1);
+1671   2                      BP_DRAM_ReadPword((UINT8 *) &rawX + 0, (UINT8 *) &rawX + 1);
+1672   2                      BP_DRAM_ReadPword((UINT8 *) &rawY + 0, (UINT8 *) &rawY + 1);
+1673   2                      srcAddr += 2;
+1674   2      
+1675   2                      /* EOF */
+1676   2                      if (rawX == wEof || rawY == wEof) {
+1677   3                              /* write EOF to the destination buffer */
+1678   3                              dstAddr = tmpAddr + (((UINT32) rawW * rawH) << 1);
+1679   3                              BP_DRAM_SetStartAddress(dstAddr, 0);
+1680   3                              BP_DRAM_WriteWord(bEof, bEof);
+1681   3                              BP_DRAM_WriteWord(bEof, bEof);  
+1682   3                              break;
+1683   3                      }
+1684   2                      /*mark the highest 4 bit*/
+1685   2                      rawX &= 0x0fff;
+1686   2                      rawY &= 0x0fff;
+1687   2      
+1688   2                      /* position caculate */
+1689   2                      dstAddr = tmpAddr + ((((UINT32) rawW * rawY) + (UINT32) rawX) << 1);
+1690   2                      
+1691   2      #if BP_ASSERT_EN
+1692   2                      if (dstAddr < tmpAddr || dstAddr> K_SDRAM_TotalSize) {
+1693   3                              /* address error */
+1694   3                              __ASSERT(__FILE, __LINE, 1);
+1695   3                              return FAIL;
+1696   3                      }
+1697   2      #endif //BP_ASSERT_EN           
+1698   2      
+1699   2                      BP_DRAM_SetStartAddress(dstAddr, 0);
+1700   2      
+1701   2                      /* temp data write */
+1702   2                      BP_DRAM_WriteWord(READ8(rawX, 0), READ8(rawX, 1));
+1703   2                      BP_DRAM_WriteWord(READ8(rawY, 0), READ8(rawY, 1));
+1704   2              }
+1705   1      
+1706   1              return SUCCESS;
+1707   1      }
+1708          
+1709          static void bpDataSort_Dma(UINT32 dstAddr , UINT32 dmaSize)
+1710          {
+1711   1              HAL_DmaSetSramAddr(0x0000);  /*sec Addr*/
+1712   1              HAL_DmaSetDramAddr(dstAddr);
+1713   1              HAL_DmaDo(1, 0, dmaSize, 0, 0); /*SRAM -> DRAM*/
+1714   1      }
+1715          //-----------------------------------------------------------------------------
+1716          //bpDataSort_Strip
+1717          //-----------------------------------------------------------------------------
+1718          /**
+1719           * @brief               fill the badpixel data to specified position
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 29  
+
+1720           * @param       srcAddr: the badpixel data start address
+1721                                  tmpAddr: the temp buffer start address
+1722           * @retval      0: success
+1723                                  1: fail
+1724           * @see         none
+1725           * @author      Phil Lin
+1726           * @since               2008-11-18
+1727           * @todo                Something need to be done.
+1728           * @bug         a bug need to be resolved.
+1729          */
+1730          #pragma OT(8, SPEED)
+1731          static UINT8 bpDataSort_Strip(UINT32 srcAddr, UINT32 tmpAddr)
+1732          {
+1733   1              const UINT16 wInitVal = 0xfefe;
+1734   1              const UINT16 wEof = 0xffff;
+1735   1              UINT16 rawX, rawY;      
+1736   1              
+1737   1              UINT16 xdata* pSrcTmpBuff;
+1738   1              UINT16 dmaCnt;
+1739   1              UINT8 exitFlag;
+1740   1              
+1741   1              exitFlag = 0;
+1742   1              
+1743   1              /* shadow badpixel function to IMEM */
+1744   1              HAL_CpuImemSdSet(LOG_BANK_16, 0xe000);
+1745   1              
+1746   1              HAL_DmaSetSramAddr(0x0000);  /*sec Addr*/
+1747   1              
+1748   1              BP_DRAM_SetStartAddress(tmpAddr, 1);
+1749   1              while (1) {
+1750   2                      /* skip what is dummy data */
+1751   2                      dmaCnt = 0;
+1752   2                      pSrcTmpBuff = (UINT16 xdata*)G_ucStorData;
+1753   2                      while (1) {
+1754   3                              BP_DRAM_ReadPword((UINT8 *) &rawX + 0, (UINT8 *) &rawX + 1);
+1755   3                              BP_DRAM_ReadPword((UINT8 *) &rawY + 0, (UINT8 *) &rawY + 1);
+1756   3                              //tmpAddr += 2;
+1757   3                              //if (*((UINT16 xdata*)pSrcBuff) == wInitVal) continue;
+1758   3                              if(rawX == wInitVal) continue;
+1759   3                              if(rawX != wEof){
+1760   4                              //if(*((UINT16 xdata*)pSrcBuff) != wEof ){
+1761   4                                      *(pSrcTmpBuff++) = rawX;
+1762   4                                      *(pSrcTmpBuff++) = rawY;
+1763   4                                      //pSrcBuff += 4;
+1764   4                                      if((++dmaCnt) == (UINT16)256){/*256 * 4Byte = 1K*/
+1765   5                                              break;
+1766   5                                      }
+1767   4                              }
+1768   3                              else{                           
+1769   4                                      exitFlag = 1;
+1770   4                                      break;
+1771   4                              }
+1772   3                              /* wInitVal == 0xfefe; */
+1773   3                              //}
+1774   3                      }
+1775   2                      
+1776   2      #if DBG_BP_EN           
+                              printf("rawX: %lx, rawY: %lx", (UINT32)rawX, (UINT32)rawY);
+              #endif //DBG_BP_EN
+1779   2      
+1780   2                      #if 0
+                              /* EOF */
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 30  
+
+                              if (rawX == wEof || rawY == wEof) {
+                                      break;
+                              }
+                              /* write data back to srcAddr*/
+                              BP_DRAM_SetStartAddress(srcAddr, 0);
+                              BP_DRAM_WriteWord(READ8(rawX, 0), READ8(rawX, 1));
+                              BP_DRAM_WriteWord(READ8(rawY, 0), READ8(rawY, 1));              
+                              srcAddr += 2;
+                              #else
+1791   2                      
+1792   2                      //bpDataSort_Dma(srcAddr,(dmaCnt<<2));
+1793   2                      HAL_DmaSetDramAddr(srcAddr);
+1794   2                      HAL_DmaDo(1, 0, (dmaCnt<<2), 0, 0); /*SRAM -> DRAM*/
+1795   2                       
+1796   2                      srcAddr += (UINT32)(dmaCnt<<1);
+1797   2                      if(exitFlag){
+1798   3                              break;
+1799   3                      }
+1800   2                      #endif
+1801   2              }
+1802   1      
+1803   1              return SUCCESS;
+1804   1      }
+1805             
+1806          //-----------------------------------------------------------------------------
+1807          //bpBadPixelFlagSave
+1808          //-----------------------------------------------------------------------------
+1809          /**
+1810           * @brief               save the badpixel flag to sdram 
+1811           *                      one flag bit stand for one pixel
+1812           * @param       flagVal: 0: good pixel
+1813           *                                   1:bad pixel
+1814           *                      X,Y: the badpixel coordinate
+1815           *                  bpflgAddr: badpixel flag start address
+1816           * @retval      none
+1817           * @see         none
+1818           * @author      kai.wang
+1819           * @since               2011-3-2
+1820           * @todo                Something need to be done.
+1821           * @bug         a bug need to be resolved.
+1822          */
+1823          static void bpBadPixelFlagSave(UINT8 flagVal, UINT16 X, UINT16 Y,UINT32 bpflgAddr)
+1824          {
+1825   1              //UINT8 a,b;
+1826   1              //static UINT16 bpflg = 0;
+1827   1              //static UINT32 pixelcnt;
+1828   1              //UINT16 temp = 1;
+1829   1              UINT32 idx,addrtemp;
+1830   1              UINT16 offsetword, offsetbit, bpflagval;
+1831   1      #if 0
+                      if(flagVal) {
+                              bpflg |= temp;
+                              temp << i;              
+                      }       
+                      i++;
+                      pixelcnt ++;
+                      if ((i == 0x10) ||(pixelcnt== s_bpRawSize)) {
+                              BP_DRAM_SetStartAddress(*bpflgAddr,0);
+                              BP_DRAM_WriteWord(READ8(bpflg,0),READ8(bpflg,1));
+                              i = 0;
+                              bpflg = 0;
+                              (*bpflgAddr) ++;
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 31  
+
+                      }
+              #endif  
+1846   1              idx = (UINT32)s_bpRawWidth * Y + X;
+1847   1              offsetword = idx >> 4;
+1848   1              offsetbit = idx & 0x0f; 
+1849   1              addrtemp = bpflgAddr + (UINT32)offsetword;
+1850   1              
+1851   1              BP_DRAM_SetStartAddress(addrtemp, 1);
+1852   1              BP_DRAM_Readword(READ8(bpflagval, 1), READ8(bpflagval, 0));
+1853   1              
+1854   1              if ( flagVal ) {
+1855   2                      bpflagval |= (UINT16)(1 << offsetbit );
+1856   2              }
+1857   1              else {
+1858   2                      bpflagval &= ~((UINT16)(1 << offsetbit ));
+1859   2              }
+1860   1              
+1861   1              BP_DRAM_SetStartAddress(addrtemp, 0);
+1862   1              BP_DRAM_WriteWord(READ8(bpflagval, 1),READ8(bpflagval, 0));
+1863   1      
+1864   1      }
+1865          
+1866          //-----------------------------------------------------------------------------
+1867          //bpBadPixelFlagValGet
+1868          //-----------------------------------------------------------------------------
+1869          /**
+1870           * @brief               get the badpixel flag value 
+1871           *                      one flag bit stand for one pixel
+1872           * @param       X,Y: the badpixel coordinate
+1873           * @retval      badpixel flag value
+1874           * @see         none
+1875           * @author      kai.wang
+1876           * @since               2011-3-2
+1877           * @todo                Something need to be done.
+1878           * @bug         a bug need to be resolved.
+1879          */
+1880          static UINT8 bpBadPixelFlagValGet(UINT16 X, UINT16 Y)
+1881          {
+1882   1              UINT32 idx,addrtemp;
+1883   1              UINT16 offsetword, offsetbit, bpflagval;
+1884   1              UINT8 val;
+1885   1      
+1886   1              if ((X & 0x1000) || (Y & 0x1000)        || (X>s_bpRawWidth) || (Y>s_bpRawHeight)) {
+1887   2                      //printf("X=%u,Y=%u,val=1\n",X,Y);
+1888   2                      return FAIL;
+1889   2              }
+1890   1              
+1891   1              idx = s_bpRawWidth * Y + X;
+1892   1              offsetword = idx /16;
+1893   1              offsetbit = idx % 16;   
+1894   1              addrtemp = (s_bpBadpixelFlagAddr+(UINT32)offsetword);
+1895   1              BP_DRAM_SetStartAddress(addrtemp,1);
+1896   1              BP_DRAM_ReadPword((UINT8 *) &bpflagval+ 1, (UINT8 *) &bpflagval + 0);
+1897   1      
+1898   1              if(bpflagval & ((UINT16)(1 << offsetbit ))) { /*bad pixel*/
+1899   2                      val = 0x01;
+1900   2                      //printf("fval=%x\n",bpflagval);
+1901   2              }
+1902   1              else { /*good pixel*/
+1903   2                      val = 0x00;
+1904   2              }
+1905   1      //      printf("X=%u,Y=%u,fval=%x,val=%bx,addr2=%lx\n",X,Y,bpflagval,val,addrtemp);
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 32  
+
+1906   1              return val;
+1907   1      }
+1908          
+1909          //-----------------------------------------------------------------------------
+1910          //bpBadPixelFlagValGet
+1911          //-----------------------------------------------------------------------------
+1912          /**
+1913           * @brief               Set the badpixel direction 
+1914           *                      left -> up ->right -> down
+1915           * @param       Badpixel start Address
+1916           * @retval      none
+1917           * @see         none
+1918           * @author      kai.wang
+1919           * @since               2011-3-2
+1920           * @todo                Something need to be done.
+1921           * @bug         a bug need to be resolved.
+1922          */
+1923          static void bpBadPixelDirSet(UINT32 BadpixelAddr)
+1924          {
+1925   1              UINT16 X,Y, i,j;
+1926   1              UINT8 loopcnt ;
+1927   1              UINT8 *pbuf = G_ucStorData;
+1928   1              UINT8 xoff ;
+1929   1              UINT8 yoff ;
+1930   1              UINT8 dmacnt; 
+1931   1              static UINT32 badpixelcnt = 0;
+1932   1              
+1933   1              dmacnt = ((g_badPixelCnt >>8)+1); /*256pixel every time dma*/ 
+1934   1              printf("dmacnt=%bx,num=%lu\n",dmacnt,g_badPixelCnt);
+1935   1              if(g_badPixelCnt==0){
+1936   2                      return;
+1937   2              }
+1938   1              while (dmacnt --) {
+1939   2                      HAL_DmaSetSramAddr(0x0000);
+1940   2                      HAL_DmaSetDramAddr(BadpixelAddr);
+1941   2                      HAL_DmaDo(0, 1, 1024, 0, 0); /*1024/4= 256 pixel */
+1942   2                      j = 0;
+1943   2                      for (i = 0; i < 256; i ++) { /* 256 pixel*/
+1944   3                              X = (UINT16) (pbuf[j+0]<<8) + pbuf[j+1] ;
+1945   3                              Y = (UINT16) (pbuf[j+2]<<8) + pbuf[j+3] ;               
+1946   3                              
+1947   3                              xoff  = 2;
+1948   3                              yoff = 2;
+1949   3                              loopcnt = 0;
+1950   3                              /*L->U->R->D*/
+1951   3                              if ((X != 0xFFFF || Y != 0xFFFF)&&(badpixelcnt <= g_badPixelCnt)) {     
+1952   4                                      X &= 0x0fff;
+1953   4                                      Y &= 0x0fff;    
+1954   4                                      printf("x=%u,y=%u\n",X,Y);
+1955   4                              #if 1   
+1956   4                                      if (bpBadPixelFlagValGet(X-xoff, Y)) {
+1957   5                                              if (bpBadPixelFlagValGet(X, Y-yoff)){
+1958   6                                                      if (bpBadPixelFlagValGet(X+xoff, Y)){
+1959   7                                                              if (bpBadPixelFlagValGet(X, Y+yoff)){
+1960   8                                                                      loopcnt ++;
+1961   8                                                                      xoff += 2;
+1962   8                                                                      yoff += 2;
+1963   8                                                              //      printf("p0=%bx\n",pbuf[j+2]);
+1964   8                                                              }
+1965   7                                                              else { 
+1966   8                                                                      /*use down*/
+1967   8                                                                      pbuf[j+2] |= BP_TYPE_DOWN>>8;
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 33  
+
+1968   8                                                              //      printf("p1=%bx\n",pbuf[j+2]);
+1969   8                                                              }
+1970   7                                                      }
+1971   6                                                      else {
+1972   7                                                              /*use right*/   
+1973   7                                                              pbuf[j+2] |= BP_TYPE_RIGHT>>8;
+1974   7                                      //                      printf("p2=%bx\n",pbuf[j+2]);
+1975   7                                                      }
+1976   6                                              }
+1977   5                                              else{
+1978   6                                                      /*use up*/
+1979   6                                                      pbuf[j+2] |= BP_TYPE_UP>>8;
+1980   6                                      //              printf("p3=%bx\n",pbuf[j+2]);
+1981   6                                              }
+1982   5                                      }
+1983   4                                      else {
+1984   5                                              /*use left */
+1985   5                                              pbuf[j+2] |= BP_TYPE_LEFT>>8;
+1986   5                                      //      printf("p4=%bx\n",pbuf[j+2]);
+1987   5                                      }
+1988   4                                      //printf("loopcnt=%bx\n",loopcnt);
+1989   4                                      while ( (loopcnt < (s_bpRawWidth>>1))&& (loopcnt != 0)) {                               
+1990   5                                              if (bpBadPixelFlagValGet(X-xoff, Y)) {                                          
+1991   6                                                      if (bpBadPixelFlagValGet(X, Y-yoff)) {
+1992   7                                                              loopcnt ++;
+1993   7                                                              xoff += 2;
+1994   7                                                              yoff += 2;
+1995   7                                                              if (((X-xoff) & 0x1000) && ((Y-yoff) & 0x1000)) {/*when X,Y overflow*/
+1996   8                                                                      /*default use left*/
+1997   8                                                              //      printf("p5=%bx\n",pbuf[j+2]);
+1998   8                                                                      break;
+1999   8                                                              }                                                               
+2000   7                                                      }                                               
+2001   6                                                      else { /*up end*/                                                       
+2002   7                                                              /*use up end*/
+2003   7                                                              pbuf[j+2] |= BP_TYPE_UP>>8;
+2004   7                                                      //      printf("p6=%bx\n",pbuf[j+2]);
+2005   7                                                              break;                                                  
+2006   7                                                      }
+2007   6                                              }                               
+2008   5                                              else { /*left end*/                                     
+2009   6                                                      /*use left end*/
+2010   6                                                      pbuf[j+2] |= BP_TYPE_LEFT>>8;
+2011   6                                              //      printf("p7=%bx\n",pbuf[j+2]);
+2012   6                                                      break;                                  
+2013   6                                              }
+2014   5                                      }
+2015   4                              #endif  
+2016   4                                      j += 4; /*next pixel*/
+2017   4                              }
+2018   3                              badpixelcnt++;
+2019   3                      }
+2020   2                      HAL_DmaSetSramAddr(0x0000);
+2021   2                      HAL_DmaSetDramAddr(BadpixelAddr);
+2022   2                      HAL_DmaDo(1, 0, 1024, 0, 0); // sram to dram
+2023   2                      BadpixelAddr += 512;
+2024   2              }
+2025   1      }
+2026          
+2027          #endif /* MODULE_BP_OPT */
+
+
+C51 COMPILER V8.08   BP_FIND                                                               10/17/2019 13:35:59 PAGE 34  
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   9159    ----
+   CONSTANT SIZE    =    270    ----
+   XDATA SIZE       =     60     397
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

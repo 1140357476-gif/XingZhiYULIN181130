@@ -1,0 +1,119 @@
+C51 COMPILER V8.08   BP_VER                                                                10/17/2019 11:40:33 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE BP_VER
+OBJECT MODULE PLACED IN .\obj\bp_ver.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE bp_ver.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\i
+                    -nc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiza
+                    -tion) DEFINE(LIB_RELEASE) PRINT(.\obj\bp_ver.lst) OBJECT(.\obj\bp_ver.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2008-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           *  Author: Phil.lin
+  22           *
+  23           *  Change Log:
+  24           *
+  25           *  1001, 20080812 Phil lin
+  26           *    a. initial version
+  27           *  1002, 20080918 Phil lin
+  28           *    a. remove image.c from the lib
+  29           *  1003, 20080923 Phil lin
+  30           *    a. move spe_distort.c from libMisc to libSpe
+  31           *  1004, 20080928 Phil lin
+  32           *    a. bad pixel compensation function for capture
+  33           *  1005, 20080930 eric
+  34           *    a. Modify for SPI compile error
+  35           *  1006, 20081001 eric
+  36           *    a. Modify still capture bad pixel compensation
+  37           *  1007, 20081007 eric
+  38           *    a. Modify preview bad pixel compensation
+  39           *  1008, 20081110 Phil lin
+  40           *    a. badpixel function integration
+  41           *  1009, 20081112 Phil lin
+  42           *    a. mask byte switch for bp function
+  43           *  1010, 20081118 Matt Wang
+  44           *    a. shorten verStr[] to reduce code size usage.
+  45           *  1011, 20081125 Phil lin
+  46           *    a. Badpixel function 2nd integration.
+  47           *  1012, 20081125 Phil lin
+  48           *    a. Fixed resource file size error.
+  49           *  1013, 20090415 yong sun
+  50           *    a. perfect bad pixel compensation.
+  51           *  1014, 20090902 tq zhang
+  52           *    a. perfect bad pixel compensation.
+  53           *
+C51 COMPILER V8.08   BP_VER                                                                10/17/2019 11:40:33 PAGE 2   
+
+  54           **************************************************************************/
+  55          
+  56          /**************************************************************************
+  57           *                            H E A D E R   F I L E S
+  58           **************************************************************************/
+  59          #include "general.h"
+  60          
+  61          /**************************************************************************
+  62           *                            G L O B A L   D A T A
+  63           **************************************************************************/
+  64          static UINT8 code verStr[] = "$bp02";
+  65          
+  66          /**************************************************************************
+  67           *
+  68           *  Function Name: miscLibVerGet
+  69           *
+  70           *  Purposes:
+  71           *
+  72           *  Descriptions:
+  73           *
+  74           *  Arguments:
+  75           *
+  76           *  Returns:
+  77           *
+  78           *  See also:
+  79           *
+  80           **************************************************************************/
+  81          UINT8 *
+  82          libBpVerGet(
+  83                  void
+  84          )
+  85          {
+  86   1              return (verStr + 3);
+  87   1      }
+  88          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,39 @@
+Build target 'libHalDisp'
+compiling haldisp_libver.c...
+compiling hal_disp_api.c...
+compiling hal_disp_lcmcmd.c...
+compiling hal_disp_paraapi.c...
+compiling hal_disp_paraset.c...
+compiling hal_disp_tp.c...
+creating library .\obj\libHalDisp.LIB...
+TRANSFER
+".\obj\haldisp_libver.obj",
+".\obj\hal_disp_api.obj",
+".\obj\hal_disp_lcmcmd.obj",
+".\obj\hal_disp_paraapi.obj",
+".\obj\hal_disp_paraset.obj",
+".\obj\hal_disp_tp.obj" 
+TO ".\obj\libHalDisp.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Work\code\HuiRui\CDAF_1627\191230v4.1屏\CDAF\kernel\src\hal\hal_disp>copy obj\libHalDisp.LIB ..\..\..\lib\libHalDisp.LIB 
+已复制         1 个文件。
+".\obj\libHalDisp.LIB" - 0 Error(s), 0 Warning(s).
+Build target 'libHalDisp'
+compiling hal_disp_paraapi.c...
+creating library .\obj\libHalDisp.LIB...
+TRANSFER
+".\obj\haldisp_libver.obj",
+".\obj\hal_disp_api.obj",
+".\obj\hal_disp_lcmcmd.obj",
+".\obj\hal_disp_paraapi.obj",
+".\obj\hal_disp_paraset.obj",
+".\obj\hal_disp_tp.obj" 
+TO ".\obj\libHalDisp.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Work\code\HuiRui\CDAF_1627\191230v4.1屏\CDAF\kernel\src\hal\hal_disp>copy obj\libHalDisp.LIB ..\..\..\lib\libHalDisp.LIB 
+已复制         1 个文件。
+".\obj\libHalDisp.LIB" - 0 Error(s), 0 Warning(s).

@@ -1,0 +1,14 @@
+TRANSFER
+".\obj\osd_zoom.obj",
+".\obj\osd_buff.obj",
+".\obj\osd_dot.obj",
+".\obj\osd_draw.obj",
+".\obj\osd_init.obj",
+".\obj\osd_line.obj",
+".\obj\osd_mem.obj",
+".\obj\osd_misc.obj",
+".\obj\osd_palette.obj",
+".\obj\osd_rect.obj",
+".\obj\osd_win.obj",
+".\obj\osd_ver.obj" 
+TO ".\obj\libOsd.LIB"

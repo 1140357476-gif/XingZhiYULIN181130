@@ -1,0 +1,128 @@
+C51 COMPILER V8.08   PB_VER                                                                12/31/2019 16:15:22 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE PB_VER
+OBJECT MODULE PLACED IN .\obj\pb_ver.obj
+COMPILER INVOKED BY: e:\Keil\C51\BIN\C51.EXE pb_ver.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\i
+                    -nc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiza
+                    -tion) DEFINE(LIB_RELEASE) PRINT(.\obj\pb_ver.lst) OBJECT(.\obj\pb_ver.obj)
+
+line level    source
+
+   1          /*************************************************************************
+   2           *
+   3           *      Copyright (c) 2007 Sunplus Technology Co., Ltd.
+   4           *
+   5           * Module Name:
+   6           *
+   7           *              pb_libver.c
+   8           *
+   9           * Abstract:
+  10           *
+  11           *              Module related to playback lib version
+  12           *
+  13           * Environment:
+  14           *
+  15           *              Keil C51 Compiler
+  16           *
+  17           * Revision History:
+  18           *
+  19           *              07/24/2007              Phil    created
+  20           *
+  21           * Change Log:
+  22           *      v01, 20111024 wangjg
+  23           *              a. initialize version
+  24           *      v02, 20111031 renhy
+  25           *              a. fixed pb crop bug
+  26           *      v03, 20111122 xu.gao
+  27           *              a. fixed pb memo bug
+  28           *      v04, 20111202 delei.gu
+  29           *              a. modify dispaly of direction-arrow zoom in
+  30           *      v05,20111207 hy.ren
+  31           *              a.modify pb display buffer size accord different display device.
+  32           *      v06,20111207 hy.ren
+  33           *              a.add time info in pbFileInfoGet function
+  34           *      v07,20111209 kai.wang
+  35           *              a.modify multiplay osd show on TV
+  36           *      v08,20111209 kai.wang
+  37           *              a.modify multiplay osd show on TV -2
+  38           *      v09,20120105 xu.gao
+  39           *              a.fix 16:9 playback problem
+  40           *      v10,20120222 dongdong.wang
+  41           *              a.add distortion
+  42           *      v11,20120224 dongdong.wang
+  43           *              a.add  16:9 solution for distortion
+  44           *      v12,20120228 dongdong.wang
+  45           *              a.add decrease time of distortion
+  46           *      v13,20120302 dongdong.wang
+  47           *              a.modify for distortion hung up
+  48           *      v14,20120919 xianxin
+  49           *              a.correct 16:9 decode size
+  50           *      v15,20120921 xianxin
+  51           *              a.for distortion
+  52           *      v16,20120924 xianxin
+  53           *              a.fix calculational error
+C51 COMPILER V8.08   PB_VER                                                                12/31/2019 16:15:22 PAGE 2   
+
+  54           *      v17,20121012 xianxin
+  55           *              a.modify roi for distortion to avoid boundary aligment
+  56           *           b.decode top left for distorion
+  57           *      v18,20121116 xianxin
+  58           *              a.fix disp rate for real 3:4 JPG
+  59           *              b.rewrite pbImgDeCmpRot() for fillblack
+  60           *              c.use main img if no thumbnail
+  61           *      v19,20121128 xianxin
+  62           *              a.fix 46334
+  63           **************************************************************************/    
+  64          
+  65          /**************************************************************************
+  66           *                            H E A D E R   F I L E S
+  67           **************************************************************************/
+  68          #include "general.h"
+  69          
+  70          /**************************************************************************
+  71           *                            G L O B A L   D A T A
+  72           **************************************************************************/
+  73          static UINT8 code verStr[] = "$pb19";
+  74          
+  75          /**************************************************************************
+  76           *
+  77           *  Function Name: pbLibVerGet
+  78           *
+  79           *  Purposes:
+  80           *
+  81           *  Descriptions:
+  82           *
+  83           *  Arguments:
+  84           *
+  85           *  Returns:
+  86           *
+  87           *  See also:
+  88           *
+  89           **************************************************************************/
+  90          UINT8 *
+  91          libPbVerGet(
+  92                  void
+  93          )
+  94          {
+  95   1              return (verStr + 3);
+  96   1      }
+  97          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

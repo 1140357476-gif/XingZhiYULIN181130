@@ -1,0 +1,780 @@
+; .\obj\timer.SRC generated from: timer.c
+; COMPILER INVOKED BY:
+;        C:\Keil\C51\BIN\C51.EXE timer.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customization) DEFINE(LIB_RELEASE) PRINT(.\obj\timer.lst) SRC(.\obj\timer.SRC)
+
+$NOMOD51
+
+NAME	TIMER
+
+TB81	BIT	0C0H.3
+P0	DATA	080H
+P1	DATA	090H
+SM01	BIT	0C0H.7
+P2	DATA	0A0H
+SM11	BIT	0C0H.6
+P3	DATA	0B0H
+SM21	BIT	0C0H.5
+T0	BIT	0B0H.4
+AC	BIT	0D0H.6
+T1	BIT	0B0H.5
+T2	BIT	090H.0
+EA	BIT	0A8H.7
+DPH1	DATA	085H
+IE	DATA	0A8H
+FL	BIT	0D0H.1
+DPL1	DATA	084H
+TA	DATA	0C7H
+EXF2	BIT	0C8H.6
+RD	BIT	0B0H.7
+REN1	BIT	0C0H.4
+IP	DATA	0B8H
+RI	BIT	098H.0
+INT0	BIT	0B0H.2
+CY	BIT	0D0H.7
+TI	BIT	098H.1
+INT1	BIT	0B0H.3
+SADEN0	DATA	0B9H
+INT2	BIT	090H.4
+SADEN1	DATA	0BAH
+RXD0	BIT	0B0H.0
+INT3	BIT	090H.5
+RXD1	BIT	090H.2
+INT4	BIT	090H.6
+SADDR0	DATA	0A9H
+TXD0	BIT	0B0H.1
+INT5	BIT	090H.7
+SADDR1	DATA	0AAH
+TXD1	BIT	090H.3
+RCAP2H	DATA	0CBH
+SP	DATA	081H
+T2EX	BIT	090H.1
+EPFI	BIT	0D8H.5
+OV	BIT	0D0H.2
+RCAP2L	DATA	0CAH
+C_T2	BIT	0C8H.1
+WR	BIT	0B0H.6
+EWDI	BIT	0E8H.4
+WDIF	BIT	0D8H.3
+RCLK	BIT	0C8H.5
+EXIF	DATA	091H
+TCLK	BIT	0C8H.4
+PCON	DATA	087H
+PWDI	BIT	0F8H.4
+TMOD	DATA	089H
+TCON	DATA	088H
+IE0	BIT	088H.1
+IE1	BIT	088H.3
+B	DATA	0F0H
+WTRF	BIT	0D8H.2
+CP_RL2	BIT	0C8H.0
+SMOD_1	BIT	0D8H.7
+ACC	DATA	0E0H
+ES0	BIT	0A8H.4
+ET0	BIT	0A8H.1
+ES1	BIT	0A8H.6
+ET1	BIT	0A8H.3
+TF0	BIT	088H.5
+ET2	BIT	0A8H.5
+TF1	BIT	088H.7
+TF2	BIT	0C8H.7
+RI1	BIT	0C0H.0
+RB8	BIT	098H.2
+TH0	DATA	08CH
+EX0	BIT	0A8H.0
+IT0	BIT	088H.0
+TH1	DATA	08DH
+TI1	BIT	0C0H.1
+TB8	BIT	098H.3
+EX1	BIT	0A8H.2
+IT1	BIT	088H.2
+TH2	DATA	0CDH
+EX2	BIT	0E8H.0
+P	BIT	0D0H.0
+EX3	BIT	0E8H.1
+SM0	BIT	098H.7
+TL0	DATA	08AH
+EX4	BIT	0E8H.2
+SM1	BIT	098H.6
+TL1	DATA	08BH
+EX5	BIT	0E8H.3
+SM2	BIT	098H.5
+TL2	DATA	0CCH
+PS0	BIT	0B8H.4
+EIE	DATA	0E8H
+PT0	BIT	0B8H.1
+PS1	BIT	0B8H.6
+PT1	BIT	0B8H.3
+RS0	BIT	0D0H.3
+PT2	BIT	0B8H.5
+TR0	BIT	088H.4
+RS1	BIT	0D0H.4
+TR1	BIT	088H.6
+TR2	BIT	0C8H.2
+PX0	BIT	0B8H.0
+PX1	BIT	0B8H.2
+PX2	BIT	0F8H.0
+PX3	BIT	0F8H.1
+PX4	BIT	0F8H.2
+DPH	DATA	083H
+PX5	BIT	0F8H.3
+EIP	DATA	0F8H
+PFI	BIT	0D8H.4
+DPL	DATA	082H
+SBUF0	DATA	099H
+SBUF1	DATA	0C1H
+EXEN2	BIT	0C8H.3
+SCON0	DATA	098H
+REN	BIT	098H.4
+SCON1	DATA	0C0H
+STATUS	DATA	0C5H
+T2MOD	DATA	0C9H
+T2CON	DATA	0C8H
+DPS	DATA	086H
+CKCON	DATA	08EH
+EWT	BIT	0D8H.1
+POR	BIT	0D8H.6
+F0	BIT	0D0H.5
+PSW	DATA	0D0H
+WDCON	DATA	0D8H
+RWT	BIT	0D8H.0
+RB81	BIT	0C0H.2
+?PR?TIMER0_Routine?TIMER                 SEGMENT CODE 
+?PR?TIMER0_Handler?TIMER                 SEGMENT CODE 
+?XD?TIMER0_Handler?TIMER                 SEGMENT XDATA OVERLAYABLE
+?PR?TIMER0_Start?TIMER                   SEGMENT CODE 
+?PR?TIMER0_Stop?TIMER                    SEGMENT CODE 
+?PR?TIMER1_Routine?TIMER                 SEGMENT CODE 
+?PR?TIMER1_Handler?TIMER                 SEGMENT CODE 
+?XD?TIMER1_Handler?TIMER                 SEGMENT XDATA OVERLAYABLE
+?PR?TIMER1_Start?TIMER                   SEGMENT CODE 
+?PR?TIMER1_Stop?TIMER                    SEGMENT CODE 
+?PR?_TIMER1_Config?TIMER                 SEGMENT CODE 
+?XD?_TIMER1_Config?TIMER                 SEGMENT XDATA OVERLAYABLE
+?XD?TIMER            SEGMENT XDATA 
+?PR?TIMER            SEGMENT CODE 
+	EXTRN	CODE (timerFuncCallList0)
+	EXTRN	CODE (timerFuncCallList1)
+	EXTRN	CODE (osTimeTick)
+	EXTRN	CODE (tmrSvc_PowerOffProc_Intr)
+	EXTRN	CODE (tmrSvc_APO_Intr)
+	EXTRN	CODE (?C?ICALL)
+	EXTRN	CODE (?C?IILDX)
+	EXTRN	CODE (?C?PSTXDATA)
+	EXTRN	CODE (?C?LLDXDATA)
+	EXTRN	CODE (?C?LSTXDATA)
+	EXTRN	CODE (?C?PLDXDATA)
+	EXTRN	CODE (?C?ICALL2)
+	EXTRN	CODE (?C?ULDIV)
+	PUBLIC	?_TIMER1_Config?BYTE
+	PUBLIC	_TIMER1_Config
+	PUBLIC	TIMER1_Stop
+	PUBLIC	TIMER1_Start
+	PUBLIC	TIMER1_Handler
+	PUBLIC	TIMER1_Routine
+	PUBLIC	TIMER0_Stop
+	PUBLIC	TIMER0_Start
+	PUBLIC	TIMER0_Handler
+	PUBLIC	TIMER0_Routine
+
+	RSEG  ?XD?TIMER0_Handler?TIMER
+?TIMER0_Handler?BYTE:
+          i?140:   DS   1
+	ORG  1
+     ppFunc?141:   DS   2
+
+	RSEG  ?XD?TIMER1_Handler?TIMER
+?TIMER1_Handler?BYTE:
+        ptr?542:   DS   3
+
+	RSEG  ?XD?_TIMER1_Config?TIMER
+?_TIMER1_Config?BYTE:
+     Period?843:   DS   4
+	ORG  4
+      pFunc?844:   DS   2
+	ORG  6
+  pFuncPara?845:   DS   3
+
+	RSEG  ?XD?TIMER
+       TimeTick:   DS   4
+        InitVal:   DS   4
+      Tmr1PFunc:   DS   2
+  Tmr1PFuncPara:   DS   3
+  Tmr1ReloadVal:   DS   4
+      Tmr0Stamp:   DS   1
+; /**************************************************************************
+;  *
+;  *        Copyright (c) 2008-2008 by Sunplus mMedia Inc., Ltd.
+;  *
+;  *  This software is copyrighted by and is the property of Sunplus
+;  *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+;  *  Inc., Ltd. This software may only be used in accordance with the
+;  *  corresponding license agreement. Any unauthorized use, duplication,
+;  *  distribution, or disclosure of this software is expressly forbidden.
+;  *
+;  *  This Copyright notice MUST not be removed or modified without prior
+;  *  written consent of Sunplus mMedia Inc., Ltd.
+;  *
+;  *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+;  *  software without notice.
+;  *
+;  *  Sunplus mMedia Inc., Ltd.
+;  *  19-1, Innovation First Road, Science-Based Industrial Park,
+;  *  Hsin-Chu, Taiwan, R.O.C.
+;  *
+;  **************************************************************************/
+;  
+; //=============================================================================
+; //Header file
+; //=============================================================================
+; #define TMR_TASK_INTERNAL
+; #include "general.h"
+; #include "timer.h"
+; 
+; #include "os_api.h"
+; //#include "os_msg.h"
+; #include "tmr_svc.h"
+; #include "key_scan.h"
+; #include "func_timer_def.h"
+; //=============================================================================
+; //Symbol
+; //=============================================================================
+; extern void adctest(void);
+; //-----------------------------------------------------------------------------
+; //Constant
+; //-----------------------------------------------------------------------------
+; 
+; //-----------------------------------------------------------------------------
+; //Variable
+; //-----------------------------------------------------------------------------
+; 
+; static UINT8 xdata Tmr0Stamp;
+; 
+; static UINT32 xdata Tmr1ReloadVal;
+; static pFuncTmr1 xdata Tmr1PFunc;
+; static UINT8* xdata Tmr1PFuncPara;
+; static UINT32 xdata InitVal;
+; static UINT32 xdata TimeTick;
+; extern UINT8 TestFlag;
+; 
+; extern TMR_TASK_DCL pFuncTmr0 code timerFuncCallList0[];
+; extern TMR_TASK_DCL pFuncTmr1 code timerFuncCallList1[];
+; //=============================================================================
+; //Program
+; //=============================================================================
+; //-----------------------------------------------------------------------------
+; //                               TIMER0
+; //-----------------------------------------------------------------------------
+; //-----------------------------------------------------------------------------
+; //TIMER0
+; //-----------------------------------------------------------------------------
+
+	RSEG  ?PR?TIMER
+Com0016:
+L?0023:
+	USING	0
+	MOV  	DPTR,#Tmr1ReloadVal
+	LCALL	?C?LLDXDATA
+L?0024:
+	MOV  	DPTR,#TimeTick
+	LJMP 	?C?LSTXDATA
+L?0025:
+	USING	0
+	MOV  	DPTR,#InitVal+03H
+	MOVX 	A,@DPTR
+	MOV  	TL1,A
+	MOV  	DPTR,#InitVal+02H
+	MOVX 	A,@DPTR
+	MOV  	TH1,A
+	RET  	
+; END OF Com0016
+
+; void TIMER0_Routine(void)
+
+	RSEG  ?PR?TIMER0_Routine?TIMER
+TIMER0_Routine:
+	USING	0
+			; SOURCE LINE # 67
+; {
+			; SOURCE LINE # 68
+; 	TIMER0_Handler();     //Timer tick: 5ms
+			; SOURCE LINE # 69
+	LJMP 	TIMER0_Handler
+; END OF TIMER0_Routine
+
+; }
+; 
+; //-----------------------------------------------------------------------------
+; //TIMER0_Handler
+; //-----------------------------------------------------------------------------
+; void TIMER0_Handler(void) USING_2
+
+	RSEG  ?PR?TIMER0_Handler?TIMER
+TIMER0_Handler:
+	USING	0
+			; SOURCE LINE # 75
+; {
+			; SOURCE LINE # 76
+; 	UINT8 i;
+; 	pFuncTmr0 code* ppFunc;
+; 
+; 	if (!(--Tmr0Stamp))
+			; SOURCE LINE # 80
+	MOV  	DPTR,#Tmr0Stamp
+	MOVX 	A,@DPTR
+	DEC  	A
+	MOVX 	@DPTR,A
+	JNZ  	?C0008
+; 	{
+			; SOURCE LINE # 81
+; 		//5ms * 2 
+; 		Tmr0Stamp = K_TIMER_PERIOD;
+			; SOURCE LINE # 83
+	MOV  	A,#02H
+	MOVX 	@DPTR,A
+;         
+; 		osTimeTick();
+			; SOURCE LINE # 85
+	LCALL	osTimeTick
+; 
+; 		/* customized timer task */
+; 		i = TMR0_TASK_MAX;
+			; SOURCE LINE # 88
+	MOV  	DPTR,#i?140
+	MOV  	A,#020H
+	MOVX 	@DPTR,A
+; 		ppFunc = &timerFuncCallList0[0];
+			; SOURCE LINE # 89
+	INC  	DPTR
+	MOV  	A,#HIGH (timerFuncCallList0)
+	MOVX 	@DPTR,A
+	INC  	DPTR
+	MOV  	A,#LOW (timerFuncCallList0)
+	MOVX 	@DPTR,A
+?C0005:
+; 		do {
+			; SOURCE LINE # 90
+; 			if (*ppFunc) {
+			; SOURCE LINE # 91
+	MOV  	DPTR,#ppFunc?141
+	MOVX 	A,@DPTR
+	MOV  	R6,A
+	INC  	DPTR
+	MOVX 	A,@DPTR
+	MOV  	DPL,A
+	MOV  	DPH,R6
+	CLR  	A
+	MOVC 	A,@A+DPTR
+	MOV  	R6,A
+	MOV  	A,#01H
+	MOVC 	A,@A+DPTR
+	MOV  	R7,A
+	ORL  	A,R6
+	JZ   	?C0004
+; 				(*ppFunc)();
+			; SOURCE LINE # 92
+	XCH  	A,R2
+	MOV  	A,R6
+	XCH  	A,R2
+	XCH  	A,R1
+	MOV  	A,R7
+	XCH  	A,R1
+	LCALL	?C?ICALL
+; 			} else {
+			; SOURCE LINE # 93
+; 				break;
+			; SOURCE LINE # 94
+; 			}
+			; SOURCE LINE # 95
+?C0007:
+; 			ppFunc++;
+			; SOURCE LINE # 96
+	MOV  	DPTR,#ppFunc?141
+	CLR  	A
+	MOV  	B,#02H
+	LCALL	?C?IILDX
+; 		} while (--i);
+			; SOURCE LINE # 97
+	MOV  	DPTR,#i?140
+	MOVX 	A,@DPTR
+	DEC  	A
+	MOVX 	@DPTR,A
+	JNZ  	?C0005
+?C0004:
+; 
+;         tmrSvc_APO_Intr();
+			; SOURCE LINE # 99
+	LCALL	tmrSvc_APO_Intr
+;         tmrSvc_PowerOffProc_Intr();
+			; SOURCE LINE # 100
+	LCALL	tmrSvc_PowerOffProc_Intr
+; 		
+; #if (UI_TEST)		
+; 
+; #else
+; 		adctest();
+; #endif		
+; 
+; 	}
+			; SOURCE LINE # 108
+; }
+			; SOURCE LINE # 109
+?C0008:
+	RET  	
+; END OF TIMER0_Handler
+
+; 
+; //-----------------------------------------------------------------------------
+; //TIMER0_Start
+; //-----------------------------------------------------------------------------
+; void TIMER0_Start(void) USING_0
+
+	RSEG  ?PR?TIMER0_Start?TIMER
+TIMER0_Start:
+	USING	0
+			; SOURCE LINE # 114
+; {
+			; SOURCE LINE # 115
+; 	Tmr0Stamp = K_TIMER_PERIOD;
+			; SOURCE LINE # 116
+	MOV  	DPTR,#Tmr0Stamp
+	MOV  	A,#02H
+	MOVX 	@DPTR,A
+; 
+; 	//start timer
+; 	ET0 = 1;                //IE:    TIMER0 interrupt enable
+			; SOURCE LINE # 119
+	SETB 	ET0
+; 	TR0 = 1;                //TCON:  TIMER0 enable
+			; SOURCE LINE # 120
+	SETB 	TR0
+; }
+			; SOURCE LINE # 121
+	RET  	
+; END OF TIMER0_Start
+
+; 
+; //-----------------------------------------------------------------------------
+; //TIMER0_Stop
+; //-----------------------------------------------------------------------------
+; void TIMER0_Stop(void) USING_0
+
+	RSEG  ?PR?TIMER0_Stop?TIMER
+TIMER0_Stop:
+	USING	0
+			; SOURCE LINE # 126
+; {
+			; SOURCE LINE # 127
+;      //stop timer
+;      TR0 = 0;                //TCON:  TIMER0 disable
+			; SOURCE LINE # 129
+	CLR  	TR0
+;      ET0 = 0;                //IE:    TIMER0 interrupt disable
+			; SOURCE LINE # 130
+	CLR  	ET0
+; }
+			; SOURCE LINE # 131
+	RET  	
+; END OF TIMER0_Stop
+
+; 
+; //-----------------------------------------------------------------------------
+; //                               TIMER1
+; //-----------------------------------------------------------------------------
+; //-----------------------------------------------------------------------------
+; //TIMER1
+; //-----------------------------------------------------------------------------
+; void TIMER1_Routine(void)
+
+	RSEG  ?PR?TIMER1_Routine?TIMER
+TIMER1_Routine:
+	USING	0
+			; SOURCE LINE # 139
+; {
+			; SOURCE LINE # 140
+;     //EX0 = 0;
+;     TIMER1_Handler();     //TIMER1 handler
+			; SOURCE LINE # 142
+	LJMP 	TIMER1_Handler
+; END OF TIMER1_Routine
+
+;     //EX0 = 1;
+; }
+; 
+; //-----------------------------------------------------------------------------
+; //TIMER1_Handler
+; //-----------------------------------------------------------------------------
+; void TIMER1_Handler(void) USING_3
+
+	RSEG  ?PR?TIMER1_Handler?TIMER
+TIMER1_Handler:
+	USING	0
+			; SOURCE LINE # 149
+; {
+			; SOURCE LINE # 150
+; 	pFuncTmr1* ptr;
+; 	
+; 	TR1 = 0 ;
+			; SOURCE LINE # 153
+	CLR  	TR1
+; 	
+; 	// add by phil for correcting the call tree for function pointer S	
+; 	if (TR1) {
+			; SOURCE LINE # 156
+	JNB  	TR1,?C0012
+; 		ptr = timerFuncCallList1;
+			; SOURCE LINE # 157
+	MOV  	R3,#0FFH
+	MOV  	R2,#HIGH (timerFuncCallList1)
+	MOV  	R1,#LOW (timerFuncCallList1)
+	MOV  	DPTR,#ptr?542
+	LCALL	?C?PSTXDATA
+; 		//ptr = intrFuncArray;
+; 	}
+			; SOURCE LINE # 159
+?C0012:
+; 	// add by phil for correcting the call tree for function pointer E	
+; 	
+; 	TL1 = READ8(InitVal, 3);
+			; SOURCE LINE # 162
+; 	TH1 = READ8(InitVal, 2);
+			; SOURCE LINE # 163
+	LCALL	L?0025
+; 	if (TimeTick) {
+			; SOURCE LINE # 164
+	MOV  	DPTR,#TimeTick
+	LCALL	?C?LLDXDATA
+	MOV  	A,R4
+	ORL  	A,R5
+	ORL  	A,R6
+	ORL  	A,R7
+	JZ   	?C0013
+; 		TimeTick--;
+			; SOURCE LINE # 165
+	MOV  	DPTR,#TimeTick
+	LCALL	?C?LLDXDATA
+	MOV  	A,R7
+	ADD  	A,#0FFH
+	MOV  	R7,A
+	MOV  	A,R6
+	ADDC 	A,#0FFH
+	MOV  	R6,A
+	MOV  	A,R5
+	ADDC 	A,#0FFH
+	MOV  	R5,A
+	MOV  	A,R4
+	ADDC 	A,#0FFH
+	MOV  	R4,A
+	LCALL	L?0024
+; 	} else {
+			; SOURCE LINE # 166
+	SJMP 	?C0014
+?C0013:
+; 		TimeTick = Tmr1ReloadVal;
+			; SOURCE LINE # 167
+	LCALL	L?0023
+; 		if (Tmr1PFunc != NULL) {
+			; SOURCE LINE # 168
+	MOV  	DPTR,#Tmr1PFunc
+	MOVX 	A,@DPTR
+	MOV  	R6,A
+	INC  	DPTR
+	MOVX 	A,@DPTR
+	MOV  	R7,A
+	ORL  	A,R6
+	JZ   	?C0014
+; 			Tmr1PFunc(Tmr1PFuncPara);
+			; SOURCE LINE # 169
+	INC  	DPTR
+	LCALL	?C?PLDXDATA
+	MOV  	DPL,R7
+	MOV  	DPH,R6
+	LCALL	?C?ICALL2
+; 		}
+			; SOURCE LINE # 170
+; 	}
+			; SOURCE LINE # 171
+?C0014:
+; 		
+; 	TR1 = 1 ;
+			; SOURCE LINE # 173
+	SETB 	TR1
+; }
+			; SOURCE LINE # 174
+	RET  	
+; END OF TIMER1_Handler
+
+; 
+; 
+; //-----------------------------------------------------------------------------
+; //TIMER1_Start
+; //-----------------------------------------------------------------------------
+; void TIMER1_Start(void) USING_3
+
+	RSEG  ?PR?TIMER1_Start?TIMER
+TIMER1_Start:
+	USING	0
+			; SOURCE LINE # 180
+; {
+			; SOURCE LINE # 181
+;     //start timer
+;     ET1 = 1;                //IE:    TIMER1 interrupt enable
+			; SOURCE LINE # 183
+	SETB 	ET1
+;     TR1 = 1;                //TCON:  TIMER1 enable
+			; SOURCE LINE # 184
+	SETB 	TR1
+; }
+			; SOURCE LINE # 185
+	RET  	
+; END OF TIMER1_Start
+
+; 
+; //-----------------------------------------------------------------------------
+; //TIMER1_Stop
+; //-----------------------------------------------------------------------------
+; void TIMER1_Stop(void) USING_3
+
+	RSEG  ?PR?TIMER1_Stop?TIMER
+TIMER1_Stop:
+	USING	0
+			; SOURCE LINE # 190
+; {
+			; SOURCE LINE # 191
+;     ET1 = 0;                //IE:    TIMER1 interrupt disable
+			; SOURCE LINE # 192
+	CLR  	ET1
+;     TR1 = 0;                //TCON:  TIMER1 disable
+			; SOURCE LINE # 193
+	CLR  	TR1
+; }
+			; SOURCE LINE # 194
+	RET  	
+; END OF TIMER1_Stop
+
+; 
+; void TIMER1_Config(UINT32 Period, pFuncTmr1 pFunc, UINT8* pFuncPara)
+
+	RSEG  ?PR?_TIMER1_Config?TIMER
+_TIMER1_Config:
+	USING	0
+			; SOURCE LINE # 196
+	MOV  	DPTR,#Period?843
+	LCALL	?C?LSTXDATA
+; {
+			; SOURCE LINE # 197
+; 	UINT32 CpuClk;
+; 	
+; 	TMOD &= 0x0f;
+			; SOURCE LINE # 200
+	ANL  	TMOD,#0FH
+; 	TMOD |= 0x10;
+			; SOURCE LINE # 201
+	ORL  	TMOD,#010H
+; 	TF1=0;
+			; SOURCE LINE # 202
+	CLR  	TF1
+; 			
+; 	if ((!Period) || (pFunc == (void (*)())NULL)) {
+			; SOURCE LINE # 204
+	MOV  	DPTR,#Period?843
+	LCALL	?C?LLDXDATA
+	MOV  	A,R4
+	ORL  	A,R5
+	ORL  	A,R6
+	ORL  	A,R7
+	JZ   	?C0021
+	MOV  	DPTR,#pFunc?844
+	MOVX 	A,@DPTR
+	MOV  	R2,A
+	INC  	DPTR
+	MOVX 	A,@DPTR
+	MOV  	R3,A
+	ORL  	A,R2
+	JZ   	?C0021
+; 		return;
+; 	}
+			; SOURCE LINE # 206
+?C0019:
+; 
+; 	Tmr1ReloadVal = Period;
+			; SOURCE LINE # 208
+	MOV  	DPTR,#Period?843
+	LCALL	?C?LLDXDATA
+	MOV  	DPTR,#Tmr1ReloadVal
+	LCALL	?C?LSTXDATA
+; 	Tmr1PFunc = pFunc;
+			; SOURCE LINE # 209
+	MOV  	DPTR,#Tmr1PFunc
+	MOV  	A,R2
+	MOVX 	@DPTR,A
+	INC  	DPTR
+	MOV  	A,R3
+	MOVX 	@DPTR,A
+; 	Tmr1PFuncPara = pFuncPara;
+			; SOURCE LINE # 210
+	MOV  	DPTR,#pFuncPara?845
+	LCALL	?C?PLDXDATA
+	MOV  	DPTR,#Tmr1PFuncPara
+	LCALL	?C?PSTXDATA
+; 
+; 	CpuClk=522000000UL/(XBYTE[0x2024]+1);
+			; SOURCE LINE # 212
+	MOV  	DPTR,#02024H
+	MOVX 	A,@DPTR
+	ADD  	A,#01H
+	MOV  	R7,A
+	CLR  	A
+	RLC  	A
+	XCH  	A,R3
+	MOV  	A,R7
+	XCH  	A,R3
+	MOV  	R2,A
+	CLR  	A
+	MOV  	R1,A
+	MOV  	R0,A
+	MOV  	R7,#080H
+	MOV  	R6,#016H
+	MOV  	R5,#01DH
+	MOV  	R4,#01FH
+	LCALL	?C?ULDIV
+;---- Variable 'CpuClk?846' assigned to Register 'R4/R5/R6/R7' ----
+; 
+; 	InitVal = 65536UL -  CpuClk / 12000UL;
+			; SOURCE LINE # 214
+	CLR  	A
+	MOV  	R3,#0E0H
+	MOV  	R2,#02EH
+	MOV  	R1,A
+	MOV  	R0,A
+	LCALL	?C?ULDIV
+	CLR  	C
+	CLR  	A
+	SUBB 	A,R7
+	MOV  	R7,A
+	CLR  	A
+	SUBB 	A,R6
+	MOV  	R6,A
+	MOV  	A,#01H
+	SUBB 	A,R5
+	MOV  	R5,A
+	CLR  	A
+	SUBB 	A,R4
+	MOV  	R4,A
+	MOV  	DPTR,#InitVal
+	LCALL	?C?LSTXDATA
+; 	TimeTick = Tmr1ReloadVal;
+			; SOURCE LINE # 215
+	LCALL	L?0023
+; 	TL1 = READ8(InitVal, 3);
+			; SOURCE LINE # 216
+; 	TH1 = READ8(InitVal, 2);
+			; SOURCE LINE # 217
+	LCALL	L?0025
+; 	
+; }
+			; SOURCE LINE # 219
+?C0021:
+	RET  	
+; END OF _TIMER1_Config
+
+	END

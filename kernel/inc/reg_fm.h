@@ -1,0 +1,182 @@
+
+#ifndef __REG_FM_H__
+#define __REG_FM_H__
+
+
+
+/**************************************************************************
+ *                  R E G I S T E R  A D D R E S S
+ **************************************************************************/ 
+//interrupt 		
+#define	REG_Fm_evt				(0x2400)	
+#define	REG_Fm_gpioRint_1		(0x2401)	
+#define	REG_Fm_gpioRint_2		(0x2402)	
+#define	REG_Fm_gpioRint_3		(0x2403)	
+#define	REG_Fm_gpioFint_1		(0x2404)	
+#define	REG_Fm_gpioFint_2		(0x2405)	
+#define	REG_Fm_gpioFint_3		(0x2406)	
+#define	REG_Fm_intEn			(0x2407)	
+#define	REG_Fm_gpioRinten_1		(0x2408)
+#define	REG_Fm_gpioRinten_2		(0x2409)
+#define	REG_Fm_gpioRinten_3		(0x240A)	
+#define	REG_Fm_gpioFinten_1		(0x240B)	
+#define	REG_Fm_gpioFinten_2		(0x240C)	
+#define	REG_Fm_gpioFinten_3		(0x240D)
+	
+//FMGPIO	
+#define	REG_Fm_ctrli_1		(0x2410)	
+#define	REG_Fm_ctrli_2		(0x2411)	
+#define	REG_Fm_ctrli_3		(0x2412)	
+#define	REG_Fm_ctrloe_1		(0x2413)	
+#define	REG_Fm_ctrloe_2		(0x2414)	
+#define	REG_Fm_ctrloe_3		(0x2415)	
+#define	REG_Fm_ctrlo_1		(0x2416)	
+#define	REG_Fm_ctrlo_2		(0x2417)	
+#define	REG_Fm_ctrlo_3		(0x2418)	
+	
+//Control
+#define	REG_Fm_Mediatype_rst	(0x2419)	
+#define	REG_Fm_tselect			(0x241A)	
+#define	REG_Fm_prbsel			(0x241B)
+
+#define	REG_Fm_disgated			(0x241D)		
+#define	REG_Fm_prbdata_low		(0x241E)	
+#define	REG_Fm_prbdata_high		(0x241F)	
+	
+//Nand-gate flash memory
+#define	REG_Fm_Nand_Acttime_Rcvtime		(0x2420)	
+#define	REG_Fm_waiten					(0x2421)	
+#define	REG_Fm_autosendtrg_nandstate	(0x2422)	
+#define	REG_Fm_cmdsize_addrsize			(0x2423)	
+#define	REG_Fm_cmdbuf_0					(0x2424)	
+#define	REG_Fm_cmdbuf_1					(0x2425)	
+#define	REG_Fm_addrbuf_0				(0x2426)	
+#define	REG_Fm_addrbuf_1				(0x2427)	
+#define	REG_Fm_addrbuf_2				(0x2428)	
+#define	REG_Fm_addrbuf_3				(0x2429)	
+#define	REG_Fm_addrbuf_4				(0x242A)	
+#define	REG_Fm_addrbuf_5				(0x242B)	
+#define	REG_Fm_Nandcsnn_wpnn_ale_cle	(0x242C)	
+#define	REG_Fm_Nandrdy_wrnn_rdnn		(0x242D)	
+#define	REG_Fm_NandDataPort				(0x242E)	
+#define	REG_Fm_NandIpioRdata			(0x242F)	
+	
+//SPI serial interface
+#define	REG_Fm_SIfreq			(0x2430)	
+#define	REG_Fm_SPImode			(0x2431)	
+#define	REG_Fm_SPIcsnn			(0x2432)	
+#define	REG_Fm_SPIpioWdata		(0x2433)	
+#define	REG_Fm_SPIpioRdataTmp	(0x2434)	
+#define	REG_Fm_SPIpioRdata 		(0x2435)	
+#define	REG_Fm_SPIbusy			(0x2436)	
+		
+#define	REG_Fm_spiclkphase		(0x243A)	
+#define	REG_Fm_spibuswidth		(0x243B)	
+#define	REG_Fm_spilatch_bypass	(0x243C)	
+#define	REG_Fm_spipinmux		(0x243D)	
+	
+//SD memofy card
+#define	REG_Fm_SD_freq_DBWitdh_RspType_TmEn_MMCmode	(0x2440)	
+#define	REG_Fm_SD_diphsel_48m_inclkphsel	(0x2441)	
+#define	REG_Fm_Tx_Rx_trigger				(0x2442)	
+#define	REG_Fm_DataLen_Low			(0x2443)	
+#define	REG_Fm_DataLen_High			(0x2444)	
+#define	REG_Fm_WaitRspTime			(0x2445)	
+#define	REG_Fm_WaitCRCTime			(0x2446)	
+#define	REG_Fm_autorsp_dummy_datarspen	(0x2447)	
+#define	REG_Fm_SD_CmdBuf_1		(0x2448)	
+#define	REG_Fm_SD_CmdBuf_2		(0x2449)	
+#define	REG_Fm_SD_CmdBuf_3		(0x244A)	
+#define	REG_Fm_SD_CmdBuf_4		(0x244B)	
+#define	REG_Fm_SD_CmdBuf_5		(0x244C)	
+#define	REG_Fm_SD_RespBuf_1		(0x244D)	
+#define	REG_Fm_SD_RespBuf_2		(0x244E)	
+#define	REG_Fm_SD_RespBuf_3		(0x244F)	
+#define	REG_Fm_SD_RespBuf_4		(0x2450)	
+#define	REG_Fm_SD_RespBuf_5		(0x2451)	
+#define	REG_Fm_SD_RespBuf_6		(0x2452)	
+#define	REG_Fm_SD_Status				(0x2453)	
+#define	REG_Fm_SD_Datastate_CRDSts		(0x2454)	
+#define	REG_Fm_SD_CRCRst				(0x2455)	
+#define	REG_Fm_CRC7buf			(0x2456)	
+#define	REG_Fm_CRC16buf_0_Low	(0x2457)	
+#define	REG_Fm_CRC16buf_0_High	(0x2458)	
+#define	REG_Fm_CRC16buf_1_Low	(0x2459)	
+#define	REG_Fm_CRC16buf_1_High	(0x245A)	
+#define	REG_Fm_CRC16buf_2_Low	(0x245B)	
+#define	REG_Fm_CRC16buf_2_High	(0x245C)	
+#define	REG_Fm_CRC16buf_3_Low	(0x245D)	
+#define	REG_Fm_CRC16buf_3_High	(0x245E)	
+#define	REG_Fm_CRC16cor			(0x245F)	
+#define	REG_Fm_SDDataPort		(0x2460)	
+	
+#define	REG_Fm_mbwen_ren		(0x2470)	
+#define	REG_Fm_mbblkcnt_Low		(0x2471)	
+#define	REG_Fm_mbblkcnt_High	(0x2472)	
+#define	REG_Fm_SD_Cmdstate		(0x2473)	
+#define	REG_Fm_SD_pinmux		(0x2474)	
+
+//ECC
+#define	REG_Fm_ECCRst	(0x24A0)	
+#define	REG_Fm_PsFMData	(0x24A1)	
+#define	REG_Fm_ECCMask	(0x24A2)	
+#define	REG_Fm_ECCMode	(0x24A3)	
+#define	REG_Fm_ECC_1	(0x24A4)	
+#define	REG_Fm_ECC_0	(0x24A5)	
+#define	REG_Fm_ECC_2	(0x24A6)	
+#define	REG_Fm_ECC_4	(0x24A7)	
+#define	REG_Fm_ECC_3	(0x24A8)	
+#define	REG_Fm_ECC_5	(0x24A9)	
+#define	REG_Fm_ECC_7	(0x24AA)	
+#define	REG_Fm_ECC_6	(0x24AB)	
+#define	REG_Fm_ECC_8	(0x24AC)	
+#define	REG_Fm_ECC_a	(0x24AD)	
+#define	REG_Fm_ECC_9	(0x24AE)	
+#define	REG_Fm_ECC_b	(0x24AF)	
+	
+//DRAM Interface
+#define	REG_Fm_dramstr				(0x24B0)	
+#define	REG_Fm_dramfmread_dmasel	(0x24B1)	
+#define	REG_Fm_drambytecnt_Low		(0x24B2)	
+#define	REG_Fm_drambytecnt_High		(0x24B3)	
+#define	REG_Fm_datstraddr_0	(0x24B4)	
+#define	REG_Fm_datstraddr_1	(0x24B5)	
+#define	REG_Fm_datstraddr_2	(0x24B6)	
+#define	REG_Fm_datstraddr_3	(0x24B7)	
+#define	REG_Fm_sprstraddr_0	(0x24B8)	
+#define	REG_Fm_sprstraddr_1	(0x24B9)	
+#define	REG_Fm_sprstraddr_2	(0x24BA)	
+#define	REG_Fm_sprstraddr_3	(0x24BB)	
+#define	REG_Fm_eccstraddr_0	(0x24BC)	
+#define	REG_Fm_eccstraddr_1	(0x24BD)	
+#define	REG_Fm_eccstraddr_2	(0x24BE)	
+#define	REG_Fm_eccstraddr_3	(0x24BF)
+	
+//Nand Auto CMD/ADDR/DATA	
+#define	REG_Fm_waitbusytime			(0x24C0)	
+#define	REG_Fm_nandautoen_blocktype	(0x24C1)	
+#define	REG_Fm_waitno				(0x24C2)	
+#define	REG_Fm_sectornum			(0x24C3)	
+#define	REG_Fm_pagenum_Low			(0x24C4)	
+#define	REG_Fm_pagenum_High			(0x24C5)	
+#define	REG_Fm_eccwb				(0x24C6)	
+	
+#define	REG_Fm_shiftaddrbuf_0	(0x24C8)	
+#define	REG_Fm_shiftaddrbuf_1	(0x24C9)	
+#define	REG_Fm_shiftaddrbuf_2	(0x24CA)	
+#define	REG_Fm_shiftaddrbuf_3	(0x24CB)	
+#define	REG_Fm_shiftaddrbuf_4	(0x24CC)	
+#define	REG_Fm_shiftaddrbuf_5	(0x24CD)	
+#define	REG_Fm_dramwbufptr		(0x24CE)	
+#define	REG_Fm_dramrbufptr		(0x24CF)	
+#define	REG_Fm_cmpcnt			(0x24D0)	
+#define	REG_Fm_pagecnt_Low		(0x24D1)	
+#define	REG_Fm_pagecnt_High		(0x24D2)	
+	
+//Others
+#define	REG_Fm_reserve0		(0x24F0)	
+#define	REG_Fm_MONTH		(0x24FE)	
+#define	REG_Fm_DATE			(0x24FF)	
+
+#endif
+

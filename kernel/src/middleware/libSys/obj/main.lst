@@ -1,0 +1,472 @@
+C51 COMPILER V8.08   MAIN                                                                  07/29/2019 16:28:43 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\obj\main.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE main.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\inc
+                    -\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customizati
+                    -on) DEFINE(LIB_RELEASE) PRINT(.\obj\main.lst) OBJECT(.\obj\main.obj)
+
+line level    source
+
+   1          /*++
+   2          
+   3          Copyright (c) 2001 Sunplus Technology Co., Ltd.
+   4          
+   5          Module Name:
+   6          
+   7                          main.c
+   8          
+   9          Abstract:
+  10          
+  11                          Module related to main routine
+  12          
+  13          Environment:
+  14          
+  15                          Keil C51 Compiler
+  16          
+  17          Revision History:
+  18          
+  19                          08/28/2001              Chi-Yeh Tsai    created
+  20          
+  21          --*/
+  22          
+  23          //=============================================================================
+  24          //Header file
+  25          //=============================================================================
+  26          #define __FILE   __FILE_ID_MAIN__
+  27          #include "general.h"
+  28          #include "sys_svc_def.h"
+  29          #include "asicreg.h"
+  30          #include "main.h"
+  31          #include "initio.h"
+  32          #include "setmode.h"
+  33          //#include "disk.h"
+  34          //#include "sensor.h"
+  35          #include "timer.h"
+  36          #include "bulkout.h"
+  37          #include "cardlink.h"
+  38          #include "class.h"
+  39          #include "sd_def.h"
+  40          #include "pv_task.h"
+  41          #include "utility.h"
+  42          #include "ctlsetup.h"
+  43          #include "doslink.h"
+  44          #include "uiflow.h"
+  45          #include "sp1k_util_api.h"
+  46          #include "sp1k_hal_api.h"
+  47          #include "sp1k_snap_api.h"
+  48          #include "snap_qtable.h"
+  49          #include "sp1k_pv_api.h"
+  50          //#include "sidcOption.h"
+  51          //richie@mi     0409
+  52          #include "usbmsdc2.h"
+  53          #include "cmd_func_fpga.h"
+C51 COMPILER V8.08   MAIN                                                                  07/29/2019 16:28:43 PAGE 2   
+
+*** WARNING C318 IN LINE 53 OF main.c: can't open file 'cmd_func_fpga.h'
+  54          #include "gpio.h"
+  55          //#include "dist_func.h"
+  56          
+  57          //richie@si0418
+  58          //#include "sidcinit.h"
+  59          //#include "sidcmain.h"
+  60          
+  61          //patch4.3@richie@zo
+  62          extern xdata UINT16     G_usZoomOSDTimer;
+  63          //patch4.4@richie@dsi begin
+  64          #if     ( DOSRAM_OPTION == 1 )
+  65          extern  xdata   UINT32  G_ulDRAMSTORFAT1AddrTemp;
+  66          #endif
+  67          
+  68          
+  69          
+  70          //patch5.1@Add copy to card function begin
+  71          #include "copydisk.h"
+  72          //patch5.1@Add copy to card function end
+  73          
+  74          #include "sdfunc.h"
+  75          
+  76          #include "os_api.h"
+  77          #include "os_msg.h"
+  78          
+  79          //#ifdef ICAT_OPTION//xian ++
+  80          #include "icat_stub.h"  //xian ++
+  81          //#endif
+  82          
+  83          //#include "cardusr.h"
+  84          #include "sp1k_hal_api.h"
+  85          //#include "sp1k_awb_api.h"//wangjg++
+  86          #include "dpf_scan.h"
+  87          #include "hal_dram.h"
+  88          #include "dbg_def.h"
+  89          #include "cmd.h"
+  90          #include "hal_global.h"
+  91          #include "sp1k_cdsp_api.h"
+  92          #include "cdsp_init.h"
+  93          #include "app_init.h"
+  94          
+  95          #include "sp1k_cdsp_api.h"
+  96          #include "reg_def.h"
+  97          #include "global_init.h"
+  98          #include "host_func_opt.h"
+  99          #include "app_dev_disp.h"
+ 100          
+ 101          //=============================================================================
+ 102          //Symbol
+ 103          //=============================================================================
+ 104          UINT8 dosSdBgWriteEnd(void);
+ 105          void dosSdBgWrite(void);
+ 106          
+ 107          UINT8 code RsvCodeBuff[0x1];
+ 108          //Reserved for debug
+ 109          UINT8 xdata __STACK[0x200] _at_ 0x7800;
+ 110          //-----------------------------------------------------------------------------
+ 111          //Constant
+ 112          //-----------------------------------------------------------------------------
+ 113          
+ 114          //-----------------------------------------------------------------------------
+C51 COMPILER V8.08   MAIN                                                                  07/29/2019 16:28:43 PAGE 3   
+
+ 115          //Variable
+ 116          //-----------------------------------------------------------------------------
+ 117          //bit flag
+ 118          
+ 119          xdata   UINT8   G_btStopStream = 0;
+ 120          xdata UINT8 G_calibrationMode = 0;
+ 121          
+ 122          xdata   UINT8   G_bUSBSpeed = 0;
+ 123          //state and     error code
+ 124          //type of storage used
+ 125          xdata   UINT8   G_ucStorageType;
+ 126          //command and data buffer of control pipe and bulk in/out pipes
+ 127          xdata   UINT8   G_ucCtrlCommand[K_CtrlCommandSize];
+ 128          xdata   UINT8   G_ucCtrlData[K_CtrlDataSize];
+ 129          xdata   UINT8   G_ucStorCommand[K_StorCommandSize];
+ 130          #if     ( SIMULATE == 1 ) // WWWW
+              xdata   UINT8   G_ucStorData[K_DMA_MaxSize];
+              #else
+ 133          xdata   UINT8   G_ucStorData[K_DMA_MaxSize]     _at_ 0x3800;    //ada@0118
+ 134          #endif
+ 135          /*++
+ 136          xdata   UINT8   G_ucStor2Command[K_Stor2CommandSize];
+ 137          xdata   UINT8   G_ucStor2Data[K_Stor2DataSize];
+ 138          --*/
+ 139          //pointer to data buffer
+ 140          UINT8   *G_pucCtrlDataPointer;  //for both CODE and     DATA area
+ 141          xdata   UINT8   *G_pucStorDataPointer;
+ 142          /*++
+ 143          xdata   UINT8   *G_pucStor2DataPointer;
+ 144          --*/
+ 145          //storage interface     N belongs to which USB class
+ 146          
+ 147          //richie
+ 148          
+ 149          //patch4.4@richie@usbvd
+ 150          
+ 151          //richie@ae0305
+ 152          xdata   UINT8   G_ucStrobeCnt;
+ 153          xdata   UINT8   G_ucStrobeRdy;
+ 154          
+ 155          //patch4.4@richie@flip
+ 156          xdata   UINT8   G_ucFlip;//bit1:H-flip, bit2:V-flip
+ 157          
+ 158          //------------------------------------------------------------------------------
+ 159          //L1 Global     variables
+ 160          //------------------------------------------------------------------------------
+ 161          //ISP
+ 162          xdata   UINT8   G_ISP;
+ 163          xdata   UINT32  G_ISPDRAMAddr;
+ 164          xdata   UINT32  G_ISPROMAddr;
+ 165          xdata   UINT32  G_ISPSecAddr;
+ 166          xdata   UINT16  G_ISPSecCnt;
+ 167          
+ 168          //patch4.3@richie@je0531 begin
+ 169          //data  UINT8   G_ucISPCheck1;
+ 170          //data  UINT8   G_ucISPCheck2;
+ 171          //patch4.3@richie@je0531 end
+ 172          
+ 173          xdata   UINT32  G_timerCheckTestUnit;
+ 174          xdata   UINT8   G_testUnitReadyFlag;
+ 175          xdata   UINT8   G_ae_ON;
+ 176          xdata   UINT8   G_ucPccamTuningFlag;
+C51 COMPILER V8.08   MAIN                                                                  07/29/2019 16:28:43 PAGE 4   
+
+ 177          //xdata      UINT8      G_ucProbeControlFlag;  
+ 178          xdata   UINT8   G_ucCommitControlFlag; 
+ 179          xdata   UINT8   G_FrameRate;
+ 180          xdata   UINT8   G_FrameIndex; 
+ 181          xdata   UINT8   G_FormatIndex; 
+ 182          
+ 183          #if STILL_SNAP_ON
+ 184          xdata   UINT8   G_StillFormatIndex;
+ 185          xdata   UINT8   G_StillFrameIndex; 
+ 186          xdata   UINT8    G_ucStillImageTriggerFlag;
+ 187          #endif
+ 188          
+ 189          xdata   UINT32  G_PixelClk;
+ 190          xdata   UINT16  G_HTotal;
+ 191          xdata   UINT16  G_VTotal; 
+ 192          xdata   UINT8   G_USBSetInterface; 
+ 193          xdata   UINT8   G_USBAudSetInterface;
+ 194          //xdata UINT8   G_USBinterin; 
+ 195          xdata UINT8     G_USBAudioSetInterface; 
+ 196          
+ 197          //device component
+ 198          xdata   UINT8   G_SensorID;                             //TBD by YGLiu
+ 199          //patch5.0@richie@sdram mapping mark
+ 200          //xdata   UINT8   G_CardType;                     //TBD by WZH
+ 201          xdata   UINT8   G_AudioModuleType;              //0:Buildin     audio CODEC, 1: External AC-97 Codec
+ 202          xdata   UINT8   G_DisplayType;                  //TBD by Prover
+ 203          //mode setting
+ 204          //xdata   UINT8   G_QtableIndex;                  //0: Q50,     1:Q70, 2:Q80, 3:Q85, 4:Q88,     5:Q90, 6:Q92, 7:Q95     //ada@0225
+ 205          xdata   UINT8   G_QtableIndex;                  //0: Q50, 1:Q70, 2:Q80, 3:Q85, 4:Q88, 5:Q90, 6:Q92,     7:Q95
+ 206          xdata   UINT8   G_DRAMint;
+ 207          //user interface
+ 208          xdata   UINT16  G_ObjectID;                             //Current object ID
+ 209          xdata   UINT8   G_ObjectType;                   //Current object type, 0: still image, 1: videoclip     with audio,     2: videoclip w
+             -/o audio 3: audio     file
+ 210          xdata   UINT16  G_KeyState;                             //UI key state, this variable is set by the     polling function or     sent by the     US
+             -B        vendor command
+ 211          //component     setting
+ 212          xdata   UINT8   G_FrameRate;
+ 213          xdata   UINT16  G_Hsize;                                //Full image width of the sensor
+ 214          xdata   UINT16  G_Vsize;                                //Full imgage height of the     sensor
+ 215          xdata   UINT16  G_MHSize;                               //Monitor mode H size
+ 216          xdata   UINT16  G_MVSize;                               //Monitor mode V size
+ 217          xdata   UINT16  G_DSPHsize;                             //Display buffer horizontal     size
+ 218          xdata   UINT16  G_DSPVsize;                             //Display buffer vertical size
+ 219          //xdata UINT8   G_3ACount=0;
+ 220          xdata   UINT8   G_AWBCount=0;
+ 221          //xdata UINT8   G_3AFlag;
+ 222          xdata   UINT8   G_PVZFactor;                    //Current zoom ratio in the     preview mode, this ratio is     used for later capture
+ 223          //xdata UINT8   G_PBZFactor;                    //Current zoom ratio in the     playback mode.
+ 224          xdata   UINT8   G_PBID;                                 //DSC playback ID
+ 225          xdata   UINT8   G_GOSDID;                               //Graphic OSD ID
+ 226          //SDRAM arrangement
+ 227          xdata   UINT32  G_AudioAddr;                    //Audio buffer starting address
+ 228          xdata   UINT32  G_FreeAddr;                             //Fress SDRAM space     starting address (this space is used as temprary buffer du
+             -ring camera operation)
+ 229          xdata   UINT32  G_RawImageBufAddr;              //patch4.2@yichang@0513 for     continue snapping
+ 230          
+ 231          //date/time
+ 232          xdata   UINT8   G_DateStamp;                    //0: Date stamp function is     off, 1: date stamp function     is on
+ 233          xdata   dateStc_t       G_DATEINFO;
+ 234          //USB
+ 235          //testing
+C51 COMPILER V8.08   MAIN                                                                  07/29/2019 16:28:43 PAGE 5   
+
+ 236          
+ 237          //For Videoclip
+ 238          xdata UINT8     G_ABVLCIntFlag;
+ 239          xdata UINT32    G_AVLCSize;
+ 240          xdata UINT32    G_BVLCSize;
+ 241          
+ 242          //patch4.4@richie@sus
+ 243          xdata UINT8     G_ucSuspend;
+ 244          
+ 245          //patch4.5@richie@checksum isp begin
+ 246          #if     0//(ISPCHECKSUM_OPTION)
+              xdata UINT16 G_usISPCheckSum;
+              #endif
+ 249          //patch4.5@richie@checksum isp end
+ 250          
+ 251          //patch4.5@richie@vender info begin
+ 252          //patch5.2.1@richie@mmlun begin
+ 253          #if 0
+              xdata UINT8     G_ucMSDC_CARD;
+              xdata UINT8     G_ucMSDC_BUILT_IN;
+              #endif
+ 257          //patch5.2.1@richie@mmlun end
+ 258          /*
+ 259          xdata    UINT8   G_ScsiVendorInformation[8]     =
+ 260          {
+ 261                           'S',  'u',      'n',  'p',      'l',  'u',      's', 0x20,
+ 262          };
+ 263          
+ 264          xdata    UINT8   G_ScsiProductIdentification[16] =
+ 265          {
+ 266                           'S',  'u',      'n',  'p',      'l',  'u',      's',  ' ',
+ 267                           'S',  'P',      'C',  'A',      '5',  '3',      '3', 0x20,
+ 268          };
+ 269          
+ 270          xdata    UINT8   G_ScsiProductRevisionLevel[4] =
+ 271          {
+ 272                           '1',  '.',      '0',  '0',
+ 273          };
+ 274          */
+ 275          //patch4.5@richie@vender info end
+ 276          
+ 277          //patch3.2@ada@0401     For     file system     refreshing when back from mass storage
+ 278          //For system refreshing when back from mass     storage
+ 279          xdata UINT8     G_MassStorage_Mode;
+ 280          
+ 281          //patch4.2@ada@0527     for     key     scan
+ 282          xdata UINT8     G_MainLoopCount;
+ 283          
+ 284          //allen added
+ 285          
+ 286          //sunyong added
+ 287          xdata UINT8 IOTrap;
+ 288          //xdata UINT8 G_ShadowData[0x1000]      _at_ 0x6000;
+ 289          
+ 290          //addby phil @ 08.04.30
+ 291          UINT32 xdata G_TimerRef;
+ 292          
+ 293          // wyeo@0521, patch     4.2
+ 294          #if     (NANDF_OPTION == 1 && CARD_OPTION == 1)
+ 295          
+ 296          // when 1, use 0x5B     cammand to test nand reserve block
+ 297          // sjould 0     to reduce code size
+C51 COMPILER V8.08   MAIN                                                                  07/29/2019 16:28:43 PAGE 6   
+
+ 298          #define K_TEST_RESERVE_BLOCK    0
+ 299          
+ 300          UINT8 TestReserveBlock(void);
+ 301          #endif
+ 302          
+ 303          /* for dram assert*/
+ 304          UINT8 xdata G_DramAssert;
+ 305          
+ 306          #if SUPPORT_MCU_WTD
+ 307          UINT8 check_usb_msdc_flag = 0;
+ 308          #endif
+ 309          
+ 310          
+ 311          
+ 312          void mainJobDo(void);
+ 313          void mainTestAp(void);
+ 314          
+ 315          #if 1
+ 316          #define _DBG_CLR_WARNING_
+ 317          
+ 318          extern void jump_main(void);
+ 319          extern UINT8 code K_CharFont[];
+ 320          extern UINT8 code K_CharFont1[];
+ 321          extern UINT8 code GOSD_data0[];
+ 322          #endif
+ 323          
+ 324          //Flow 17
+ 325          #if 0
+              extern void DIVSETX(UINT32 Divindend);
+              extern void DIVSETY(UINT32 Divisor);
+              extern UINT32 DIVDO(void);
+              
+              //2 Don't chang the sequence of function-calling
+              #define UserDiv(Divindend, Divisor, Quotient) { \
+                                                                 DIVSETY(Divisor); \
+                                                                 DIVSETX(Divindend); \
+                                                                 Quotient = DIVDO();\
+                                                            }
+              #endif
+ 337          
+ 338          /*
+ 339              Add for FPGA verify used.
+ 340              Refers to "#define FPGA_MEM_POOL_ADDR   (0x80000UL + 0x8000UL)".
+ 341          */
+ 342          #ifdef FPGA_MEM_POOL_ADDR
+ 343          UINT8 xdata G_FPGAMemPool[0x3000] _at_ 0xc000;
+ 344          #endif
+ 345          
+ 346          extern code UINT16 pkgChipId;
+ 347          //=============================================================================
+ 348          //Program
+ 349          //=============================================================================
+ 350          /**
+ 351           * @brief     main
+ 352           * @param     NONE
+ 353           * @retval    NONE
+ 354           * @see       none
+ 355           * @author    Phil Lin
+ 356           * @since     2010-01-01
+ 357           * @todo      N/A
+ 358           * @bug       N/A
+ 359          */
+C51 COMPILER V8.08   MAIN                                                                  07/29/2019 16:28:43 PAGE 7   
+
+ 360          void
+ 361          __main(
+ 362                  void
+ 363          )
+ 364          {
+ 365   1              globalInit();
+ 366   1              
+ 367   1              mainJobDo();
+ 368   1      }
+ 369          
+ 370          /**
+ 371           * @brief     mainJobDo
+ 372           * @param     NONE
+ 373           * @retval    NONE
+ 374           * @see       none
+ 375           * @author    Phil Lin
+ 376           * @since     2010-01-01
+ 377           * @todo      N/A
+ 378           * @bug       N/A
+ 379          */
+ 380          void
+ 381          mainJobDo(
+ 382                  void
+ 383          )
+ 384          {
+ 385   1              UINT32 mainCnt = 0;
+ 386   1      
+ 387   1              #if SUPPORT_MCU_WTD
+ 388   1              static UINT8 flag = 0;
+ 389   1              static UINT32 dleay_cnt = 0;
+ 390   1              #endif
+ 391   1              
+ 392   1              /*
+ 393   1                      Note: The uart interrupt always be disabled.
+ 394   1                      The cmd line request handled by flag pooling
+ 395   1              */
+ 396   1              ES0 = 0;
+ 397   1              while (1) {
+ 398   2                      mainCnt++;
+ 399   2      
+ 400   2                      /* feed the watch dog */
+ 401   2                      dbgWdtFeed(-1);
+ 402   2                      
+ 403   2                      /* Check if there's any Message in Msg-Que */
+ 404   2                      if (osMsgQuery() == TRUE) {
+ 405   3                              osMsgRcv();             
+ 406   3                      }
+ 407   2      
+ 408   2                      /* Task schedule */
+ 409   2                      osSched();
+ 410   2      
+ 411   2                      /* system service */
+ 412   2                      sysSvcSched(&mainCnt);
+ 413   2      
+ 414   2                      #if SUPPORT_MCU_WTD
+ 415   2                      if (check_usb_msdc_flag) {
+ 416   3                              if (++dleay_cnt == 200/*0xA2C2A*/) {
+ 417   4                                      dleay_cnt = 0;
+ 418   4                                      appSetWTDHeartbeat(flag);
+ 419   4                                      flag = !flag;
+ 420   4                              }
+ 421   3                      }
+C51 COMPILER V8.08   MAIN                                                                  07/29/2019 16:28:43 PAGE 8   
+
+ 422   2                      #endif
+ 423   2              }
+ 424   1      }
+ 425          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    134    ----
+   CONSTANT SIZE    =      1    ----
+   XDATA SIZE       =    258       4
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,86 @@
+C51 COMPILER V8.08   INTR_PTR_FUNC                                                         06/16/2022 10:11:56 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE INTR_PTR_FUNC
+OBJECT MODULE PLACED IN .\obj\intr_ptr_func.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE intr_ptr_func.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\
+                    -..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\cu
+                    -stomization) DEFINE(LIB_RELEASE) PRINT(.\obj\intr_ptr_func.lst) OBJECT(.\obj\intr_ptr_func.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2007 by Sunplus mMedia  Technology Co., Ltd.       *
+   3           *                                                                         *
+   4           *  This software is copyrighted by and is the property of Sunplus mMedia  *
+   5           *  Technology Co., Ltd. All rights are reserved by Sunplus mMedia Techno- *
+   6           *  logy Co., Ltd. This software may only be used in accordance with the   *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,    *
+   8           *  distribution, or disclosure of this software is expressly forbidden.   *
+   9           *                                                                         *
+  10           *  This Copyright notice "M U S T" not be removed or modified without     *
+  11           *  prior written consent of Sunplus mMedia Technology  Co., Ltd.          *
+  12           *                                                                         *
+  13           *  Sunplus mMedia Technology Co., Ltd. reserves the right to modify this  *
+  14           *  software without notice.                                               *
+  15           *                                                                         *
+  16           *  Sunplus mMedia Technology Co., Ltd.                                    *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,            *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                               *
+  19           *                                                                         *
+  20           **************************************************************************/
+  21          #include "general.h"
+  22          #include "timer.h"
+  23          #include "func_ptr.h"
+  24          #include "hal_global.h"
+  25          /**************************************************************************
+  26           *                           C O N S T A N T S                            *
+  27           **************************************************************************/
+  28          
+  29          /**************************************************************************
+  30           *                              M A C R O S                               *
+  31           **************************************************************************/
+  32          
+  33          /**************************************************************************
+  34           *                          D A T A    T Y P E S                          *
+  35           **************************************************************************/
+  36          
+  37          /**************************************************************************
+  38           *                         G L O B A L    D A T A                         *
+  39           **************************************************************************/
+  40          pFuncTmr1 code intrFuncArray[] = {
+  41                  NULL,
+  42          //      (pFuncTmr)HAL_USBForceFS,
+  43          };
+  44          
+  45          pFuncGT2 code GTmr2FuncCallList[] = {
+  46                  NULL,
+  47                  //(pFuncTmr)pFunc_frontOpShutterClose,
+  48          };
+  49          /**************************************************************************
+  50           *                 E X T E R N A L    R E F E R E N C E S                 *
+  51           **************************************************************************/
+  52          
+  53          
+C51 COMPILER V8.08   INTR_PTR_FUNC                                                         06/16/2022 10:11:56 PAGE 2   
+
+  54          
+  55          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =      4    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

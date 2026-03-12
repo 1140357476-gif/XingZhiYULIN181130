@@ -1,0 +1,10 @@
+Build target 'prj'
+creating library .\obj\drv_front.LIB...
+TRANSFER
+".\obj\front_OV_OV5647_RAW.obj" 
+TO ".\obj\drv_front.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+".\obj\drv_front.LIB" - 0 Error(s), 0 Warning(s).

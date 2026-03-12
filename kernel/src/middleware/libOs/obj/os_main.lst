@@ -1,0 +1,325 @@
+C51 COMPILER V8.12   OS_MAIN                                                               12/29/2014 15:17:56 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE OS_MAIN
+OBJECT MODULE PLACED IN .\obj\os_main.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE os_main.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\
+                    -inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiz
+                    -ation) DEFINE(LIB_RELEASE) PRINT(.\obj\os_main.lst) OBJECT(.\obj\os_main.obj)
+
+line level    source
+
+   1          /*
+   2          
+   3          Copyright (c) 2007 Sunplus Technology Co., Ltd.
+   4          
+   5          Module Name:
+   6          
+   7                          os_main.c
+   8          
+   9          Abstract:
+  10          
+  11                          Module related to OS
+  12          
+  13          Environment:
+  14          
+  15                          Keil C51 Compiler
+  16          
+  17          Revision History:
+  18          
+  19                          07/24/2007              Phil    created
+  20          
+  21          */
+  22          
+  23          //=============================================================================
+  24          //Header file
+  25          //=============================================================================
+  26          #include "general.h"
+  27          #define SYS_OS_INTERNAL // for libOs internal use
+  28          #include "func_os_def.h"
+  29          #include "os_api.h"
+  30          #include "os_main.h"
+  31          #include "func_ptr.h"
+  32          //=============================================================================
+  33          //Symbol
+  34          //=============================================================================
+  35          
+  36          /**************************************************************************
+  37           *                          D A T A    T Y P E S                          *
+  38           **************************************************************************/
+  39          typedef void (code* pfp)(void);
+  40          
+  41          //-----------------------------------------------------------------------------
+  42          //Constant
+  43          //-----------------------------------------------------------------------------
+  44          #define OS_TASK_WAIT_EVER               0
+  45          #define OS_CHECK_TO_RUN(osTaskId)               {\
+  46                                                                                                  if ((osTaskId)) {\
+  47                                                                                                          (*pTcb->osTask)();\
+  48                                                                                                          if (pTcb->osTaskID) {\
+  49                                                                                                                  osTaskId = 0;\
+  50                                                                                                                  pTcb->osTaskDly = pTcb->osTaskPrio;\
+  51                                                                                                          }\
+  52                                                                                                  }\
+  53                                                                                                  pTcb = pTcb->osTcbNext;\
+C51 COMPILER V8.12   OS_MAIN                                                               12/29/2014 15:17:56 PAGE 2   
+
+  54                                                                                                  if (pTcb == pFree){\
+  55                                                                                                          break;\
+  56                                                                                                  }\
+  57                                                                                          }
+  58          //-----------------------------------------------------------------------------
+  59          //Variable
+  60          //-----------------------------------------------------------------------------
+  61          static UINT8 xdata OSMapTbl[9] = {0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x00};
+  62          static OS_TCB xdata osTaskBuf[OS_TASK_MAX];
+  63          static OS_TCB xdata* xdata pFreeTaskList;
+  64          static OS_TCB xdata* xdata pTaskList;
+  65          static UINT8 bdata osTaskState;
+  66          sbit OS_TASK_0 = osTaskState^0;
+  67          sbit OS_TASK_1 = osTaskState^1;
+  68          sbit OS_TASK_2 = osTaskState^2;
+  69          sbit OS_TASK_3 = osTaskState^3;
+  70          sbit OS_TASK_4 = osTaskState^4;
+  71          sbit OS_TASK_5 = osTaskState^5;
+  72          sbit OS_TASK_6 = osTaskState^6;
+  73          sbit OS_TASK_7 = osTaskState^7;
+  74          
+  75          extern SYS_OS_DCL pFuncOS code funcOsArray[];
+  76          
+  77          //SysMode_t osSysMode = OS_SYS_MODE_DEFAULT;
+  78          osSysMode_t osSysMode = OS_SYS_MODE_STILL_PV;
+  79          
+  80          // add by phil for correcting the call tree for function pointer E
+  81          //=============================================================================
+  82          //Program
+  83          //=============================================================================
+  84          //-----------------------------------------------------------------------------
+  85          //osInit
+  86          //-----------------------------------------------------------------------------
+  87          #if (OS_TASK_MAX)
+  88          void osInit(void ) USING_0
+  89          {
+  90   1              UINT8 i;
+  91   1      
+  92   1              pFreeTaskList = osTaskBuf;
+  93   1              pTaskList = (OS_TCB*)0;
+  94   1              for (i = 0; i < OS_TASK_MAX; i++) {
+  95   2                      osTaskBuf[i].osTask = (pFunc)0;
+  96   2                      osTaskBuf[i].osTaskID = i;
+  97   2                      osTaskBuf[i].osTaskDly = osTaskBuf[i].osTaskPrio = OS_TASK_WAIT_EVER;
+  98   2                      osTaskBuf[i].osTaskBank = 0;
+  99   2                      osTaskBuf[i].osTcbNext = &osTaskBuf[i + 1];
+ 100   2              }
+ 101   1              osTaskBuf[OS_TASK_MAX - 1].osTcbNext = (OS_TCB*)0;
+ 102   1      
+ 103   1              /*The first task must be always in ready*/
+ 104   1              osTaskState = 0x01;
+ 105   1      }
+ 106          //-----------------------------------------------------------------------------
+ 107          //osTaskCreate
+ 108          //-----------------------------------------------------------------------------
+ 109          
+ 110          UINT8 osTaskCreate(pFunc TaskFunc, UINT8 TaskPrio) USING_0
+ 111          {
+ 112   1              UINT8 status;
+ 113   1              OS_TCB* pTcb;
+ 114   1      /*
+ 115   1              if (TaskBank > (SP1K_BANK_NUM_MAX - 1)) {
+C51 COMPILER V8.12   OS_MAIN                                                               12/29/2014 15:17:56 PAGE 3   
+
+ 116   1                      //Task bank must be 0~14!
+ 117   1                      return;
+ 118   1              }
+ 119   1      */
+ 120   1              ENTER_CRITICAL( status );
+ 121   1              pTcb = pFreeTaskList;
+ 122   1              if (pFreeTaskList) {
+ 123   2                      pFreeTaskList = pFreeTaskList->osTcbNext;
+ 124   2              }
+ 125   1              if (pTcb == (OS_TCB*)0) {
+ 126   2                      //ran out of OS task control block!
+ 127   2                      EXIT_CRITICAL( status );
+ 128   2                      return -1;
+ 129   2              }
+ 130   1              pTcb->osTask = TaskFunc;
+ 131   1              pTcb->osTaskPrio = TaskPrio;
+ 132   1              pTcb->osTaskDly = TaskPrio;
+ 133   1      //      pTcb->osTaskBank = TaskBank;
+ 134   1      
+ 135   1              pTaskList = pTcb;
+ 136   1              EXIT_CRITICAL( status );
+ 137   1      
+ 138   1              //printf("ID %bu\n", pTaskList->osTaskID);
+ 139   1              return pTaskList->osTaskID;
+ 140   1      }
+ 141          
+ 142          //-----------------------------------------------------------------------------
+ 143          //osTimeTick
+ 144          //
+ 145          //Executed in timer interrupt routine
+ 146          //-----------------------------------------------------------------------------
+ 147          void osTimeTick(void) USING_2
+ 148          {
+ 149   1              OS_TCB* pTcb;
+ 150   1              OS_TCB* pFree;
+ 151   1      
+ 152   1              pTcb = osTaskBuf;
+ 153   1              pFree = pFreeTaskList;
+ 154   1      
+ 155   1              do {
+ 156   2                      if (pTcb->osTaskID) {
+ 157   3                              if (--pTcb->osTaskDly == 0) {
+ 158   4      #ifndef TS
+ 159   4                                      osTaskState |= OSMapTbl[pTcb->osTaskID];
+ 160   4      #else
+                                              osTaskState |= (1 << pTcb->osTaskID);
+              #endif
+ 163   4                                      //printf("State is %bu\n", osTaskState);
+ 164   4                              }
+ 165   3                      }
+ 166   2                      pTcb = pTcb->osTcbNext;
+ 167   2              } while (pTcb != pFree);
+ 168   1      
+ 169   1      }
+ 170          
+ 171          //-----------------------------------------------------------------------------
+ 172          //osSched
+ 173          //
+ 174          //Execute tasks which are already in ready in task list
+ 175          //-----------------------------------------------------------------------------
+ 176          void osSched(void) USING_0
+ 177          {
+C51 COMPILER V8.12   OS_MAIN                                                               12/29/2014 15:17:56 PAGE 4   
+
+ 178   1              static OS_TCB* pTcb;
+ 179   1              static OS_TCB* pFree;
+ 180   1              pFuncOS* pf;
+ 181   1      
+ 182   1              pTcb = osTaskBuf;
+ 183   1              pFree = pFreeTaskList;
+ 184   1      
+ 185   1      //dbgTimerStart();
+ 186   1      //printf("State is %bu\n", osTaskState);
+ 187   1              do {
+ 188   2                      OS_CHECK_TO_RUN(OS_TASK_0);
+ 189   2                      OS_CHECK_TO_RUN(OS_TASK_1);
+ 190   2                      OS_CHECK_TO_RUN(OS_TASK_2);
+ 191   2                      OS_CHECK_TO_RUN(OS_TASK_3);
+ 192   2                      OS_CHECK_TO_RUN(OS_TASK_4);
+ 193   2                      OS_CHECK_TO_RUN(OS_TASK_5);
+ 194   2                      OS_CHECK_TO_RUN(OS_TASK_6);
+ 195   2                      OS_CHECK_TO_RUN(OS_TASK_7);
+ 196   2                      pf = funcOsArray; // add by phil for correcting the call tree for function pointer
+ 197   2              } while(0);
+ 198   1      
+ 199   1      //dbgTimerStop();
+ 200   1              //printf("osSched finished \n");
+ 201   1      }
+ 202          
+ 203          //-----------------------------------------------------------------------------
+ 204          //osTaskIdle
+ 205          //
+ 206          //
+ 207          //-----------------------------------------------------------------------------
+ 208          UINT8 osTaskIdle(void) USING_0
+ 209          {
+ 210   1              //printf("osTaskIdle\n");
+ 211   1              return SUCCESS;
+ 212   1      }
+ 213          
+ 214          //-----------------------------------------------------------------------------
+ 215          //osActiveFuncSet
+ 216          //
+ 217          //
+ 218          //-----------------------------------------------------------------------------
+ 219          
+ 220          void osActiveFuncSet(pFunc Func) USING_0
+ 221          {
+ 222   1              UINT8 status;
+ 223   1      /*
+ 224   1              if (FuncBank > SP1K_BANK_NUM_MAX) {
+ 225   1                      return;
+ 226   1              }
+ 227   1      */
+ 228   1              ENTER_CRITICAL( status );
+ 229   1              osTaskBuf[0].osTask = Func;
+ 230   1      //      osTaskBuf[0].osTaskBank = FuncBank;
+ 231   1              EXIT_CRITICAL( status );
+ 232   1      }
+ 233          //-----------------------------------------------------------------------------
+ 234          //osTaskSuspend
+ 235          //
+ 236          //
+ 237          //-----------------------------------------------------------------------------
+ 238          
+ 239          void osTaskSuspend(UINT8 TaskID) USING_0
+C51 COMPILER V8.12   OS_MAIN                                                               12/29/2014 15:17:56 PAGE 5   
+
+ 240          {
+ 241   1              UINT8 status;
+ 242   1      
+ 243   1              if (TaskID > OS_TASK_MAX) {
+ 244   2                      return;
+ 245   2              }
+ 246   1              ENTER_CRITICAL( status );
+ 247   1              osTaskBuf[TaskID].osTaskDly = OS_TASK_WAIT_EVER;
+ 248   1              osTaskState &= ~OSMapTbl[TaskID];
+ 249   1              EXIT_CRITICAL( status );
+ 250   1              //printf("osTaskState is %bu\n", osTaskState );
+ 251   1      }
+ 252          //-----------------------------------------------------------------------------
+ 253          //osTaskResume
+ 254          //
+ 255          //
+ 256          //-----------------------------------------------------------------------------
+ 257          
+ 258          void osTaskResume(UINT8 TaskID) USING_0
+ 259          {
+ 260   1              UINT8 status;
+ 261   1      
+ 262   1              if (TaskID > OS_TASK_MAX) {
+ 263   2                      return;
+ 264   2              }
+ 265   1              ENTER_CRITICAL( status );
+ 266   1              osTaskBuf[TaskID].osTaskDly = osTaskBuf[TaskID].osTaskPrio;
+ 267   1              osTaskState |= OSMapTbl[TaskID];
+ 268   1              EXIT_CRITICAL( status );
+ 269   1      }
+ 270          
+ 271          //-----------------------------------------------------------------------------
+ 272          //osAppModeSet
+ 273          //-----------------------------------------------------------------------------
+ 274          void osSysModeSet(osSysMode_t mode) USING_0
+ 275          {
+ 276   1              if(mode < OS_SYS_MODE_MAX)
+ 277   1                      osSysMode = mode;
+ 278   1      }
+ 279          
+ 280          osSysMode_t osSysModeGet(void) USING_0
+ 281          {
+ 282   1              return osSysMode;
+ 283   1      }
+ 284          
+ 285          #endif /*OS_TASK_MAX*/
+ 286          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1079    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     84      14
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+C51 COMPILER V8.12   OS_MAIN                                                               12/29/2014 15:17:56 PAGE 6   
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

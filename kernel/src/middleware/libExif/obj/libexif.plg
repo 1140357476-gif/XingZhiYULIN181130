@@ -1,0 +1,27 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+F:\WORK\SuoDa\221123 新板 按键 屏显 偏红 L 开关机 曝光\CDAF\kernel\src\middleware\libExif\libexif.uv2
+Project File Date:  12/31/2019
+
+<h2>Output:</h2>
+Build target 'libexif'
+compiling exif_ver.c...
+compiling exif_entry.c...
+compiling exif_fun.c...
+compiling exifcon.c...
+creating library .\obj\libexif.LIB...
+TRANSFER
+".\obj\exif_ver.obj",
+".\obj\exif_entry.obj",
+".\obj\exif_fun.obj",
+".\obj\exifcon.obj" 
+TO ".\obj\libexif.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\libexif_post.bat
+F:\WORK\SuoDa\221123 新板 按键 屏显 偏红 L 开关机 曝光\CDAF\kernel\src\middleware\libExif>copy obj\libexif.LIB ..\..\..\lib\libExif.LIB 
+已复制         1 个文件。
+".\obj\libexif.LIB" - 0 Error(s), 0 Warning(s).

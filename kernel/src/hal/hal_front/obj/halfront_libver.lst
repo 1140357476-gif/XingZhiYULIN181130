@@ -1,0 +1,123 @@
+C51 COMPILER V8.08   HALFRONT_LIBVER                                                       09/21/2019 10:52:16 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE HALFRONT_LIBVER
+OBJECT MODULE PLACED IN .\obj\halfront_libver.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE halfront_libver.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;.
+                    -.\..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\
+                    -customization) DEFINE(LIB_RELEASE) PRINT(.\obj\halfront_libver.lst) OBJECT(.\obj\halfront_libver.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2007-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           *  Author: Matt Wang
+  22           *  1000, 20081013 Matt Wang
+  23           *    a. separate hal_front from hal_image.
+  24           *  1001, 20081016 Matt Wang
+  25           *    a. add HAL_I2cRegRead().
+  26           *  1002, 20081027 wenguo
+  27           *    a. VD wait use 0x2A66 instead of 0x2AB8
+  28           *  1003, 20081105 Matt Wang
+  29           *    a. set VDFintNum and VDRintNum=1 in HAL_FrontIntrEnable().
+  30           *  1004, 20081110 Matt Wang
+  31           *    a. busy waiting must be before any reg writing in HAL_I2cCmdTableSend()
+  32           *       and HAL_I2cRegRead().
+  33           *  1005, 20081113 Matt Wang
+  34           *    a. set master clk phase in HAL_FrontParaMClkCfgSet().
+  35           *  1006, 20081118 Matt Wang
+  36           *    a. shorten verStr[] to reduce code size usage.
+  37           *  1007, 20081126 Matt Wang
+  38           *    a. modify HAL_I2cRegRead() wait busy flow to fix first read back data error.
+  39           *  1008, 20081208 Matt Wang
+  40           *    a. [0033193] fix getting clk division in HAL_FrontParaMClkCfgGet() and
+  41           *       HAL_FrontParaPClkCfgGet().
+  42           *    b. [0033193] add argument *pphase in HAL_FrontParaMClkCfgGet().
+  43           *  1009, 20081209 Matt Wang
+  44           *    a. [0034493] set master clk driving in HAL_FrontParaMClkCfgSet().
+  45           *    b. [0034493] add argument *pdrv in HAL_FrontParaMClkCfgGet().
+  46           *  1010, 20081229 Matt Wang
+  47           *    a. [0034567] add i2c 16-bit read api HAL_I2cReg16Read().
+  48           *  1011, 20090321 Phil Lin
+  49           *    a. add new i2c function for interrupt routine.
+  50           *  1012, 20090727 Phil Lin
+  51           *    a. function call tree correction
+  52           *    b. compiling warning clean up
+  53           *  ht02, 20120223 linjie.cheng
+C51 COMPILER V8.08   HALFRONT_LIBVER                                                       09/21/2019 10:52:16 PAGE 2   
+
+  54           *    a. add high quality sensor zoom flow
+  55           *  ht03, 20120508 linjie.cheng
+  56           *    a. add i2c source div
+  57           *
+  58           **************************************************************************/
+  59          
+  60          /**************************************************************************
+  61           *                            H E A D E R   F I L E S
+  62           **************************************************************************/
+  63          #include "general.h"
+  64          
+  65          /**************************************************************************
+  66           *                            G L O B A L   D A T A
+  67           **************************************************************************/
+  68          static UINT8 code verStr[] = "$ht03";
+  69          
+  70          /**************************************************************************
+  71           *
+  72           *  Function Name: halFrontLibVerGet
+  73           *
+  74           *  Purposes: Get current libaray's version.
+  75           *
+  76           *  Descriptions:
+  77           *
+  78           *  Arguments:
+  79           *
+  80           *  Returns:
+  81           *
+  82           *  See also:
+  83           *
+  84           **************************************************************************/
+  85          UINT8 *
+  86          libHalFrontVerGet(
+  87                  void
+  88          )
+  89          {
+  90   1              return (verStr + 3);
+  91   1      }
+  92          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

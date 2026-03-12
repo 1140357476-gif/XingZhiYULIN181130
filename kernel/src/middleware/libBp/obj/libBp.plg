@@ -1,0 +1,34 @@
+Build target 'libBp'
+compiling bp_find.c...
+BP_FIND.C(941): warning C280: 'sts': unreferenced local variable
+compiling bp_fmt.c...
+compiling bp_main.c...
+compiling bp_ver.c...
+creating library .\obj\libBp.LIB...
+TRANSFER
+".\obj\bp_find.obj",
+".\obj\bp_fmt.obj",
+".\obj\bp_main.obj",
+".\obj\bp_ver.obj" 
+TO ".\obj\libBp.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Work\code\ShaMoLang\MD004v2_1627\ZhongXing\191016_48M+36M\1628_release_v2.2.0.9910_20141229\MD004_1628_v4.0\kernel\src\middleware\libBp>copy obj\libBp.LIB ..\..\..\lib\libBp.LIB 
+已复制         1 个文件。
+".\obj\libBp.LIB" - 0 Error(s), 1 Warning(s).
+Build target 'libBp'
+compiling bp_find.c...
+creating library .\obj\libBp.LIB...
+TRANSFER
+".\obj\bp_find.obj",
+".\obj\bp_fmt.obj",
+".\obj\bp_main.obj",
+".\obj\bp_ver.obj" 
+TO ".\obj\libBp.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Work\code\ShaMoLang\MD004v2_1627\ZhongXing\191016_48M+36M\1628_release_v2.2.0.9910_20141229\MD004_1628_v4.0\kernel\src\middleware\libBp>copy obj\libBp.LIB ..\..\..\lib\libBp.LIB 
+已复制         1 个文件。
+".\obj\libBp.LIB" - 0 Error(s), 0 Warning(s).

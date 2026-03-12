@@ -1,0 +1,6 @@
+TRANSFER
+".\obj\os_main.obj",
+".\obj\os_msg.obj",
+".\obj\os_mutex.obj",
+".\obj\os_ver.obj" 
+TO ".\obj\libOs.LIB"

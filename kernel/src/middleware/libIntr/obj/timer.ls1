@@ -1,0 +1,1030 @@
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE     1
+
+
+MACRO ASSEMBLER AX51 V3.02a
+OBJECT MODULE PLACED IN .\obj\timer.OBJ
+ASSEMBLER INVOKED BY: C:\Keil\C51\BIN\AX51.EXE .\obj\timer.src PR(.\obj\timer.ls1) EP
+
+LOC    OBJ             LINE     SOURCE
+
+                          1     ; .\obj\timer.SRC generated from: timer.c
+                          2     ; COMPILER INVOKED BY:
+                          3     ;        C:\Keil\C51\BIN\C51.EXE timer.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\.
+                               .\..\inc;..\..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..
+                               \..\..\host\inc\app;..\..\..\..\host\inc\customization) DEFINE(LIB_RELEASE) PRINT(.\obj\timer.lst) SRC(.\obj\timer.SRC)
+                          4     
+                          5     $nomod51 
+                          6     
+                          7     NAME    TIMER
+                          8     
+ 00C0.3                   9     TB81    BIT     0C0H.3
+ 0080                    10     P0      DATA    080H
+ 0090                    11     P1      DATA    090H
+ 00C0.7                  12     SM01    BIT     0C0H.7
+ 00A0                    13     P2      DATA    0A0H
+ 00C0.6                  14     SM11    BIT     0C0H.6
+ 00B0                    15     P3      DATA    0B0H
+ 00C0.5                  16     SM21    BIT     0C0H.5
+ 00B0.4                  17     T0      BIT     0B0H.4
+ 00D0.6                  18     AC      BIT     0D0H.6
+ 00B0.5                  19     T1      BIT     0B0H.5
+ 0090.0                  20     T2      BIT     090H.0
+ 00A8.7                  21     EA      BIT     0A8H.7
+ 0085                    22     DPH1    DATA    085H
+ 00A8                    23     IE      DATA    0A8H
+ 00D0.1                  24     FL      BIT     0D0H.1
+ 0084                    25     DPL1    DATA    084H
+ 00C7                    26     TA      DATA    0C7H
+ 00C8.6                  27     EXF2    BIT     0C8H.6
+ 00B0.7                  28     RD      BIT     0B0H.7
+ 00C0.4                  29     REN1    BIT     0C0H.4
+ 00B8                    30     IP      DATA    0B8H
+ 0098.0                  31     RI      BIT     098H.0
+ 00B0.2                  32     INT0    BIT     0B0H.2
+ 00D0.7                  33     CY      BIT     0D0H.7
+ 0098.1                  34     TI      BIT     098H.1
+ 00B0.3                  35     INT1    BIT     0B0H.3
+ 00B9                    36     SADEN0  DATA    0B9H
+ 0090.4                  37     INT2    BIT     090H.4
+ 00BA                    38     SADEN1  DATA    0BAH
+ 00B0.0                  39     RXD0    BIT     0B0H.0
+ 0090.5                  40     INT3    BIT     090H.5
+ 0090.2                  41     RXD1    BIT     090H.2
+ 0090.6                  42     INT4    BIT     090H.6
+ 00A9                    43     SADDR0  DATA    0A9H
+ 00B0.1                  44     TXD0    BIT     0B0H.1
+ 0090.7                  45     INT5    BIT     090H.7
+ 00AA                    46     SADDR1  DATA    0AAH
+ 0090.3                  47     TXD1    BIT     090H.3
+ 00CB                    48     RCAP2H  DATA    0CBH
+ 0081                    49     SP      DATA    081H
+ 0090.1                  50     T2EX    BIT     090H.1
+ 00D8.5                  51     EPFI    BIT     0D8H.5
+ 00D0.2                  52     OV      BIT     0D0H.2
+ 00CA                    53     RCAP2L  DATA    0CAH
+ 00C8.1                  54     C_T2    BIT     0C8H.1
+ 00B0.6                  55     WR      BIT     0B0H.6
+ 00E8.4                  56     EWDI    BIT     0E8H.4
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE     2
+
+ 00D8.3                  57     WDIF    BIT     0D8H.3
+ 00C8.5                  58     RCLK    BIT     0C8H.5
+ 0091                    59     EXIF    DATA    091H
+ 00C8.4                  60     TCLK    BIT     0C8H.4
+ 0087                    61     PCON    DATA    087H
+ 00F8.4                  62     PWDI    BIT     0F8H.4
+ 0089                    63     TMOD    DATA    089H
+ 0088                    64     TCON    DATA    088H
+ 0088.1                  65     IE0     BIT     088H.1
+ 0088.3                  66     IE1     BIT     088H.3
+ 00F0                    67     B       DATA    0F0H
+ 00D8.2                  68     WTRF    BIT     0D8H.2
+ 00C8.0                  69     CP_RL2  BIT     0C8H.0
+ 00D8.7                  70     SMOD_1  BIT     0D8H.7
+ 00E0                    71     ACC     DATA    0E0H
+ 00A8.4                  72     ES0     BIT     0A8H.4
+ 00A8.1                  73     ET0     BIT     0A8H.1
+ 00A8.6                  74     ES1     BIT     0A8H.6
+ 00A8.3                  75     ET1     BIT     0A8H.3
+ 0088.5                  76     TF0     BIT     088H.5
+ 00A8.5                  77     ET2     BIT     0A8H.5
+ 0088.7                  78     TF1     BIT     088H.7
+ 00C8.7                  79     TF2     BIT     0C8H.7
+ 00C0.0                  80     RI1     BIT     0C0H.0
+ 0098.2                  81     RB8     BIT     098H.2
+ 008C                    82     TH0     DATA    08CH
+ 00A8.0                  83     EX0     BIT     0A8H.0
+ 0088.0                  84     IT0     BIT     088H.0
+ 008D                    85     TH1     DATA    08DH
+ 00C0.1                  86     TI1     BIT     0C0H.1
+ 0098.3                  87     TB8     BIT     098H.3
+ 00A8.2                  88     EX1     BIT     0A8H.2
+ 0088.2                  89     IT1     BIT     088H.2
+ 00CD                    90     TH2     DATA    0CDH
+ 00E8.0                  91     EX2     BIT     0E8H.0
+ 00D0.0                  92     P       BIT     0D0H.0
+ 00E8.1                  93     EX3     BIT     0E8H.1
+ 0098.7                  94     SM0     BIT     098H.7
+ 008A                    95     TL0     DATA    08AH
+ 00E8.2                  96     EX4     BIT     0E8H.2
+ 0098.6                  97     SM1     BIT     098H.6
+ 008B                    98     TL1     DATA    08BH
+ 00E8.3                  99     EX5     BIT     0E8H.3
+ 0098.5                 100     SM2     BIT     098H.5
+ 00CC                   101     TL2     DATA    0CCH
+ 00B8.4                 102     PS0     BIT     0B8H.4
+ 00E8                   103     EIE     DATA    0E8H
+ 00B8.1                 104     PT0     BIT     0B8H.1
+ 00B8.6                 105     PS1     BIT     0B8H.6
+ 00B8.3                 106     PT1     BIT     0B8H.3
+ 00D0.3                 107     RS0     BIT     0D0H.3
+ 00B8.5                 108     PT2     BIT     0B8H.5
+ 0088.4                 109     TR0     BIT     088H.4
+ 00D0.4                 110     RS1     BIT     0D0H.4
+ 0088.6                 111     TR1     BIT     088H.6
+ 00C8.2                 112     TR2     BIT     0C8H.2
+ 00B8.0                 113     PX0     BIT     0B8H.0
+ 00B8.2                 114     PX1     BIT     0B8H.2
+ 00F8.0                 115     PX2     BIT     0F8H.0
+ 00F8.1                 116     PX3     BIT     0F8H.1
+ 00F8.2                 117     PX4     BIT     0F8H.2
+ 0083                   118     DPH     DATA    083H
+ 00F8.3                 119     PX5     BIT     0F8H.3
+ 00F8                   120     EIP     DATA    0F8H
+ 00D8.4                 121     PFI     BIT     0D8H.4
+ 0082                   122     DPL     DATA    082H
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE     3
+
+ 0099                   123     SBUF0   DATA    099H
+ 00C1                   124     SBUF1   DATA    0C1H
+ 00C8.3                 125     EXEN2   BIT     0C8H.3
+ 0098                   126     SCON0   DATA    098H
+ 0098.4                 127     REN     BIT     098H.4
+ 00C0                   128     SCON1   DATA    0C0H
+ 00C5                   129     STATUS  DATA    0C5H
+ 00C9                   130     T2MOD   DATA    0C9H
+ 00C8                   131     T2CON   DATA    0C8H
+ 0086                   132     DPS     DATA    086H
+ 008E                   133     CKCON   DATA    08EH
+ 00D8.1                 134     EWT     BIT     0D8H.1
+ 00D8.6                 135     POR     BIT     0D8H.6
+ 00D0.5                 136     F0      BIT     0D0H.5
+ 00D0                   137     PSW     DATA    0D0H
+ 00D8                   138     WDCON   DATA    0D8H
+ 00D8.0                 139     RWT     BIT     0D8H.0
+ 00C0.2                 140     RB81    BIT     0C0H.2
+------                  141     ?PR?TIMER0_Routine?TIMER                 SEGMENT CODE 
+------                  142     ?PR?TIMER0_Handler?TIMER                 SEGMENT CODE 
+------                  143     ?XD?TIMER0_Handler?TIMER                 SEGMENT XDATA OVERLAYABLE
+------                  144     ?PR?TIMER0_Start?TIMER                   SEGMENT CODE 
+------                  145     ?PR?TIMER0_Stop?TIMER                    SEGMENT CODE 
+------                  146     ?PR?TIMER1_Routine?TIMER                 SEGMENT CODE 
+------                  147     ?PR?TIMER1_Handler?TIMER                 SEGMENT CODE 
+------                  148     ?XD?TIMER1_Handler?TIMER                 SEGMENT XDATA OVERLAYABLE
+------                  149     ?PR?TIMER1_Start?TIMER                   SEGMENT CODE 
+------                  150     ?PR?TIMER1_Stop?TIMER                    SEGMENT CODE 
+------                  151     ?PR?_TIMER1_Config?TIMER                 SEGMENT CODE 
+------                  152     ?XD?_TIMER1_Config?TIMER                 SEGMENT XDATA OVERLAYABLE
+------                  153     ?XD?TIMER            SEGMENT XDATA 
+------                  154     ?PR?TIMER            SEGMENT CODE 
+                        155             EXTRN   CODE (timerFuncCallList0)
+                        156             EXTRN   CODE (timerFuncCallList1)
+                        157             EXTRN   CODE (osTimeTick)
+                        158             EXTRN   CODE (tmrSvc_PowerOffProc_Intr)
+                        159             EXTRN   CODE (tmrSvc_APO_Intr)
+                        160             EXTRN   CODE (?C?ICALL)
+                        161             EXTRN   CODE (?C?IILDX)
+                        162             EXTRN   CODE (?C?PSTXDATA)
+                        163             EXTRN   CODE (?C?LLDXDATA)
+                        164             EXTRN   CODE (?C?LSTXDATA)
+                        165             EXTRN   CODE (?C?PLDXDATA)
+                        166             EXTRN   CODE (?C?ICALL2)
+                        167             EXTRN   CODE (?C?ULDIV)
+                        168             PUBLIC  ?_TIMER1_Config?BYTE
+                        169             PUBLIC  _TIMER1_Config
+                        170             PUBLIC  TIMER1_Stop
+                        171             PUBLIC  TIMER1_Start
+                        172             PUBLIC  TIMER1_Handler
+                        173             PUBLIC  TIMER1_Routine
+                        174             PUBLIC  TIMER0_Stop
+                        175             PUBLIC  TIMER0_Start
+                        176             PUBLIC  TIMER0_Handler
+                        177             PUBLIC  TIMER0_Routine
+                        178     
+------                  179             RSEG  ?XD?TIMER0_Handler?TIMER
+000000                  180     ?TIMER0_Handler?BYTE:
+000000                  181               i?140:   DS   1
+000001                  182             ORG  1
+000001                  183          ppFunc?141:   DS   2
+                        184     
+------                  185             RSEG  ?XD?TIMER1_Handler?TIMER
+000000                  186     ?TIMER1_Handler?BYTE:
+000000                  187             ptr?542:   DS   3
+                        188     
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE     4
+
+------                  189             RSEG  ?XD?_TIMER1_Config?TIMER
+000000                  190     ?_TIMER1_Config?BYTE:
+000000                  191          Period?843:   DS   4
+000004                  192             ORG  4
+000004                  193           pFunc?844:   DS   2
+000006                  194             ORG  6
+000006                  195       pFuncPara?845:   DS   3
+                        196     
+------                  197             RSEG  ?XD?TIMER
+000000                  198            TimeTick:   DS   4
+000004                  199             InitVal:   DS   4
+000008                  200           Tmr1PFunc:   DS   2
+00000A                  201       Tmr1PFuncPara:   DS   3
+00000D                  202       Tmr1ReloadVal:   DS   4
+000011                  203           Tmr0Stamp:   DS   1
+                        204     ; /**************************************************************************
+                        205     ;  *
+                        206     ;  *        Copyright (c) 2008-2008 by Sunplus mMedia Inc., Ltd.
+                        207     ;  *
+                        208     ;  *  This software is copyrighted by and is the property of Sunplus
+                        209     ;  *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+                        210     ;  *  Inc., Ltd. This software may only be used in accordance with the
+                        211     ;  *  corresponding license agreement. Any unauthorized use, duplication,
+                        212     ;  *  distribution, or disclosure of this software is expressly forbidden.
+                        213     ;  *
+                        214     ;  *  This Copyright notice MUST not be removed or modified without prior
+                        215     ;  *  written consent of Sunplus mMedia Inc., Ltd.
+                        216     ;  *
+                        217     ;  *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+                        218     ;  *  software without notice.
+                        219     ;  *
+                        220     ;  *  Sunplus mMedia Inc., Ltd.
+                        221     ;  *  19-1, Innovation First Road, Science-Based Industrial Park,
+                        222     ;  *  Hsin-Chu, Taiwan, R.O.C.
+                        223     ;  *
+                        224     ;  **************************************************************************/
+                        225     ;  
+                        226     ; //=============================================================================
+                        227     ; //Header file
+                        228     ; //=============================================================================
+                        229     ; #define TMR_TASK_INTERNAL
+                        230     ; #include "general.h"
+                        231     ; #include "timer.h"
+                        232     ; 
+                        233     ; #include "os_api.h"
+                        234     ; //#include "os_msg.h"
+                        235     ; #include "tmr_svc.h"
+                        236     ; #include "key_scan.h"
+                        237     ; #include "func_timer_def.h"
+                        238     ; //=============================================================================
+                        239     ; //Symbol
+                        240     ; //=============================================================================
+                        241     ; extern void adctest(void);
+                        242     ; //-----------------------------------------------------------------------------
+                        243     ; //Constant
+                        244     ; //-----------------------------------------------------------------------------
+                        245     ; 
+                        246     ; //-----------------------------------------------------------------------------
+                        247     ; //Variable
+                        248     ; //-----------------------------------------------------------------------------
+                        249     ; 
+                        250     ; static UINT8 xdata Tmr0Stamp;
+                        251     ; 
+                        252     ; static UINT32 xdata Tmr1ReloadVal;
+                        253     ; static pFuncTmr1 xdata Tmr1PFunc;
+                        254     ; static UINT8* xdata Tmr1PFuncPara;
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE     5
+
+                        255     ; static UINT32 xdata InitVal;
+                        256     ; static UINT32 xdata TimeTick;
+                        257     ; extern UINT8 TestFlag;
+                        258     ; 
+                        259     ; extern TMR_TASK_DCL pFuncTmr0 code timerFuncCallList0[];
+                        260     ; extern TMR_TASK_DCL pFuncTmr1 code timerFuncCallList1[];
+                        261     ; //=============================================================================
+                        262     ; //Program
+                        263     ; //=============================================================================
+                        264     ; //-----------------------------------------------------------------------------
+                        265     ; //                               TIMER0
+                        266     ; //-----------------------------------------------------------------------------
+                        267     ; //-----------------------------------------------------------------------------
+                        268     ; //TIMER0
+                        269     ; //-----------------------------------------------------------------------------
+                        270     
+------                  271             RSEG  ?PR?TIMER
+000000                  272     Com0016:
+000000                  273     L?0023:
+                        274             USING   0
+000000 900000     F     275             MOV     DPTR,#Tmr1ReloadVal
+000003 120000     E     276             LCALL   ?C?LLDXDATA
+000006                  277     L?0024:
+000006 900000     F     278             MOV     DPTR,#TimeTick
+000009 020000     E     279             LJMP    ?C?LSTXDATA
+00000C                  280     L?0025:
+                        281             USING   0
+00000C 900000     F     282             MOV     DPTR,#InitVal+03H
+00000F E0               283             MOVX    A,@DPTR
+000010 F58B             284             MOV     TL1,A
+000012 900000     F     285             MOV     DPTR,#InitVal+02H
+000015 E0               286             MOVX    A,@DPTR
+000016 F58D             287             MOV     TH1,A
+000018 22               288             RET     
+                        289     ; END OF Com0016
+                        290     
+                        291     ; void TIMER0_Routine(void)
+                        292     
+------                  293             RSEG  ?PR?TIMER0_Routine?TIMER
+000000                  294     TIMER0_Routine:
+                        295             USING   0
+                        296                             ; SOURCE LINE # 67
+                        297     ; {
+                        298                             ; SOURCE LINE # 68
+                        299     ;       TIMER0_Handler();     //Timer tick: 5ms
+                        300                             ; SOURCE LINE # 69
+000000 020000     F     301             LJMP    TIMER0_Handler
+                        302     ; END OF TIMER0_Routine
+                        303     
+                        304     ; }
+                        305     ; 
+                        306     ; //-----------------------------------------------------------------------------
+                        307     ; //TIMER0_Handler
+                        308     ; //-----------------------------------------------------------------------------
+                        309     ; void TIMER0_Handler(void) USING_2
+                        310     
+------                  311             RSEG  ?PR?TIMER0_Handler?TIMER
+000000                  312     TIMER0_Handler:
+                        313             USING   0
+                        314                             ; SOURCE LINE # 75
+                        315     ; {
+                        316                             ; SOURCE LINE # 76
+                        317     ;       UINT8 i;
+                        318     ;       pFuncTmr0 code* ppFunc;
+                        319     ; 
+                        320     ;       if (!(--Tmr0Stamp))
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE     6
+
+                        321                             ; SOURCE LINE # 80
+000000 900000     F     322             MOV     DPTR,#Tmr0Stamp
+000003 E0               323             MOVX    A,@DPTR
+000004 14               324             DEC     A
+000005 F0               325             MOVX    @DPTR,A
+000006 704A             326             JNZ     ?C0008
+                        327     ;       {
+                        328                             ; SOURCE LINE # 81
+                        329     ;               //5ms * 2 
+                        330     ;               Tmr0Stamp = K_TIMER_PERIOD;
+                        331                             ; SOURCE LINE # 83
+000008 7402             332             MOV     A,#02H
+00000A F0               333             MOVX    @DPTR,A
+                        334     ;         
+                        335     ;               osTimeTick();
+                        336                             ; SOURCE LINE # 85
+00000B 120000     E     337             LCALL   osTimeTick
+                        338     ; 
+                        339     ;               /* customized timer task */
+                        340     ;               i = TMR0_TASK_MAX;
+                        341                             ; SOURCE LINE # 88
+00000E 900000     F     342             MOV     DPTR,#i?140
+000011 7420             343             MOV     A,#020H
+000013 F0               344             MOVX    @DPTR,A
+                        345     ;               ppFunc = &timerFuncCallList0[0];
+                        346                             ; SOURCE LINE # 89
+000014 A3               347             INC     DPTR
+000015 7400       E     348             MOV     A,#HIGH (timerFuncCallList0)
+000017 F0               349             MOVX    @DPTR,A
+000018 A3               350             INC     DPTR
+000019 7400       E     351             MOV     A,#LOW (timerFuncCallList0)
+00001B F0               352             MOVX    @DPTR,A
+00001C                  353     ?C0005:
+                        354     ;               do {
+                        355                             ; SOURCE LINE # 90
+                        356     ;                       if (*ppFunc) {
+                        357                             ; SOURCE LINE # 91
+00001C 900000     F     358             MOV     DPTR,#ppFunc?141
+00001F E0               359             MOVX    A,@DPTR
+000020 FE               360             MOV     R6,A
+000021 A3               361             INC     DPTR
+000022 E0               362             MOVX    A,@DPTR
+000023 F582             363             MOV     DPL,A
+000025 8E83             364             MOV     DPH,R6
+000027 E4               365             CLR     A
+000028 93               366             MOVC    A,@A+DPTR
+000029 FE               367             MOV     R6,A
+00002A 7401             368             MOV     A,#01H
+00002C 93               369             MOVC    A,@A+DPTR
+00002D FF               370             MOV     R7,A
+00002E 4E               371             ORL     A,R6
+00002F 601B             372             JZ      ?C0004
+                        373     ;                               (*ppFunc)();
+                        374                             ; SOURCE LINE # 92
+000031 CA               375             XCH     A,R2
+000032 EE               376             MOV     A,R6
+000033 CA               377             XCH     A,R2
+000034 C9               378             XCH     A,R1
+000035 EF               379             MOV     A,R7
+000036 C9               380             XCH     A,R1
+000037 120000     E     381             LCALL   ?C?ICALL
+                        382     ;                       } else {
+                        383                             ; SOURCE LINE # 93
+                        384     ;                               break;
+                        385                             ; SOURCE LINE # 94
+                        386     ;                       }
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE     7
+
+                        387                             ; SOURCE LINE # 95
+00003A                  388     ?C0007:
+                        389     ;                       ppFunc++;
+                        390                             ; SOURCE LINE # 96
+00003A 900000     F     391             MOV     DPTR,#ppFunc?141
+00003D E4               392             CLR     A
+00003E 75F002           393             MOV     B,#02H
+000041 120000     E     394             LCALL   ?C?IILDX
+                        395     ;               } while (--i);
+                        396                             ; SOURCE LINE # 97
+000044 900000     F     397             MOV     DPTR,#i?140
+000047 E0               398             MOVX    A,@DPTR
+000048 14               399             DEC     A
+000049 F0               400             MOVX    @DPTR,A
+00004A 70D0             401             JNZ     ?C0005
+00004C                  402     ?C0004:
+                        403     ; 
+                        404     ;         tmrSvc_APO_Intr();
+                        405                             ; SOURCE LINE # 99
+00004C 120000     E     406             LCALL   tmrSvc_APO_Intr
+                        407     ;         tmrSvc_PowerOffProc_Intr();
+                        408                             ; SOURCE LINE # 100
+00004F 120000     E     409             LCALL   tmrSvc_PowerOffProc_Intr
+                        410     ;               
+                        411     ; #if (UI_TEST)         
+                        412     ; 
+                        413     ; #else
+                        414     ;               adctest();
+                        415     ; #endif                
+                        416     ; 
+                        417     ;       }
+                        418                             ; SOURCE LINE # 108
+                        419     ; }
+                        420                             ; SOURCE LINE # 109
+000052                  421     ?C0008:
+000052 22               422             RET     
+                        423     ; END OF TIMER0_Handler
+                        424     
+                        425     ; 
+                        426     ; //-----------------------------------------------------------------------------
+                        427     ; //TIMER0_Start
+                        428     ; //-----------------------------------------------------------------------------
+                        429     ; void TIMER0_Start(void) USING_0
+                        430     
+------                  431             RSEG  ?PR?TIMER0_Start?TIMER
+000000                  432     TIMER0_Start:
+                        433             USING   0
+                        434                             ; SOURCE LINE # 114
+                        435     ; {
+                        436                             ; SOURCE LINE # 115
+                        437     ;       Tmr0Stamp = K_TIMER_PERIOD;
+                        438                             ; SOURCE LINE # 116
+000000 900000     F     439             MOV     DPTR,#Tmr0Stamp
+000003 7402             440             MOV     A,#02H
+000005 F0               441             MOVX    @DPTR,A
+                        442     ; 
+                        443     ;       //start timer
+                        444     ;       ET0 = 1;                //IE:    TIMER0 interrupt enable
+                        445                             ; SOURCE LINE # 119
+000006 D2A9             446             SETB    ET0
+                        447     ;       TR0 = 1;                //TCON:  TIMER0 enable
+                        448                             ; SOURCE LINE # 120
+000008 D28C             449             SETB    TR0
+                        450     ; }
+                        451                             ; SOURCE LINE # 121
+00000A 22               452             RET     
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE     8
+
+                        453     ; END OF TIMER0_Start
+                        454     
+                        455     ; 
+                        456     ; //-----------------------------------------------------------------------------
+                        457     ; //TIMER0_Stop
+                        458     ; //-----------------------------------------------------------------------------
+                        459     ; void TIMER0_Stop(void) USING_0
+                        460     
+------                  461             RSEG  ?PR?TIMER0_Stop?TIMER
+000000                  462     TIMER0_Stop:
+                        463             USING   0
+                        464                             ; SOURCE LINE # 126
+                        465     ; {
+                        466                             ; SOURCE LINE # 127
+                        467     ;      //stop timer
+                        468     ;      TR0 = 0;                //TCON:  TIMER0 disable
+                        469                             ; SOURCE LINE # 129
+000000 C28C             470             CLR     TR0
+                        471     ;      ET0 = 0;                //IE:    TIMER0 interrupt disable
+                        472                             ; SOURCE LINE # 130
+000002 C2A9             473             CLR     ET0
+                        474     ; }
+                        475                             ; SOURCE LINE # 131
+000004 22               476             RET     
+                        477     ; END OF TIMER0_Stop
+                        478     
+                        479     ; 
+                        480     ; //-----------------------------------------------------------------------------
+                        481     ; //                               TIMER1
+                        482     ; //-----------------------------------------------------------------------------
+                        483     ; //-----------------------------------------------------------------------------
+                        484     ; //TIMER1
+                        485     ; //-----------------------------------------------------------------------------
+                        486     ; void TIMER1_Routine(void)
+                        487     
+------                  488             RSEG  ?PR?TIMER1_Routine?TIMER
+000000                  489     TIMER1_Routine:
+                        490             USING   0
+                        491                             ; SOURCE LINE # 139
+                        492     ; {
+                        493                             ; SOURCE LINE # 140
+                        494     ;     //EX0 = 0;
+                        495     ;     TIMER1_Handler();     //TIMER1 handler
+                        496                             ; SOURCE LINE # 142
+000000 020000     F     497             LJMP    TIMER1_Handler
+                        498     ; END OF TIMER1_Routine
+                        499     
+                        500     ;     //EX0 = 1;
+                        501     ; }
+                        502     ; 
+                        503     ; //-----------------------------------------------------------------------------
+                        504     ; //TIMER1_Handler
+                        505     ; //-----------------------------------------------------------------------------
+                        506     ; void TIMER1_Handler(void) USING_3
+                        507     
+------                  508             RSEG  ?PR?TIMER1_Handler?TIMER
+000000                  509     TIMER1_Handler:
+                        510             USING   0
+                        511                             ; SOURCE LINE # 149
+                        512     ; {
+                        513                             ; SOURCE LINE # 150
+                        514     ;       pFuncTmr1* ptr;
+                        515     ;       
+                        516     ;       TR1 = 0 ;
+                        517                             ; SOURCE LINE # 153
+000000 C28E             518             CLR     TR1
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE     9
+
+                        519     ;       
+                        520     ;       // add by phil for correcting the call tree for function pointer S      
+                        521     ;       if (TR1) {
+                        522                             ; SOURCE LINE # 156
+000002 308E0C           523             JNB     TR1,?C0012
+                        524     ;               ptr = timerFuncCallList1;
+                        525                             ; SOURCE LINE # 157
+000005 7BFF             526             MOV     R3,#0FFH
+000007 7A00       E     527             MOV     R2,#HIGH (timerFuncCallList1)
+000009 7900       E     528             MOV     R1,#LOW (timerFuncCallList1)
+00000B 900000     F     529             MOV     DPTR,#ptr?542
+00000E 120000     E     530             LCALL   ?C?PSTXDATA
+                        531     ;               //ptr = intrFuncArray;
+                        532     ;       }
+                        533                             ; SOURCE LINE # 159
+000011                  534     ?C0012:
+                        535     ;       // add by phil for correcting the call tree for function pointer E      
+                        536     ;       
+                        537     ;       TL1 = READ8(InitVal, 3);
+                        538                             ; SOURCE LINE # 162
+                        539     ;       TH1 = READ8(InitVal, 2);
+                        540                             ; SOURCE LINE # 163
+000011 120000     F     541             LCALL   L?0025
+                        542     ;       if (TimeTick) {
+                        543                             ; SOURCE LINE # 164
+000014 900000     F     544             MOV     DPTR,#TimeTick
+000017 120000     E     545             LCALL   ?C?LLDXDATA
+00001A EC               546             MOV     A,R4
+00001B 4D               547             ORL     A,R5
+00001C 4E               548             ORL     A,R6
+00001D 4F               549             ORL     A,R7
+00001E 601B             550             JZ      ?C0013
+                        551     ;               TimeTick--;
+                        552                             ; SOURCE LINE # 165
+000020 900000     F     553             MOV     DPTR,#TimeTick
+000023 120000     E     554             LCALL   ?C?LLDXDATA
+000026 EF               555             MOV     A,R7
+000027 24FF             556             ADD     A,#0FFH
+000029 FF               557             MOV     R7,A
+00002A EE               558             MOV     A,R6
+00002B 34FF             559             ADDC    A,#0FFH
+00002D FE               560             MOV     R6,A
+00002E ED               561             MOV     A,R5
+00002F 34FF             562             ADDC    A,#0FFH
+000031 FD               563             MOV     R5,A
+000032 EC               564             MOV     A,R4
+000033 34FF             565             ADDC    A,#0FFH
+000035 FC               566             MOV     R4,A
+000036 120000     F     567             LCALL   L?0024
+                        568     ;       } else {
+                        569                             ; SOURCE LINE # 166
+000039 8019             570             SJMP    ?C0014
+00003B                  571     ?C0013:
+                        572     ;               TimeTick = Tmr1ReloadVal;
+                        573                             ; SOURCE LINE # 167
+00003B 120000     F     574             LCALL   L?0023
+                        575     ;               if (Tmr1PFunc != NULL) {
+                        576                             ; SOURCE LINE # 168
+00003E 900000     F     577             MOV     DPTR,#Tmr1PFunc
+000041 E0               578             MOVX    A,@DPTR
+000042 FE               579             MOV     R6,A
+000043 A3               580             INC     DPTR
+000044 E0               581             MOVX    A,@DPTR
+000045 FF               582             MOV     R7,A
+000046 4E               583             ORL     A,R6
+000047 600B             584             JZ      ?C0014
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE    10
+
+                        585     ;                       Tmr1PFunc(Tmr1PFuncPara);
+                        586                             ; SOURCE LINE # 169
+000049 A3               587             INC     DPTR
+00004A 120000     E     588             LCALL   ?C?PLDXDATA
+00004D 8F82             589             MOV     DPL,R7
+00004F 8E83             590             MOV     DPH,R6
+000051 120000     E     591             LCALL   ?C?ICALL2
+                        592     ;               }
+                        593                             ; SOURCE LINE # 170
+                        594     ;       }
+                        595                             ; SOURCE LINE # 171
+000054                  596     ?C0014:
+                        597     ;               
+                        598     ;       TR1 = 1 ;
+                        599                             ; SOURCE LINE # 173
+000054 D28E             600             SETB    TR1
+                        601     ; }
+                        602                             ; SOURCE LINE # 174
+000056 22               603             RET     
+                        604     ; END OF TIMER1_Handler
+                        605     
+                        606     ; 
+                        607     ; 
+                        608     ; //-----------------------------------------------------------------------------
+                        609     ; //TIMER1_Start
+                        610     ; //-----------------------------------------------------------------------------
+                        611     ; void TIMER1_Start(void) USING_3
+                        612     
+------                  613             RSEG  ?PR?TIMER1_Start?TIMER
+000000                  614     TIMER1_Start:
+                        615             USING   0
+                        616                             ; SOURCE LINE # 180
+                        617     ; {
+                        618                             ; SOURCE LINE # 181
+                        619     ;     //start timer
+                        620     ;     ET1 = 1;                //IE:    TIMER1 interrupt enable
+                        621                             ; SOURCE LINE # 183
+000000 D2AB             622             SETB    ET1
+                        623     ;     TR1 = 1;                //TCON:  TIMER1 enable
+                        624                             ; SOURCE LINE # 184
+000002 D28E             625             SETB    TR1
+                        626     ; }
+                        627                             ; SOURCE LINE # 185
+000004 22               628             RET     
+                        629     ; END OF TIMER1_Start
+                        630     
+                        631     ; 
+                        632     ; //-----------------------------------------------------------------------------
+                        633     ; //TIMER1_Stop
+                        634     ; //-----------------------------------------------------------------------------
+                        635     ; void TIMER1_Stop(void) USING_3
+                        636     
+------                  637             RSEG  ?PR?TIMER1_Stop?TIMER
+000000                  638     TIMER1_Stop:
+                        639             USING   0
+                        640                             ; SOURCE LINE # 190
+                        641     ; {
+                        642                             ; SOURCE LINE # 191
+                        643     ;     ET1 = 0;                //IE:    TIMER1 interrupt disable
+                        644                             ; SOURCE LINE # 192
+000000 C2AB             645             CLR     ET1
+                        646     ;     TR1 = 0;                //TCON:  TIMER1 disable
+                        647                             ; SOURCE LINE # 193
+000002 C28E             648             CLR     TR1
+                        649     ; }
+                        650                             ; SOURCE LINE # 194
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE    11
+
+000004 22               651             RET     
+                        652     ; END OF TIMER1_Stop
+                        653     
+                        654     ; 
+                        655     ; void TIMER1_Config(UINT32 Period, pFuncTmr1 pFunc, UINT8* pFuncPara)
+                        656     
+------                  657             RSEG  ?PR?_TIMER1_Config?TIMER
+000000                  658     _TIMER1_Config:
+                        659             USING   0
+                        660                             ; SOURCE LINE # 196
+000000 900000     F     661             MOV     DPTR,#Period?843
+000003 120000     E     662             LCALL   ?C?LSTXDATA
+                        663     ; {
+                        664                             ; SOURCE LINE # 197
+                        665     ;       UINT32 CpuClk;
+                        666     ;       
+                        667     ;       TMOD &= 0x0f;
+                        668                             ; SOURCE LINE # 200
+000006 53890F           669             ANL     TMOD,#0FH
+                        670     ;       TMOD |= 0x10;
+                        671                             ; SOURCE LINE # 201
+000009 438910           672             ORL     TMOD,#010H
+                        673     ;       TF1=0;
+                        674                             ; SOURCE LINE # 202
+00000C C28F             675             CLR     TF1
+                        676     ;                       
+                        677     ;       if ((!Period) || (pFunc == (void (*)())NULL)) {
+                        678                             ; SOURCE LINE # 204
+00000E 900000     F     679             MOV     DPTR,#Period?843
+000011 120000     E     680             LCALL   ?C?LLDXDATA
+000014 EC               681             MOV     A,R4
+000015 4D               682             ORL     A,R5
+000016 4E               683             ORL     A,R6
+000017 4F               684             ORL     A,R7
+000018 606A             685             JZ      ?C0021
+00001A 900000     F     686             MOV     DPTR,#pFunc?844
+00001D E0               687             MOVX    A,@DPTR
+00001E FA               688             MOV     R2,A
+00001F A3               689             INC     DPTR
+000020 E0               690             MOVX    A,@DPTR
+000021 FB               691             MOV     R3,A
+000022 4A               692             ORL     A,R2
+000023 605F             693             JZ      ?C0021
+                        694     ;               return;
+                        695     ;       }
+                        696                             ; SOURCE LINE # 206
+000025                  697     ?C0019:
+                        698     ; 
+                        699     ;       Tmr1ReloadVal = Period;
+                        700                             ; SOURCE LINE # 208
+000025 900000     F     701             MOV     DPTR,#Period?843
+000028 120000     E     702             LCALL   ?C?LLDXDATA
+00002B 900000     F     703             MOV     DPTR,#Tmr1ReloadVal
+00002E 120000     E     704             LCALL   ?C?LSTXDATA
+                        705     ;       Tmr1PFunc = pFunc;
+                        706                             ; SOURCE LINE # 209
+000031 900000     F     707             MOV     DPTR,#Tmr1PFunc
+000034 EA               708             MOV     A,R2
+000035 F0               709             MOVX    @DPTR,A
+000036 A3               710             INC     DPTR
+000037 EB               711             MOV     A,R3
+000038 F0               712             MOVX    @DPTR,A
+                        713     ;       Tmr1PFuncPara = pFuncPara;
+                        714                             ; SOURCE LINE # 210
+000039 900000     F     715             MOV     DPTR,#pFuncPara?845
+00003C 120000     E     716             LCALL   ?C?PLDXDATA
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE    12
+
+00003F 900000     F     717             MOV     DPTR,#Tmr1PFuncPara
+000042 120000     E     718             LCALL   ?C?PSTXDATA
+                        719     ; 
+                        720     ;       CpuClk=522000000UL/(XBYTE[0x2024]+1);
+                        721                             ; SOURCE LINE # 212
+000045 902024           722             MOV     DPTR,#02024H
+000048 E0               723             MOVX    A,@DPTR
+000049 2401             724             ADD     A,#01H
+00004B FF               725             MOV     R7,A
+00004C E4               726             CLR     A
+00004D 33               727             RLC     A
+00004E CB               728             XCH     A,R3
+00004F EF               729             MOV     A,R7
+000050 CB               730             XCH     A,R3
+000051 FA               731             MOV     R2,A
+000052 E4               732             CLR     A
+000053 F9               733             MOV     R1,A
+000054 F8               734             MOV     R0,A
+000055 7F80             735             MOV     R7,#080H
+000057 7E16             736             MOV     R6,#016H
+000059 7D1D             737             MOV     R5,#01DH
+00005B 7C1F             738             MOV     R4,#01FH
+00005D 120000     E     739             LCALL   ?C?ULDIV
+                        740     ;---- Variable 'CpuClk?846' assigned to Register 'R4/R5/R6/R7' ----
+                        741     ; 
+                        742     ;       InitVal = 65536UL -  CpuClk / 12000UL;
+                        743                             ; SOURCE LINE # 214
+000060 E4               744             CLR     A
+000061 7BE0             745             MOV     R3,#0E0H
+000063 7A2E             746             MOV     R2,#02EH
+000065 F9               747             MOV     R1,A
+000066 F8               748             MOV     R0,A
+000067 120000     E     749             LCALL   ?C?ULDIV
+00006A C3               750             CLR     C
+00006B E4               751             CLR     A
+00006C 9F               752             SUBB    A,R7
+00006D FF               753             MOV     R7,A
+00006E E4               754             CLR     A
+00006F 9E               755             SUBB    A,R6
+000070 FE               756             MOV     R6,A
+000071 7401             757             MOV     A,#01H
+000073 9D               758             SUBB    A,R5
+000074 FD               759             MOV     R5,A
+000075 E4               760             CLR     A
+000076 9C               761             SUBB    A,R4
+000077 FC               762             MOV     R4,A
+000078 900000     F     763             MOV     DPTR,#InitVal
+00007B 120000     E     764             LCALL   ?C?LSTXDATA
+                        765     ;       TimeTick = Tmr1ReloadVal;
+                        766                             ; SOURCE LINE # 215
+00007E 120000     F     767             LCALL   L?0023
+                        768     ;       TL1 = READ8(InitVal, 3);
+                        769                             ; SOURCE LINE # 216
+                        770     ;       TH1 = READ8(InitVal, 2);
+                        771                             ; SOURCE LINE # 217
+000081 120000     F     772             LCALL   L?0025
+                        773     ;       
+                        774     ; }
+                        775                             ; SOURCE LINE # 219
+000084                  776     ?C0021:
+000084 22               777             RET     
+                        778     ; END OF _TIMER1_Config
+                        779     
+                        780             END
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE    13
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E                   T Y P E  V A L U E     ATTRIBUTES
+
+?_TIMER1_CONFIG?BYTE . .  X  ADDR  0000H     R   SEG=?XD?_TIMER1_CONFIG?TIMER
+?C0004 . . . . . . . . .  C  ADDR  004CH     R   SEG=?PR?TIMER0_HANDLER?TIMER
+?C0005 . . . . . . . . .  C  ADDR  001CH     R   SEG=?PR?TIMER0_HANDLER?TIMER
+?C0007 . . . . . . . . .  C  ADDR  003AH     R   SEG=?PR?TIMER0_HANDLER?TIMER
+?C0008 . . . . . . . . .  C  ADDR  0052H     R   SEG=?PR?TIMER0_HANDLER?TIMER
+?C0012 . . . . . . . . .  C  ADDR  0011H     R   SEG=?PR?TIMER1_HANDLER?TIMER
+?C0013 . . . . . . . . .  C  ADDR  003BH     R   SEG=?PR?TIMER1_HANDLER?TIMER
+?C0014 . . . . . . . . .  C  ADDR  0054H     R   SEG=?PR?TIMER1_HANDLER?TIMER
+?C0019 . . . . . . . . .  C  ADDR  0025H     R   SEG=?PR?_TIMER1_CONFIG?TIMER
+?C0021 . . . . . . . . .  C  ADDR  0084H     R   SEG=?PR?_TIMER1_CONFIG?TIMER
+?C?ICALL . . . . . . . .  C  ADDR  -------       EXT
+?C?ICALL2. . . . . . . .  C  ADDR  -------       EXT
+?C?IILDX . . . . . . . .  C  ADDR  -------       EXT
+?C?LLDXDATA. . . . . . .  C  ADDR  -------       EXT
+?C?LSTXDATA. . . . . . .  C  ADDR  -------       EXT
+?C?PLDXDATA. . . . . . .  C  ADDR  -------       EXT
+?C?PSTXDATA. . . . . . .  C  ADDR  -------       EXT
+?C?ULDIV . . . . . . . .  C  ADDR  -------       EXT
+?PR?_TIMER1_CONFIG?TIMER  C  SEG   000085H       REL=UNIT, ALN=BYTE
+?PR?TIMER. . . . . . . .  C  SEG   000019H       REL=UNIT, ALN=BYTE
+?PR?TIMER0_HANDLER?TIMER  C  SEG   000053H       REL=UNIT, ALN=BYTE
+?PR?TIMER0_ROUTINE?TIMER  C  SEG   000003H       REL=UNIT, ALN=BYTE
+?PR?TIMER0_START?TIMER .  C  SEG   00000BH       REL=UNIT, ALN=BYTE
+?PR?TIMER0_STOP?TIMER. .  C  SEG   000005H       REL=UNIT, ALN=BYTE
+?PR?TIMER1_HANDLER?TIMER  C  SEG   000057H       REL=UNIT, ALN=BYTE
+?PR?TIMER1_ROUTINE?TIMER  C  SEG   000003H       REL=UNIT, ALN=BYTE
+?PR?TIMER1_START?TIMER .  C  SEG   000005H       REL=UNIT, ALN=BYTE
+?PR?TIMER1_STOP?TIMER. .  C  SEG   000005H       REL=UNIT, ALN=BYTE
+?TIMER0_HANDLER?BYTE . .  X  ADDR  0000H     R   SEG=?XD?TIMER0_HANDLER?TIMER
+?TIMER1_HANDLER?BYTE . .  X  ADDR  0000H     R   SEG=?XD?TIMER1_HANDLER?TIMER
+?XD?_TIMER1_CONFIG?TIMER  X  SEG   000009H       REL=UNIT, ALN=BYTE
+?XD?TIMER. . . . . . . .  X  SEG   000012H       REL=UNIT, ALN=BYTE
+?XD?TIMER0_HANDLER?TIMER  X  SEG   000003H       REL=UNIT, ALN=BYTE
+?XD?TIMER1_HANDLER?TIMER  X  SEG   000003H       REL=UNIT, ALN=BYTE
+_TIMER1_CONFIG . . . . .  C  ADDR  0000H     R   SEG=?PR?_TIMER1_CONFIG?TIMER
+AC . . . . . . . . . . .  B  ADDR  00D0H.6   A   
+ACC. . . . . . . . . . .  D  ADDR  00E0H     A   
+B. . . . . . . . . . . .  D  ADDR  00F0H     A   
+C_T2 . . . . . . . . . .  B  ADDR  00C8H.1   A   
+CKCON. . . . . . . . . .  D  ADDR  008EH     A   
+COM0016. . . . . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER
+CP_RL2 . . . . . . . . .  B  ADDR  00C8H.0   A   
+CY . . . . . . . . . . .  B  ADDR  00D0H.7   A   
+DPH. . . . . . . . . . .  D  ADDR  0083H     A   
+DPH1 . . . . . . . . . .  D  ADDR  0085H     A   
+DPL. . . . . . . . . . .  D  ADDR  0082H     A   
+DPL1 . . . . . . . . . .  D  ADDR  0084H     A   
+DPS. . . . . . . . . . .  D  ADDR  0086H     A   
+EA . . . . . . . . . . .  B  ADDR  00A8H.7   A   
+EIE. . . . . . . . . . .  D  ADDR  00E8H     A   
+EIP. . . . . . . . . . .  D  ADDR  00F8H     A   
+EPFI . . . . . . . . . .  B  ADDR  00D8H.5   A   
+ES0. . . . . . . . . . .  B  ADDR  00A8H.4   A   
+ES1. . . . . . . . . . .  B  ADDR  00A8H.6   A   
+ET0. . . . . . . . . . .  B  ADDR  00A8H.1   A   
+ET1. . . . . . . . . . .  B  ADDR  00A8H.3   A   
+ET2. . . . . . . . . . .  B  ADDR  00A8H.5   A   
+EWDI . . . . . . . . . .  B  ADDR  00E8H.4   A   
+EWT. . . . . . . . . . .  B  ADDR  00D8H.1   A   
+EX0. . . . . . . . . . .  B  ADDR  00A8H.0   A   
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE    14
+
+EX1. . . . . . . . . . .  B  ADDR  00A8H.2   A   
+EX2. . . . . . . . . . .  B  ADDR  00E8H.0   A   
+EX3. . . . . . . . . . .  B  ADDR  00E8H.1   A   
+EX4. . . . . . . . . . .  B  ADDR  00E8H.2   A   
+EX5. . . . . . . . . . .  B  ADDR  00E8H.3   A   
+EXEN2. . . . . . . . . .  B  ADDR  00C8H.3   A   
+EXF2 . . . . . . . . . .  B  ADDR  00C8H.6   A   
+EXIF . . . . . . . . . .  D  ADDR  0091H     A   
+F0 . . . . . . . . . . .  B  ADDR  00D0H.5   A   
+FL . . . . . . . . . . .  B  ADDR  00D0H.1   A   
+I?140. . . . . . . . . .  X  ADDR  0000H     R   SEG=?XD?TIMER0_HANDLER?TIMER
+IE . . . . . . . . . . .  D  ADDR  00A8H     A   
+IE0. . . . . . . . . . .  B  ADDR  0088H.1   A   
+IE1. . . . . . . . . . .  B  ADDR  0088H.3   A   
+INITVAL. . . . . . . . .  X  ADDR  0004H     R   SEG=?XD?TIMER
+INT0 . . . . . . . . . .  B  ADDR  00B0H.2   A   
+INT1 . . . . . . . . . .  B  ADDR  00B0H.3   A   
+INT2 . . . . . . . . . .  B  ADDR  0090H.4   A   
+INT3 . . . . . . . . . .  B  ADDR  0090H.5   A   
+INT4 . . . . . . . . . .  B  ADDR  0090H.6   A   
+INT5 . . . . . . . . . .  B  ADDR  0090H.7   A   
+IP . . . . . . . . . . .  D  ADDR  00B8H     A   
+IT0. . . . . . . . . . .  B  ADDR  0088H.0   A   
+IT1. . . . . . . . . . .  B  ADDR  0088H.2   A   
+L?0023 . . . . . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER
+L?0024 . . . . . . . . .  C  ADDR  0006H     R   SEG=?PR?TIMER
+L?0025 . . . . . . . . .  C  ADDR  000CH     R   SEG=?PR?TIMER
+OSTIMETICK . . . . . . .  C  ADDR  -------       EXT
+OV . . . . . . . . . . .  B  ADDR  00D0H.2   A   
+P. . . . . . . . . . . .  B  ADDR  00D0H.0   A   
+P0 . . . . . . . . . . .  D  ADDR  0080H     A   
+P1 . . . . . . . . . . .  D  ADDR  0090H     A   
+P2 . . . . . . . . . . .  D  ADDR  00A0H     A   
+P3 . . . . . . . . . . .  D  ADDR  00B0H     A   
+PCON . . . . . . . . . .  D  ADDR  0087H     A   
+PERIOD?843 . . . . . . .  X  ADDR  0000H     R   SEG=?XD?_TIMER1_CONFIG?TIMER
+PFI. . . . . . . . . . .  B  ADDR  00D8H.4   A   
+PFUNC?844. . . . . . . .  X  ADDR  0004H     R   SEG=?XD?_TIMER1_CONFIG?TIMER
+PFUNCPARA?845. . . . . .  X  ADDR  0006H     R   SEG=?XD?_TIMER1_CONFIG?TIMER
+POR. . . . . . . . . . .  B  ADDR  00D8H.6   A   
+PPFUNC?141 . . . . . . .  X  ADDR  0001H     R   SEG=?XD?TIMER0_HANDLER?TIMER
+PS0. . . . . . . . . . .  B  ADDR  00B8H.4   A   
+PS1. . . . . . . . . . .  B  ADDR  00B8H.6   A   
+PSW. . . . . . . . . . .  D  ADDR  00D0H     A   
+PT0. . . . . . . . . . .  B  ADDR  00B8H.1   A   
+PT1. . . . . . . . . . .  B  ADDR  00B8H.3   A   
+PT2. . . . . . . . . . .  B  ADDR  00B8H.5   A   
+PTR?542. . . . . . . . .  X  ADDR  0000H     R   SEG=?XD?TIMER1_HANDLER?TIMER
+PWDI . . . . . . . . . .  B  ADDR  00F8H.4   A   
+PX0. . . . . . . . . . .  B  ADDR  00B8H.0   A   
+PX1. . . . . . . . . . .  B  ADDR  00B8H.2   A   
+PX2. . . . . . . . . . .  B  ADDR  00F8H.0   A   
+PX3. . . . . . . . . . .  B  ADDR  00F8H.1   A   
+PX4. . . . . . . . . . .  B  ADDR  00F8H.2   A   
+PX5. . . . . . . . . . .  B  ADDR  00F8H.3   A   
+RB8. . . . . . . . . . .  B  ADDR  0098H.2   A   
+RB81 . . . . . . . . . .  B  ADDR  00C0H.2   A   
+RCAP2H . . . . . . . . .  D  ADDR  00CBH     A   
+RCAP2L . . . . . . . . .  D  ADDR  00CAH     A   
+RCLK . . . . . . . . . .  B  ADDR  00C8H.5   A   
+RD . . . . . . . . . . .  B  ADDR  00B0H.7   A   
+REN. . . . . . . . . . .  B  ADDR  0098H.4   A   
+REN1 . . . . . . . . . .  B  ADDR  00C0H.4   A   
+RI . . . . . . . . . . .  B  ADDR  0098H.0   A   
+RI1. . . . . . . . . . .  B  ADDR  00C0H.0   A   
+RS0. . . . . . . . . . .  B  ADDR  00D0H.3   A   
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE    15
+
+RS1. . . . . . . . . . .  B  ADDR  00D0H.4   A   
+RWT. . . . . . . . . . .  B  ADDR  00D8H.0   A   
+RXD0 . . . . . . . . . .  B  ADDR  00B0H.0   A   
+RXD1 . . . . . . . . . .  B  ADDR  0090H.2   A   
+SADDR0 . . . . . . . . .  D  ADDR  00A9H     A   
+SADDR1 . . . . . . . . .  D  ADDR  00AAH     A   
+SADEN0 . . . . . . . . .  D  ADDR  00B9H     A   
+SADEN1 . . . . . . . . .  D  ADDR  00BAH     A   
+SBUF0. . . . . . . . . .  D  ADDR  0099H     A   
+SBUF1. . . . . . . . . .  D  ADDR  00C1H     A   
+SCON0. . . . . . . . . .  D  ADDR  0098H     A   
+SCON1. . . . . . . . . .  D  ADDR  00C0H     A   
+SM0. . . . . . . . . . .  B  ADDR  0098H.7   A   
+SM01 . . . . . . . . . .  B  ADDR  00C0H.7   A   
+SM1. . . . . . . . . . .  B  ADDR  0098H.6   A   
+SM11 . . . . . . . . . .  B  ADDR  00C0H.6   A   
+SM2. . . . . . . . . . .  B  ADDR  0098H.5   A   
+SM21 . . . . . . . . . .  B  ADDR  00C0H.5   A   
+SMOD_1 . . . . . . . . .  B  ADDR  00D8H.7   A   
+SP . . . . . . . . . . .  D  ADDR  0081H     A   
+STATUS . . . . . . . . .  D  ADDR  00C5H     A   
+T0 . . . . . . . . . . .  B  ADDR  00B0H.4   A   
+T1 . . . . . . . . . . .  B  ADDR  00B0H.5   A   
+T2 . . . . . . . . . . .  B  ADDR  0090H.0   A   
+T2CON. . . . . . . . . .  D  ADDR  00C8H     A   
+T2EX . . . . . . . . . .  B  ADDR  0090H.1   A   
+T2MOD. . . . . . . . . .  D  ADDR  00C9H     A   
+TA . . . . . . . . . . .  D  ADDR  00C7H     A   
+TB8. . . . . . . . . . .  B  ADDR  0098H.3   A   
+TB81 . . . . . . . . . .  B  ADDR  00C0H.3   A   
+TCLK . . . . . . . . . .  B  ADDR  00C8H.4   A   
+TCON . . . . . . . . . .  D  ADDR  0088H     A   
+TF0. . . . . . . . . . .  B  ADDR  0088H.5   A   
+TF1. . . . . . . . . . .  B  ADDR  0088H.7   A   
+TF2. . . . . . . . . . .  B  ADDR  00C8H.7   A   
+TH0. . . . . . . . . . .  D  ADDR  008CH     A   
+TH1. . . . . . . . . . .  D  ADDR  008DH     A   
+TH2. . . . . . . . . . .  D  ADDR  00CDH     A   
+TI . . . . . . . . . . .  B  ADDR  0098H.1   A   
+TI1. . . . . . . . . . .  B  ADDR  00C0H.1   A   
+TIMER. . . . . . . . . .  -- ----  -------       
+TIMER0_HANDLER . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER0_HANDLER?TIMER
+TIMER0_ROUTINE . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER0_ROUTINE?TIMER
+TIMER0_START . . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER0_START?TIMER
+TIMER0_STOP. . . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER0_STOP?TIMER
+TIMER1_HANDLER . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER1_HANDLER?TIMER
+TIMER1_ROUTINE . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER1_ROUTINE?TIMER
+TIMER1_START . . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER1_START?TIMER
+TIMER1_STOP. . . . . . .  C  ADDR  0000H     R   SEG=?PR?TIMER1_STOP?TIMER
+TIMERFUNCCALLLIST0 . . .  C  ADDR  -------       EXT
+TIMERFUNCCALLLIST1 . . .  C  ADDR  -------       EXT
+TIMETICK . . . . . . . .  X  ADDR  0000H     R   SEG=?XD?TIMER
+TL0. . . . . . . . . . .  D  ADDR  008AH     A   
+TL1. . . . . . . . . . .  D  ADDR  008BH     A   
+TL2. . . . . . . . . . .  D  ADDR  00CCH     A   
+TMOD . . . . . . . . . .  D  ADDR  0089H     A   
+TMR0STAMP. . . . . . . .  X  ADDR  0011H     R   SEG=?XD?TIMER
+TMR1PFUNC. . . . . . . .  X  ADDR  0008H     R   SEG=?XD?TIMER
+TMR1PFUNCPARA. . . . . .  X  ADDR  000AH     R   SEG=?XD?TIMER
+TMR1RELOADVAL. . . . . .  X  ADDR  000DH     R   SEG=?XD?TIMER
+TMRSVC_APO_INTR. . . . .  C  ADDR  -------       EXT
+TMRSVC_POWEROFFPROC_INTR  C  ADDR  -------       EXT
+TR0. . . . . . . . . . .  B  ADDR  0088H.4   A   
+TR1. . . . . . . . . . .  B  ADDR  0088H.6   A   
+TR2. . . . . . . . . . .  B  ADDR  00C8H.2   A   
+TXD0 . . . . . . . . . .  B  ADDR  00B0H.1   A   
+AX51 MACRO ASSEMBLER  TIMER                                                                 06/16/22 10:11:56 PAGE    16
+
+TXD1 . . . . . . . . . .  B  ADDR  0090H.3   A   
+WDCON. . . . . . . . . .  D  ADDR  00D8H     A   
+WDIF . . . . . . . . . .  B  ADDR  00D8H.3   A   
+WR . . . . . . . . . . .  B  ADDR  00B0H.6   A   
+WTRF . . . . . . . . . .  B  ADDR  00D8H.2   A   
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S).

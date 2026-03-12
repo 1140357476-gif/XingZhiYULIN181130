@@ -1,0 +1,17 @@
+Build target 'libApiRtc'
+compiling sp1k_rtc_api.c...
+compiling api_rtc_ver.c...
+creating library .\obj\libApiRtc.LIB...
+TRANSFER
+".\obj\sp1k_rtc_api.obj",
+".\obj\api_rtc_ver.obj" 
+TO ".\obj\libApiRtc.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\api\sp1kRtc>copy obj\libApiRtc.LIB ..\..\..\lib\libApiRtc.LIB 
+已复制         1 个文件。
+".\obj\libApiRtc.LIB" - 0 Error(s), 0 Warning(s).

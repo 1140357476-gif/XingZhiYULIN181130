@@ -1,0 +1,820 @@
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE STAMP
+OBJECT MODULE PLACED IN .\obj\stamp.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE stamp.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\in
+                    -c\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customizat
+                    -ion) DEFINE(LIB_RELEASE) PRINT(.\obj\stamp.lst) OBJECT(.\obj\stamp.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           * *
+   3           * Copyright (c) 2007 by Sunplus mMedia Inc.                      *
+   4           * *
+   5           **************************************************************************/
+   6          #include "general.h"
+   7          #include "hal_gprm.h"
+   8          #include "dbg_def.h"
+   9          #include "stamp.h"
+  10          #include "initio.h"
+  11          #include "sp1k_rsvblk_api.h"
+  12          #include "utility.h"
+  13          #include "sp1k_snap_api.h"
+  14          
+  15          #if STAMP_EN
+  16          #define __FILE  __FILE_ID_DATESTAMP__
+  17          
+  18          // External function declaration
+  19          extern void dispPnlDimGet(UINT16 *dispH, UINT16 *dispW);
+  20          
+  21          // Mode control: 0=photo(dot matrix) 1=video(original font)
+  22          static UINT8 gStampVideoMode = 0;
+  23          
+  24          // Dot matrix config
+  25          #define DOT_ROWS 7
+  26          #define DOT_COLS 5
+  27          
+  28          // 点阵颜色配置 - 修正 YUV 值 
+  29          #define DOT_COLOR_YELLOW    0 
+  30          #define DOT_COLOR_GREEN     1 
+  31          #define DOT_COLOR_WHITE     2 
+  32          #define DOT_COLOR_RED       3 
+  33          
+  34          // 修正的 YUV 值 (YUV422 格式) 
+  35          static const UINT8 colorTable[4][3] = { 
+  36              {0xD2, 0x10, 0x92},  // 黄色 
+  37              {0x96, 0x2E, 0x15},  // 绿色 
+  38              {0xFF, 0x80, 0x80},  // 白色 
+  39              {0x51, 0x5F, 0xF0},  // 红色 
+  40          };
+  41          
+  42          static UINT8 dotSize = 8;
+  43          static UINT8 dotSpace = 3;
+  44          static UINT8 lastDotSize = 0;  
+  45          static UINT8 dotInit = 0;  
+  46          static UINT8 lastDotColor = DOT_COLOR_YELLOW;  
+  47          static UINT8 dotColor = DOT_COLOR_YELLOW;  
+  48          
+  49          // Function prototypes (static)
+  50          static void stampAutoScale(UINT16 w, UINT16 h);
+  51          static void stampDotInit(void);
+  52          static void stampDrawDot(UINT32 addrW, UINT16 w, UINT16 h, UINT16 x, UINT16 y, UINT8 pasteThd);
+  53          static void stampPaintPattern(UINT32 addrW, UINT16 w, UINT16 h, UINT16 xOff, UINT16 yOff, UINT8 pasteThd, 
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 2   
+
+             -const UINT8 *pattern);
+  54          
+  55          stamp_font_t stampFonts[STAMP_FONT_RES_NUM];
+  56          
+  57          UINT32 stampFontAddr;
+  58          UINT16 stampFontWidth,stampFontHeight;
+  59          UINT8 stampFontNum;
+  60          UINT32 stampBGAddr;
+  61          UINT16 stampBGWidth,stampBGHeight;
+  62          UINT32 stampImgAddr;
+  63          UINT8  stampBGEnable;
+  64          UINT8  stampDateFmt;
+  65          UINT8 stampTimeFmt;
+  66          stamp_text_t dtText[STAMP_TYPE_MAX];
+  67          dateStc_t stampDateInf;
+  68          UINT32 stampGTimer;
+  69          
+  70          void stampTextReset()
+  71          {
+  72   1              memset(dtText,0,sizeof(dtText));
+  73   1      }
+  74          
+  75          UINT8 stampFontResLoad(UINT8 id,UINT8 resId,UINT8 fontW,UINT8 fontH,UINT8 fontNum)
+  76          {
+  77   1              stamp_font_t *pFont = stampFonts+id-1;
+  78   1              UINT32 addr = K_SDRAM_GrafFontBufAddr;
+  79   1              if(id>STAMP_FONT_RES_NUM){return FALSE;}
+  80   1              if(id>0){
+  81   2                      if(pFont->addr==0){return FALSE;}
+  82   2                      addr= pFont->addr+ (UINT32)pFont->width* pFont->height* pFont->count;
+  83   2              }
+  84   1              if(addr+(UINT32)fontW*fontH*fontNum - K_SDRAM_GrafFontBufAddr > K_SDRAM_GrafFontBufSize){return FALSE;}
+  85   1              pFont++;
+  86   1              pFont->addr = addr;
+  87   1              pFont->resId = resId;
+  88   1              pFont->width = fontW;
+  89   1              pFont->height = fontH;  
+  90   1              pFont->count = fontNum;
+  91   1              sp1kNandRsvRead(resId, addr<<1);
+  92   1              return TRUE;
+  93   1      }
+  94          
+  95          UINT8 stampFontInit()
+  96          {       
+  97   1              UINT8 fonts[]={
+  98   1                       0x23,32,64,16
+  99   1                      ,0x24,24,48,16
+ 100   1                      ,0x25,16,32,16
+ 101   1                      ,0x26,12,24,16
+ 102   1                      ,0x27,10,20,16
+ 103   1                      ,0x28,8,16,16
+ 104   1                      ,0x29,6,10,16
+ 105   1              };
+ 106   1              UINT8 *pfont = fonts;
+ 107   1              UINT8 i,ret;
+ 108   1              for(i=0;i<STAMP_FONT_RES_NUM;i++,pfont+=4)
+ 109   1              {               
+ 110   2                      ret = stampFontResLoad(i,pfont[0],pfont[1],pfont[2],pfont[3]);
+ 111   2              }
+ 112   1              return ret;
+ 113   1      }
+ 114          
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 3   
+
+ 115          stamp_font_t* stampFontSet(UINT32 fontAddr,UINT16 fontWidth,UINT16 fontHeight,UINT32 tmpAddr)
+ 116          {
+ 117   1              UINT8 i;
+ 118   1              stamp_font_t *pFont = stampFonts;
+ 119   1              stampFontAddr = fontAddr;
+ 120   1              stampFontWidth = fontWidth;
+ 121   1              stampFontHeight = fontHeight;   
+ 122   1              
+ 123   1              for(i=0;i<7;i++,pFont++){
+ 124   2                      if(fontWidth >= pFont->width && fontHeight >= pFont->height){
+ 125   3                              break;
+ 126   3                      }
+ 127   2              }
+ 128   1      
+ 129   1              if(i>=7){i=6;pFont--;}
+ 130   1              
+ 131   1              stampFontNum = pFont->count;
+ 132   1              if(fontAddr && tmpAddr){
+ 133   2                      HAL_GprmScale(pFont->addr
+ 134   2                              , (UINT16)pFont->width* (UINT16)stampFontNum, (UINT16)pFont->height,
+ 135   2                              fontAddr
+ 136   2                              , (UINT16)fontWidth * (UINT16)stampFontNum 
+ 137   2                              , (UINT16)fontHeight, tmpAddr
+ 138   2                              , 0);
+ 139   2              }
+ 140   1              return pFont;
+ 141   1      }
+ 142          
+ 143          void stampDateTimeFmtSet(UINT8 dateFmt,UINT8 timeFmt)
+ 144          {
+ 145   1              stampDateFmt = dateFmt;
+ 146   1              stampTimeFmt = timeFmt;
+ 147   1      }
+ 148          
+ 149          void stampTimeFormat(UINT8* text,UINT8 hour,UINT8 minute,UINT8 second,UINT8 fmt)
+ 150          {
+ 151   1              UINT8 ai = 0;
+ 152   1              UINT8 pattern[]= "%02bu:%02bu:%02bu AM";
+ 153   1              
+ 154   1              switch(fmt){
+ 155   2              case 0: pattern[11] = 0; break;
+ 156   2              case 1: ai = 12; pattern[11] = ' '; pattern[12] = 'A'; pattern[13] = 'M'; pattern[14] = 0; break;
+ 157   2              case 2: pattern[17] = 0; break;
+ 158   2              case 3: ai = 18; break;
+ 159   2              case 4: ai = 18; pattern[19] = 0; break;        
+ 160   2              case 5: ai = 12; pattern[11] = ' '; pattern[12] = 'A'; pattern[13] = 0; break;
+ 161   2              default: pattern[17] = 0; break;
+ 162   2              }
+ 163   1              if(ai && hour>=12){     
+ 164   2                      if(hour>12) hour = hour - 12;   
+ 165   2                      pattern[ai] = 'P';      
+ 166   2              }
+ 167   1              else if(ai && hour==0){
+ 168   2                      hour=12;
+ 169   2                      pattern[ai] = 'A';      
+ 170   2              }
+ 171   1      
+ 172   1              sprintf(text,pattern,hour,minute,second);       
+ 173   1      }
+ 174          
+ 175          void stampDateFormat(UINT8* text,UINT8 year,UINT8 mon,UINT8 day,UINT8 fmt)
+ 176          {
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 4   
+
+ 177   1              code UINT8 pattern0[]= "20%02bu/%02bu/%02bu";
+ 178   1              code UINT8 pattern1[]= "%02bu/%02bu/20%02bu";
+ 179   1              code UINT8 pattern2[]= "%02bu/%02bu/%02bu";
+ 180   1              switch( fmt ){
+ 181   2              case 0: sprintf(text,pattern0,year,mon,day); break;
+ 182   2              case 1: sprintf(text,pattern1,day,mon,year); break;
+ 183   2              case 2: sprintf(text,pattern1,mon,day,year); break;
+ 184   2              case 3: sprintf(text,pattern2,year,mon,day); break;
+ 185   2              default: sprintf(text,pattern0,year,mon,day); break;
+ 186   2              }
+ 187   1      }
+ 188          
+ 189          static UINT32 stampFontHOffsetGet(UINT8 val)
+ 190          {
+ 191   1              UINT32 hoff;
+ 192   1              if(val >= '/' && val <= ':'){
+ 193   2                      val = val - '/'; 
+ 194   2              }
+ 195   1              else {
+ 196   2                      switch (val){                    
+ 197   3                      case 'A': val = ':' - '/' + 1; break;
+ 198   3                      case 'P': val = ':' - '/' + 2; break;
+ 199   3                      case 'M': val = ':' - '/' + 3; break;                     
+ 200   3                      default:  val = stampFontNum-1; break;
+ 201   3                      }
+ 202   2              }
+ 203   1              hoff = (UINT16)val * stampFontWidth;
+ 204   1              return hoff;
+ 205   1      }
+ 206          
+ 207          static const UINT8 digitPatterns[10][DOT_ROWS] = {
+ 208           {0x0E,0x11,0x13,0x15,0x19,0x11,0x0E}, {0x04,0x0C,0x04,0x04,0x04,0x04,0x0E},
+ 209           {0x0E,0x11,0x01,0x02,0x04,0x08,0x1F}, {0x1E,0x01,0x01,0x0E,0x01,0x01,0x1E},
+ 210           {0x02,0x06,0x0A,0x12,0x1F,0x02,0x02}, {0x1F,0x10,0x1E,0x01,0x01,0x11,0x0E},
+ 211           {0x06,0x08,0x10,0x1E,0x11,0x11,0x0E}, {0x1F,0x01,0x02,0x04,0x08,0x08,0x08},
+ 212           {0x0E,0x11,0x11,0x0E,0x11,0x11,0x0E}, {0x0E,0x11,0x11,0x0F,0x01,0x02,0x0C}
+ 213          };
+ 214          
+ 215          static const UINT8 slashPattern[DOT_ROWS] = {0x02,0x02,0x04,0x04,0x08,0x10,0x10};
+ 216          static const UINT8 colonPattern[DOT_ROWS] = {0x00,0x04,0x04,0x00,0x04,0x04,0x00};
+ 217          static const UINT8 dotPattern[DOT_ROWS]   = {0x00,0x00,0x00,0x00,0x00,0x04,0x00};
+ 218          
+ 219          static UINT8 dotBuffer[4096]; 
+ 220          
+ 221          static void stampAutoScale(UINT16 w, UINT16 h)
+ 222          {
+ 223   1              UINT16 actualW, actualH;
+ 224   1              UINT32 pixels;
+ 225   1              
+ 226   1              // 消灭警告的小技巧：即便没有用到，也象征性地读一下避免编译器报错
+ 227   1              actualH = h;
+ 228   1              
+ 229   1              if (gStampVideoMode == 0) { 
+ 230   2                      sp1kSnapSizeGet(&actualW, &actualH);
+ 231   2              } else { 
+ 232   2                      actualW = w;
+ 233   2              }
+ 234   1              
+ 235   1              pixels = (UINT32)actualW * (UINT32)actualH;
+ 236   1              
+ 237   1              if(pixels >= 8160UL*6120UL) { dotSize = 16; dotSpace = 4; }
+ 238   1              else if(pixels >= 7664UL*5748UL) { dotSize = 15; dotSpace = 4; }
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 5   
+
+ 239   1              else if(pixels >= 7488UL*5616UL) { dotSize = 15; dotSpace = 4; }
+ 240   1              else if(pixels >= 6944UL*5208UL) { dotSize = 14; dotSpace = 4; }
+ 241   1              else if(pixels >= 5600UL*4200UL) { dotSize = 12; dotSpace = 3; }
+ 242   1              else if(pixels >= 5120UL*3840UL) { dotSize = 11; dotSpace = 3; }
+ 243   1              else if(pixels >= 4608UL*3456UL) { dotSize = 10; dotSpace = 3; }
+ 244   1              else if(pixels >= 3888UL*2916UL) { dotSize = 9; dotSpace = 2; }
+ 245   1              else if(pixels >= 3664UL*2748UL) { dotSize = 8; dotSpace = 2; }
+ 246   1              else if(pixels >= 3264UL*2448UL) { dotSize = 8; dotSpace = 2; }
+ 247   1              else if(pixels >= 2592UL*1944UL) { dotSize = 7; dotSpace = 2; }
+ 248   1              else if(pixels >= 2048UL*1536UL) { dotSize = 6; dotSpace = 2; }
+ 249   1              else if(pixels >= 1600UL*1200UL) { dotSize = 5; dotSpace = 2; }
+ 250   1              else if(pixels >= 1920UL*1080UL) { dotSize = 5; dotSpace = 2; }
+ 251   1              else if(pixels >= 1280UL*720UL) { dotSize = 4; dotSpace = 2; }
+ 252   1              else if(pixels >= 1024UL*768UL) { dotSize = 4; dotSpace = 1; }
+ 253   1              else if(pixels >= 640UL*480UL) { dotSize = 3; dotSpace = 1; }
+ 254   1              else { dotSize = 2; dotSpace = 1; }
+ 255   1              
+ 256   1              if (dotSize & 1) dotSize++;
+ 257   1              if (dotSpace & 1) dotSpace++;
+ 258   1      }
+ 259          
+ 260          static void stampDotInit(void)
+ 261          {
+ 262   1          UINT32 i;
+ 263   1          UINT32 totalPixels;
+ 264   1          UINT8 y, u, v;
+ 265   1          UINT16 *pBuf16;  
+ 266   1          UINT8 *pUncached;
+ 267   1      
+ 268   1          if(dotInit && lastDotSize == dotSize && lastDotColor == dotColor) { return; }
+ 269   1          if (dotSize & 1) dotSize++;
+ 270   1      
+ 271   1          totalPixels = (UINT32)dotSize * dotSize;
+ 272   1          
+ 273   1          y = colorTable[dotColor][0];
+ 274   1          u = colorTable[dotColor][1];
+ 275   1          v = colorTable[dotColor][2];
+ 276   1      
+ 277   1          pUncached = dotBuffer;
+ 278   1          pBuf16 = (UINT16 *)pUncached;
+ 279   1      
+ 280   1          for(i = 0; i < totalPixels * 2; i += 4) {
+ 281   2              dotBuffer[i]   = y;   
+ 282   2              dotBuffer[i+1] = u;   
+ 283   2              dotBuffer[i+2] = y;   
+ 284   2              dotBuffer[i+3] = v;   
+ 285   2          }
+ 286   1      
+ 287   1          lastDotSize = dotSize;
+ 288   1          lastDotColor = dotColor;
+ 289   1          dotInit = 1;
+ 290   1      }
+ 291          
+ 292          void stampVideoModeSet(UINT8 video)
+ 293          {
+ 294   1              gStampVideoMode = video;
+ 295   1      }
+ 296          
+ 297          void stampDotColorSet(UINT8 color)
+ 298          {
+ 299   1              if(color <= DOT_COLOR_RED) {
+ 300   2                      if(dotColor != color) {
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 6   
+
+ 301   3                              dotColor = color;
+ 302   3                              dotInit = 0; 
+ 303   3                              lastDotColor = (color == DOT_COLOR_YELLOW) ? DOT_COLOR_GREEN : DOT_COLOR_YELLOW;
+ 304   3                      }
+ 305   2              }
+ 306   1      }
+ 307          
+ 308          void stampResolutionGet(UINT16 *width, UINT16 *height)
+ 309          {
+ 310   1              dispPnlDimGet(height, width);
+ 311   1              stampAutoScale(*width, *height);
+ 312   1      }
+ 313          
+ 314          void stampPaintDotMatrixDigit(UINT32 addrW, UINT16 w, UINT16 h, UINT16 xOff, UINT16 yOff, UINT8 pasteThd, 
+             -UINT8 digit)
+ 315          {
+ 316   1              if(digit > 9) return;
+ 317   1              stampAutoScale(w, h);
+ 318   1              stampDotInit();
+ 319   1              stampPaintPattern(addrW, w, h, xOff, yOff, pasteThd, digitPatterns[digit]);
+ 320   1      }
+ 321          
+ 322          void stampPaintDotMatrixSymbol(UINT32 addrW, UINT16 w, UINT16 h, UINT16 xOff, UINT16 yOff, UINT8 pasteThd,
+             - UINT8 symbol)
+ 323          {
+ 324   1              const UINT8 *pattern;
+ 325   1              
+ 326   1              stampAutoScale(w, h);
+ 327   1              stampDotInit();
+ 328   1              
+ 329   1              if(symbol == 0) pattern = slashPattern;
+ 330   1              else if(symbol == 1) pattern = colonPattern;
+ 331   1              else if(symbol == 2) pattern = dotPattern;
+ 332   1              else return;
+ 333   1              
+ 334   1              stampPaintPattern(addrW, w, h, xOff, yOff, pasteThd, pattern);
+ 335   1      }
+ 336          
+ 337          void stampPaintText(UINT32 addrW,UINT16 w,UINT16 h,UINT16 xOff,UINT16 yOff,UINT8 pasteThd,UINT8 *text)
+ 338          {
+ 339   1              UINT8 i;
+ 340   1              UINT16 hoff;
+ 341   1              
+ 342   1              if(gStampVideoMode == 1) {
+ 343   2                      for(i=0; i<20 && text[i]; i++, xOff+=stampFontWidth){ 
+ 344   3                              hoff = stampFontHOffsetGet(text[i]);
+ 345   3                              HAL_GprmCopy(stampFontAddr
+ 346   3                                      , (UINT16)stampFontWidth* (UINT16)stampFontNum, (UINT16)stampFontHeight
+ 347   3                                      , hoff, 0
+ 348   3                                      , addrW
+ 349   3                                      , w, h
+ 350   3                                      , xOff, yOff
+ 351   3                                      , (UINT16)stampFontWidth, (UINT16)stampFontHeight
+ 352   3                                      , pasteThd
+ 353   3                                      , 0);  
+ 354   3                      }
+ 355   2              } else {
+ 356   2                      stampAutoScale(w, h);
+ 357   2                      stampDotInit();
+ 358   2                      
+ 359   2                      for(i=0; i<20 && text[i]; i++) {
+ 360   3                              if(text[i]>='0' && text[i]<='9') {
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 7   
+
+ 361   4                                      stampPaintPattern(addrW, w, h, xOff, yOff, pasteThd, digitPatterns[text[i]-'0']);
+ 362   4                                      xOff += (DOT_COLS*(dotSize+dotSpace))+dotSpace*2;
+ 363   4                              }
+ 364   3                              else if(text[i]=='/') {
+ 365   4                                      stampPaintPattern(addrW, w, h, xOff, yOff, pasteThd, slashPattern);
+ 366   4                                      xOff += (DOT_COLS*(dotSize+dotSpace))+dotSpace*2;
+ 367   4                              }
+ 368   3                              else if(text[i]==':') {
+ 369   4                                      stampPaintPattern(addrW, w, h, xOff, yOff, pasteThd, colonPattern);
+ 370   4                                      xOff += (DOT_COLS*(dotSize+dotSpace))+dotSpace*2; 
+ 371   4                              }
+ 372   3                              else if(text[i]=='.') {
+ 373   4                                      stampPaintPattern(addrW, w, h, xOff, yOff, pasteThd, dotPattern);
+ 374   4                                      xOff += (DOT_COLS*(dotSize+dotSpace))+dotSpace*2;
+ 375   4                              }
+ 376   3                              else if(text[i]==' ') {
+ 377   4                                      xOff += (DOT_COLS*(dotSize+dotSpace))+dotSpace*4;
+ 378   4                              }
+ 379   3                              xOff = (xOff + 1) & ~1; 
+ 380   3                      }
+ 381   2              }
+ 382   1      }
+ 383          
+ 384          static void stampDrawDot(UINT32 addrW,UINT16 w,UINT16 h,UINT16 x,UINT16 y,UINT8 pasteThd)
+ 385          {
+ 386   1              x = x & ~1;
+ 387   1              HAL_GprmCopy((UINT32)dotBuffer >> 1, dotSize, dotSize, 0, 0, addrW, w, h, x, y, dotSize, dotSize, pasteTh
+             -d, 0);
+ 388   1      }
+ 389          
+ 390          static void stampPaintPattern(UINT32 addrW, UINT16 w, UINT16 h, UINT16 x, UINT16 y, UINT8 pasteThd, const 
+             -UINT8 *pattern)
+ 391          {
+ 392   1          UINT8 r, c;
+ 393   1          UINT16 xBase, yPos, xPos;
+ 394   1      
+ 395   1          xBase = x & ~1;
+ 396   1      
+ 397   1          for (r = 0; r < DOT_ROWS; r++) {
+ 398   2              for (c = 0; c < DOT_COLS; c++) {
+ 399   3                  if (pattern[r] & (0x10 >> c)) {
+ 400   4                      xPos = xBase + (c * (dotSize + dotSpace));
+ 401   4                      xPos = xPos & ~1;  
+ 402   4                      yPos = y + (r * (dotSize + dotSpace));
+ 403   4                      
+ 404   4                      if(xPos + dotSize > w || yPos + dotSize > h) continue;
+ 405   4      
+ 406   4                      HAL_GprmCopy((UINT32)dotBuffer >> 1, dotSize, dotSize, 0, 0, addrW, w, h, xPos, yPos, dotS
+             -ize, dotSize, pasteThd, 0);
+ 407   4                  }
+ 408   3              }
+ 409   2          }
+ 410   1      }
+ 411          
+ 412          void stampPaintTextToBackground(UINT8* text,UINT32 xOff,UINT32 yOff,UINT8 pasteThd)
+ 413          {
+ 414   1              stampPaintText(stampBGAddr, stampBGWidth, stampBGHeight, xOff, yOff, pasteThd, text);
+ 415   1      }
+ 416          
+ 417          void stampBackgroundGet(UINT32* addrW,UINT32* xSize,UINT32* ySize)
+ 418          {
+ 419   1              *addrW = stampBGAddr;
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 8   
+
+ 420   1              *xSize = stampBGWidth;
+ 421   1              *ySize = stampBGHeight;
+ 422   1      }
+ 423          
+ 424          void stampBackgroundSet(UINT32 addrW,UINT16 xSize,UINT16 ySize)
+ 425          {
+ 426   1              stampBGAddr = addrW;
+ 427   1              stampBGWidth = xSize;
+ 428   1              stampBGHeight = ySize;
+ 429   1      }
+ 430          
+ 431          UINT8 stampBackgroundEnable(UINT8 enable)
+ 432          {
+ 433   1              if(enable!=0xff){
+ 434   2                      stampBGEnable = enable;
+ 435   2              }
+ 436   1              return stampBGEnable;
+ 437   1      }
+ 438          
+ 439          UINT8 stampTextEnable(stamp_text_type type,UINT8 enable)
+ 440          {
+ 441   1              stamp_text_t* ptText = dtText + type;
+ 442   1              if(enable!=0xff){               
+ 443   2                      ptText->enable = enable;
+ 444   2              }
+ 445   1              return ptText->enable;
+ 446   1      }
+ 447          
+ 448          void stampTextSet(stamp_text_type type,UINT32 xOff,UINT32 yOff,UINT8 pasteThd)
+ 449          {
+ 450   1              stamp_text_t* ptText = dtText + type;
+ 451   1              ptText->xOff = (xOff>stampBGWidth?stampBGWidth:xOff) & ~1;
+ 452   1              ptText->yOff = yOff>stampBGHeight?stampBGHeight:yOff;;
+ 453   1              ptText->pasteThd = pasteThd;
+ 454   1      }
+ 455          
+ 456          stamp_text_t* stampTextGet(stamp_text_type type)
+ 457          {
+ 458   1              return dtText + type;   
+ 459   1      }
+ 460          
+ 461          void stampTextImageSet(stamp_text_type type,UINT32 imgAddr,UINT32 size)
+ 462          {
+ 463   1              stamp_text_t* ptText = dtText + type;   
+ 464   1              UINT16 height = stampFontHeight;
+ 465   1              UINT16 width = size/2/stampFontWidth;
+ 466   1              ptText->imgAddrW = imgAddr;
+ 467   1              ptText->imgSize = size;
+ 468   1              
+ 469   1              if(width+ptText->xOff>stampBGWidth) {width = stampBGWidth-ptText->xOff;}
+ 470   1              if(height+ptText->yOff>stampBGHeight) {height = stampBGHeight-ptText->yOff;}
+ 471   1              ptText->imgWidth = width & 0xfff8;
+ 472   1              ptText->imgHeight= height;
+ 473   1      }
+ 474          
+ 475          void stampTextModifyByString(stamp_text_type type,UINT8* str)
+ 476          {
+ 477   1              stamp_text_t* ptText = dtText + type;
+ 478   1              UINT8* text = ptText->text;
+ 479   1              UINT8 i, c=strlen(str);
+ 480   1              
+ 481   1              if(ptText->imgAddrW){
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 9   
+
+ 482   2                      UINT32 addrW = ptText->imgAddrW;
+ 483   2                      UINT16 w = c*stampFontWidth;
+ 484   2                      UINT16 h = stampFontHeight;
+ 485   2                      UINT16 hoff;
+ 486   2                      
+ 487   2                      if(w+ptText->xOff<=stampBGWidth){
+ 488   3                              ptText->imgWidth = w;
+ 489   3                              
+ 490   3                              if(gStampVideoMode == 1) {
+ 491   4                                      for(i=0; i<c; i++) {
+ 492   5                                              if(text[i]!=str[i] && text[i] && str[i]){
+ 493   6                                                      hoff = stampFontHOffsetGet(str[i]);
+ 494   6                                                      HAL_GprmCopy(stampFontAddr
+ 495   6                                                              , (UINT16)stampFontWidth* (UINT16)stampFontNum, (UINT16)stampFontHeight
+ 496   6                                                              , hoff, 0
+ 497   6                                                              , addrW
+ 498   6                                                              , w, h  , stampFontWidth*i, 0
+ 499   6                                                              , (UINT16)stampFontWidth, (UINT16)stampFontHeight
+ 500   6                                                              , ptText->pasteThd
+ 501   6                                                              , 0
+ 502   6                                                              );  
+ 503   6                                              }
+ 504   5                                      }
+ 505   4                              } else {
+ 506   4                                      stampPaintText(addrW, w, h, 0, 0, ptText->pasteThd, str);
+ 507   4                              }
+ 508   3                      }
+ 509   2              }
+ 510   1              memcpy(text, str, c+1);
+ 511   1      }
+ 512          
+ 513          void stampTextModifyByImage(stamp_text_type type,UINT32 imgAddrW,UINT16 imgw,UINT16 imgh)
+ 514          {
+ 515   1              stamp_text_t* ptText = dtText + type;
+ 516   1              if(ptText->imgAddrW && ptText->imgSize>(UINT32)imgw*imgh*2){
+ 517   2                      if(imgw && imgh){
+ 518   3                              ptText->imgWidth = imgw;
+ 519   3                              ptText->imgHeight = imgh;
+ 520   3                      }
+ 521   2                      HAL_GprmDramDmaAdv(
+ 522   2                              imgAddrW<<1
+ 523   2                              , ptText->imgAddrW<<1
+ 524   2                              , (UINT32)ptText->imgWidth*ptText->imgHeight*2
+ 525   2                              , 0);
+ 526   2              }
+ 527   1      }
+ 528          
+ 529          void stampTextModifyByGTimer(UINT32 gTimer)
+ 530          {
+ 531   1              UINT32 dTimer;
+ 532   1      
+ 533   1              if(gTimer==0){
+ 534   2                      HAL_GlobalReadGTimer(&gTimer);
+ 535   2              }
+ 536   1              if(gTimer<=stampGTimer)return;
+ 537   1      
+ 538   1              dTimer= gTimer - stampGTimer;
+ 539   1      
+ 540   1              if(dTimer<1000)return;
+ 541   1      
+ 542   1              dTimer/=1000;
+ 543   1      
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 10  
+
+ 544   1              stampDateTimeUpdate(&stampDateInf, dTimer);
+ 545   1      
+ 546   1              stampTextModifyByRTC(&stampDateInf);
+ 547   1      
+ 548   1              stampGTimer+=dTimer*1000;
+ 549   1      }
+ 550          
+ 551          void stampTextModifyByRTC(dateStc_t* rtc)
+ 552          {
+ 553   1              stamp_text_t* ptDate = dtText + STAMP_DATE;
+ 554   1              stamp_text_t* ptTime = dtText + STAMP_TIME;
+ 555   1              UINT8 text[40];
+ 556   1              
+ 557   1              if(!rtc){
+ 558   2                      rtc = &stampDateInf;
+ 559   2                      HAL_GlobalReadRTC(rtc);
+ 560   2              }else{
+ 561   2                      stampDateInf = *rtc;
+ 562   2              }
+ 563   1              
+ 564   1              if(gStampVideoMode == 1) {
+ 565   2                      if(ptDate->enable){
+ 566   3                              stampDateFormat(text, rtc->Year, rtc->Month, rtc->Day, stampDateFmt);
+ 567   3                              stampTextModifyByString(STAMP_DATE, text);
+ 568   3                      }
+ 569   2                      if(ptTime->enable){
+ 570   3                              stampTimeFormat(text, rtc->Hour, rtc->Minute, rtc->Second, stampTimeFmt);
+ 571   3                              stampTextModifyByString(STAMP_TIME, text);
+ 572   3                      }
+ 573   2              } else {
+ 574   2                      UINT8 dateStr[20];
+ 575   2                      UINT8 timeStr[20];
+ 576   2                      stampDateFormat(dateStr, rtc->Year, rtc->Month, rtc->Day, stampDateFmt);
+ 577   2                      stampTimeFormat(timeStr, rtc->Hour, rtc->Minute, rtc->Second, stampTimeFmt);
+ 578   2                      sprintf((char*)text,"%s %s",dateStr,timeStr);
+ 579   2                      
+ 580   2                      if(ptDate->enable){
+ 581   3                              stampTextModifyByString(STAMP_DATE, text);
+ 582   3                      }
+ 583   2                      ptTime->enable = 0;
+ 584   2              }
+ 585   1      }
+ 586          
+ 587          void stampCombine(UINT32 dstAddrW)
+ 588          {
+ 589   1              UINT8 i;
+ 590   1              if(stampBGAddr && stampBGEnable && stampBGAddr!=dstAddrW){
+ 591   2                      HAL_GprmDramDmaAdv(stampBGAddr<<1, dstAddrW<<1, (UINT32)stampBGWidth*stampBGHeight*2, 1);
+ 592   2              }
+ 593   1              for(i=0; i<STAMP_TYPE_MAX; i++)
+ 594   1              {
+ 595   2                      stamp_text_t* ptText = dtText+i;
+ 596   2                      if(!ptText->enable){continue;}
+ 597   2                      
+ 598   2                      if(ptText->imgAddrW){
+ 599   3                              HAL_GprmCopy(
+ 600   3                                      ptText->imgAddrW
+ 601   3                                      , ptText->imgWidth, ptText->imgHeight, 0, 0
+ 602   3                                      , dstAddrW
+ 603   3                                      , stampBGWidth, stampBGWidth, ptText->xOff, ptText->yOff
+ 604   3                                      , ptText->imgWidth, ptText->imgHeight
+ 605   3                                      , ptText->pasteThd
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 11  
+
+ 606   3                                      , 0
+ 607   3                                      );
+ 608   3                      }else{
+ 609   3                              stampPaintText(
+ 610   3                                      dstAddrW
+ 611   3                                      , stampBGWidth, stampBGHeight
+ 612   3                                      , ptText->xOff, ptText->yOff
+ 613   3                                      , ptText->pasteThd
+ 614   3                                      , ptText->text
+ 615   3                                      );
+ 616   3                      }
+ 617   2              }
+ 618   1      }
+ 619          
+ 620          void stampCombineNext(UINT32 dstAddrW)
+ 621          {
+ 622   1              stampDateTimeNext(&stampDateInf);
+ 623   1              stampTextModifyByRTC(&stampDateInf);
+ 624   1              stampCombine(dstAddrW); 
+ 625   1      }
+ 626          
+ 627          void stampCombineToImage(UINT32 dstAddrW,UINT16 w,UINT16 h,UINT16 xoff,UINT16 yoff,UINT8 pasteThr)
+ 628          {       
+ 629   1              UINT8 i;
+ 630   1              if(stampBGAddr && stampBGEnable && stampBGAddr!=dstAddrW){
+ 631   2                      HAL_GprmCopy(
+ 632   2                              stampBGAddr
+ 633   2                              , stampBGWidth, stampBGHeight, 0, 0
+ 634   2                              , dstAddrW
+ 635   2                              , w, h, xoff, yoff
+ 636   2                              , stampBGWidth, stampBGHeight
+ 637   2                              , pasteThr
+ 638   2                              , 0
+ 639   2                              );
+ 640   2              }
+ 641   1              for(i=0; i<STAMP_TYPE_MAX; i++)
+ 642   1              {
+ 643   2                      stamp_text_t* ptText = dtText+i;
+ 644   2                      if(!ptText->enable)continue;
+ 645   2                      
+ 646   2                      if(ptText->imgAddrW){
+ 647   3                              HAL_GprmCopy(
+ 648   3                                      ptText->imgAddrW
+ 649   3                                      , ptText->imgWidth, ptText->imgHeight, 0, 0
+ 650   3                                      , dstAddrW
+ 651   3                                      , w, h, xoff+ptText->xOff, yoff+ptText->yOff
+ 652   3                                      , ptText->imgWidth, ptText->imgHeight
+ 653   3                                      , ptText->pasteThd
+ 654   3                                      , 0
+ 655   3                                      );
+ 656   3                      }else{
+ 657   3                              stampPaintText(
+ 658   3                                      dstAddrW
+ 659   3                                      , w, h
+ 660   3                                      , xoff+ptText->xOff, yoff+ptText->yOff
+ 661   3                                      , ptText->pasteThd
+ 662   3                                      , ptText->text
+ 663   3                                      );
+ 664   3                      }
+ 665   2              }
+ 666   1      }
+ 667          
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 12  
+
+ 668          void stampDateTimeUpdate(dateStc_t* dateInfNext,UINT32 skipSecond)
+ 669          {
+ 670   1              UINT8 day=31;
+ 671   1              if(dateInfNext==NULL){
+ 672   2                      dateInfNext = &stampDateInf;
+ 673   2              }       
+ 674   1              if(skipSecond==0){
+ 675   2                      return;
+ 676   2              }else if(skipSecond==0xffffffff){
+ 677   2                      HAL_GlobalReadRTC(dateInfNext);
+ 678   2              }
+ 679   1              dateInfNext->Second+=skipSecond;
+ 680   1              if(dateInfNext->Second<60)return;
+ 681   1              dateInfNext->Minute+=dateInfNext->Second/60;
+ 682   1              dateInfNext->Second=dateInfNext->Second%60;
+ 683   1              if(dateInfNext->Minute<60)return;
+ 684   1              dateInfNext->Hour+=dateInfNext->Minute/60;
+ 685   1              dateInfNext->Minute=dateInfNext->Minute%60;
+ 686   1              if(dateInfNext->Hour<24)return;
+ 687   1              dateInfNext->Day+=dateInfNext->Hour/24;
+ 688   1              dateInfNext->Hour=dateInfNext->Hour%24;
+ 689   1      
+ 690   1              while(1){
+ 691   2                      if((dateInfNext->Month==4) || (dateInfNext->Month==6) || (dateInfNext->Month==9) || (dateInfNext->Month=
+             -=11)){
+ 692   3                              day = 30;
+ 693   3                      }
+ 694   2                      if(dateInfNext->Month==2){
+ 695   3                              if((dateInfNext->Year%400==0)||((dateInfNext->Year%4==0)&&(dateInfNext->Year%100!=0))){
+ 696   4                                      day=29;
+ 697   4                              }else{
+ 698   4                                      day=28;
+ 699   4                              }
+ 700   3                      }
+ 701   2                      if(dateInfNext->Day<day)
+ 702   2                      {       
+ 703   3                              dateInfNext->Year += dateInfNext->Month/12;
+ 704   3                              break;
+ 705   3                      }
+ 706   2                      dateInfNext->Month++;
+ 707   2                      dateInfNext->Day-=day;  
+ 708   2              }
+ 709   1      }
+ 710          
+ 711          void stampDateTimeNext(dateStc_t* dateInfNext)
+ 712          {
+ 713   1      #if 1
+ 714   1              UINT8 day=31;
+ 715   1              if(dateInfNext==NULL){
+ 716   2                      dateInfNext = &stampDateInf;
+ 717   2              }
+ 718   1              dateInfNext->Second++;
+ 719   1              if(dateInfNext->Second<60)return;
+ 720   1              dateInfNext->Minute++;
+ 721   1              dateInfNext->Second=0;
+ 722   1              if(dateInfNext->Minute<60)return;
+ 723   1              dateInfNext->Hour++;
+ 724   1              dateInfNext->Minute=0;
+ 725   1              if(dateInfNext->Hour<24)return;
+ 726   1              dateInfNext->Day++;
+ 727   1              dateInfNext->Hour=0;
+ 728   1              
+C51 COMPILER V8.08   STAMP                                                                 03/12/2026 15:28:25 PAGE 13  
+
+ 729   1              if((dateInfNext->Month==4) || (dateInfNext->Month==6) || (dateInfNext->Month==9) || (dateInfNext->Month==
+             -11)){
+ 730   2                      day = 30;
+ 731   2              }
+ 732   1              if(dateInfNext->Month==2){
+ 733   2                      if((dateInfNext->Year%400==0)||((dateInfNext->Year%4==0)&&(dateInfNext->Year%100!=0))){
+ 734   3                              day=29;
+ 735   3                      }else{
+ 736   3                              day=28;
+ 737   3                      }
+ 738   2              }
+ 739   1              if(dateInfNext->Day<=day)return;
+ 740   1              dateInfNext->Month++;
+ 741   1              dateInfNext->Day = 1;
+ 742   1              if(dateInfNext->Month<=12)return;
+ 743   1              dateInfNext->Year++;
+ 744   1              dateInfNext->Month = 1;
+ 745   1      
+ 746   1      #endif
+ 747   1      }
+ 748          
+ 749          dateStc_t* stampRTCInfoGet()
+ 750          {
+ 751   1              return &stampDateInf;
+ 752   1      }
+ 753          
+ 754          UINT32 stampGTimerGet()
+ 755          {
+ 756   1              return stampGTimer;
+ 757   1      }
+ 758          
+ 759          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   6921    ----
+   CONSTANT SIZE    =    113    ----
+   XDATA SIZE       =   4417     444
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

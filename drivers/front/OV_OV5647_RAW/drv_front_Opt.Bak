@@ -1,0 +1,57 @@
+### uVision2 Project, (C) Keil Software
+### Do not modify !
+
+ cExt (*.c)
+ aExt (*.s*; *.src; *.a*)
+ oExt (*.obj)
+ lExt (*.lib)
+ tExt (*.txt; *.h; *.inc)
+ pExt (*.plm)
+ CppX (*.cpp)
+ DaveTm { 0,0,0,0,0,0,0,0 }
+
+Target (src), 0x0000 // Tools: 'MCS-51'
+Target (prj), 0x0000 // Tools: 'MCS-51'
+GRPOPT 1,(main),1,0,0
+
+OPTFFF 1,1,1,0,0,0,0,0,<.\front_OV_OV5647_RAW.c><front_OV_OV5647_RAW.c> 
+
+
+TARGOPT 1, (src)
+ CLK51=18000000
+  OPTTT 1,1,1,0
+  OPTHX 0,65535,0,0,0
+  OPTLX 120,65,8,<.\obj\>
+  OPTOX 16
+  OPTLT 0,0,0,1,1,1,0,1,0,0,0,0
+  OPTXL 0,0,0,0,0,0,0,0,0
+  OPTFL 1,0,1
+  OPTAX 255
+  OPTBL 0,(Data Sheet)<DATASHTS\DALLAS\DS80C32X.PDF>
+  OPTBL 1,(High-Speed User's Guide)<DATASHTS\DALLAS\HIGHSPEED_UG.PDF>
+  OPTDL (S8051.DLL)()(DP51.DLL)(-p320)(S8051.DLL)()(TP51.DLL)(-p320)
+  OPTDBG 48125,-1,()()()()()()()()()() ()()()()
+  OPTDF 0x2
+  OPTLE <>
+  OPTLC <>
+EndOpt
+
+TARGOPT 2, (prj)
+ CLK51=18000000
+  OPTTT 1,1,1,0
+  OPTHX 0,65535,0,0,0
+  OPTLX 120,65,8,<.\obj\>
+  OPTOX 16
+  OPTLT 0,0,0,1,1,1,0,1,0,0,0,0
+  OPTXL 0,0,0,0,0,0,0,0,0
+  OPTFL 1,0,0
+  OPTAX 255
+  OPTBL 0,(Data Sheet)<DATASHTS\DALLAS\DS80C32X.PDF>
+  OPTBL 1,(High-Speed User's Guide)<DATASHTS\DALLAS\HIGHSPEED_UG.PDF>
+  OPTDL (S8051.DLL)()(DP51.DLL)(-p320)(S8051.DLL)()(TP51.DLL)(-p320)
+  OPTDBG 48125,-1,()()()()()()()()()() ()()()()
+  OPTDF 0x2
+  OPTLE <>
+  OPTLC <>
+EndOpt
+

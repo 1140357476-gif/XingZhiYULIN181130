@@ -1,0 +1,135 @@
+C51 COMPILER V8.08   INTR_VER                                                              06/16/2022 10:11:57 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE INTR_VER
+OBJECT MODULE PLACED IN .\obj\intr_ver.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE intr_ver.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..
+                    -\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customi
+                    -zation) DEFINE(LIB_RELEASE) PRINT(.\obj\intr_ver.lst) OBJECT(.\obj\intr_ver.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2007-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           *  Author: Matt Wang
+  22           *      it01, 20111024 Guoqiang.li
+  23           *              a. modify number of version
+  24           *      it02, 20111110 LinJieCheng
+  25           *              a. add Dzoom non-blocking flow
+  26           *              b. removed old Dzoom non-blocking flow
+  27           *      it03, 20111112 LinJieCheng
+  28           *              a. add 1080P FHD AE FLOW (8 frame)
+  29           *      it04, 20111112 LinJieCheng
+  30           *              a. fixed 1080P FHD AE FLOW (8 frame)
+  31           *      it05, 20111117 wangjg
+  32           *              a. clean G_FPGAMemPool
+  33           *      it06, 20111209 rf.wang
+  34           *              a. modify 1<<2 to 0x04
+  35           *      it07, 20120105 rf.wang
+  36           *              a.add RTC intr.
+  37           *      it08, 20120119 jg.wang
+  38           *              a.move video intr proc to lib itself.
+  39           *      it09, 20120207 rf.wang
+  40           *              a.move clear jpg overflow intr to INTR_videoClipBrcVlcOvfSetQtable() function.
+  41           *      it0a, 20120208 Phil.Lin
+  42           *              a.add touch panel function.
+  43           *      it0b, 20120222 linjie.cheng
+  44           *              a.fixed non-blocking dzoom for still & video flow
+  45           *      it0c, 20120223 linjie.cheng
+  46           *              a. add high quality sensor zoom flow
+  47           *      it0d, 20120303 rf.wang
+  48           *              a. debug infor when jpg overflow
+  49           *      it0c, 20120316 peng.tan
+  50           *              a.add still image snap flow
+  51           *      it0d, 20120413 dongdong.wang
+  52           *              a.add speedy capture
+  53           *      it0e, 20120511 linjiecheng
+C51 COMPILER V8.08   INTR_VER                                                              06/16/2022 10:11:57 PAGE 2   
+
+  54           *              a.add AF_FIXTURE host flow & af lib
+  55           *      it0f, 20120619 linjiecheng
+  56           *              a.fixed smooth zoom flow
+  57           *      it10, 20120727 rf.wang
+  58           *              a.add blcoking zoom and nonblocking zoom
+  59           *      it11, 20120801 rf.wang
+  60           *              a.fix msg queue over flow bug when zoom
+  61           *      it12, 20120804 peng.tan
+  62           *              a.fix cannot preview after pccam set frame rate
+  63           *      it13, 20120905 peng.tan
+  64           *              a.skip first four frame In pccam mode(preview mjpeg)
+  65           *      it14, 20130318 linjie.cheng
+  66           *           a. add panorama function 
+  67           *           b. adjust motion detect flow
+  68          ***************************************************************************/
+  69          
+  70          /**************************************************************************
+  71           *                            H E A D E R   F I L E S
+  72           **************************************************************************/
+  73          #include "general.h"
+  74          
+  75          /**************************************************************************
+  76           *                            G L O B A L   D A T A
+  77           **************************************************************************/
+  78          static UINT8 code verStr[] = "$it14";
+  79          
+  80          /**************************************************************************
+  81           *
+  82           *  Function Name: intrLibVerGet
+  83           *
+  84           *  Purposes: Get current libaray's version.
+  85           *
+  86           *  Descriptions:
+  87           *
+  88           *  Arguments:
+  89           *
+  90           *  Returns:
+  91           *
+  92           *  See also:
+  93           *
+  94           **************************************************************************/
+  95          UINT8 *
+  96          libIntrVerGet(
+  97                  void
+  98          )
+  99          {
+ 100   1              return (verStr + 3);
+ 101   1      }
+ 102          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+C51 COMPILER V8.08   INTR_VER                                                              06/16/2022 10:11:57 PAGE 3   
+
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

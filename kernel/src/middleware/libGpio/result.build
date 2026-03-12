@@ -1,0 +1,19 @@
+Build target 'libGpio'
+compiling gpio_byte.c...
+compiling gpio.c...
+compiling gpio_ver.c...
+creating library .\obj\libGpio.LIB...
+TRANSFER
+".\obj\gpio_byte.obj",
+".\obj\gpio.obj",
+".\obj\gpio_ver.obj" 
+TO ".\obj\libGpio.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libGpio>copy obj\libGpio.LIB ..\..\..\lib\libGpio.LIB 
+已复制         1 个文件。
+".\obj\libGpio.LIB" - 0 Error(s), 0 Warning(s).

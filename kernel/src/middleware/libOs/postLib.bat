@@ -1,0 +1,1 @@
+copy .\obj\libOs.lib ..\..\..\lib\

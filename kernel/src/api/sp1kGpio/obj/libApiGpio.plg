@@ -1,0 +1,23 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+F:\WORK\SuoDa\220919 新板 按键 屏显 偏红 L\CDAF\kernel\src\api\sp1kGpio\libApiGpio.uv2
+Project File Date:  06/20/2018
+
+<h2>Output:</h2>
+Build target 'libApiGpio'
+compiling sp1k_gpio_api.c...
+compiling api_gpio_ver.c...
+creating library .\obj\libApiGpio.LIB...
+TRANSFER
+".\obj\sp1k_gpio_api.obj",
+".\obj\api_gpio_ver.obj" 
+TO ".\obj\libApiGpio.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\WORK\SuoDa\220919 新板 按键 屏显 偏红 L\CDAF\kernel\src\api\sp1kGpio>copy obj\libApiGpio.LIB ..\..\..\lib\libApiGpio.LIB 
+已复制         1 个文件。
+".\obj\libApiGpio.LIB" - 0 Error(s), 0 Warning(s).

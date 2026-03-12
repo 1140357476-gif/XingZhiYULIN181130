@@ -1,0 +1,8 @@
+TRANSFER
+".\obj\sd_bgrw.obj",
+".\obj\sd_core.obj",
+".\obj\sd_hw.obj",
+".\obj\sd_rw.obj",
+".\obj\sd_ver.obj",
+".\obj\sd_bg.obj" 
+TO ".\obj\libStorage_sd.LIB"

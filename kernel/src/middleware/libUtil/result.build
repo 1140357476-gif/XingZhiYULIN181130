@@ -1,0 +1,25 @@
+Build target 'utility'
+compiling utility.c...
+compiling sdramhw.c...
+compiling util_code_sentry.c...
+compiling util_fs.c...
+compiling util_fw_update.c...
+compiling util_ver.c...
+creating library .\obj\utility.LIB...
+TRANSFER
+".\obj\utility.obj",
+".\obj\sdramhw.obj",
+".\obj\util_code_sentry.obj",
+".\obj\util_fs.obj",
+".\obj\util_fw_update.obj",
+".\obj\util_ver.obj" 
+TO ".\obj\utility.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libUtil>copy .\obj\utility.LIB ..\..\..\lib\libUtil.LIB 
+已复制         1 个文件。
+".\obj\utility.LIB" - 0 Error(s), 0 Warning(s).

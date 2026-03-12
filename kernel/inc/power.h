@@ -1,0 +1,44 @@
+/**************************************************************************
+ *         Copyright(c) 2007 by Sunplus mMedia  Technology Co., Ltd.       *
+ *                                                                         *
+ *  This software is copyrighted by and is the property of Sunplus mMedia  *
+ *  Technology Co., Ltd. All rights are reserved by Sunplus mMedia Techno- *
+ *  logy Co., Ltd. This software may only be used in accordance with the   *
+ *  corresponding license agreement. Any unauthorized use, duplication,    *
+ *  distribution, or disclosure of this software is expressly forbidden.   *
+ *                                                                         *
+ *  This Copyright notice "M U S T" not be removed or modified without     *
+ *  prior written consent of Sunplus mMedia Technology  Co., Ltd.          *
+ *                                                                         *
+ *  Sunplus mMedia Technology Co., Ltd. reserves the right to modify this  *
+ *  software without notice.                                               *
+ *                                                                         *
+ *  Sunplus mMedia Technology Co., Ltd.                                    *
+ *  19-1, Innovation First Road, Science-Based Industrial Park,            *
+ *  Hsin-Chu, Taiwan, R.O.C.                                               *
+ *                                                                         *
+ **************************************************************************/
+#ifndef __POWER_H__
+#define __POWER_H__
+//------------------------------------------------------------------------------
+//Constant
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//External Link
+//------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------
+//Function Prototype
+//------------------------------------------------------------------------------
+void POWER_Initialize(void);
+void POWER_UsbConnectStatusChangeInt(void);
+void POWER_UsbConnect(void);
+void POWER_UsbDisconnect(void);
+void POWER_UsbSuspendPolling(void);
+void POWER_UsbSuspend(void);
+void POWER_UiSuspendPolling(void);
+void POWER_UiSuspend(void);
+void POWER_Resume(void);
+
+#endif /*__POWER_H__*/

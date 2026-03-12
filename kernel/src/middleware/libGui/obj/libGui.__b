@@ -1,0 +1,8 @@
+TRANSFER
+".\obj\gui_api.obj",
+".\obj\gui_core.obj",
+".\obj\gui_dbg.obj",
+".\obj\gui_evt.obj",
+".\obj\gui_tp.obj",
+".\obj\gui_ver.obj" 
+TO ".\obj\libGui.LIB"

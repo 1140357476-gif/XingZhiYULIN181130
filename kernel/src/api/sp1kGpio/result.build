@@ -1,0 +1,17 @@
+Build target 'libApiGpio'
+compiling sp1k_gpio_api.c...
+compiling api_gpio_ver.c...
+creating library .\obj\libApiGpio.LIB...
+TRANSFER
+".\obj\sp1k_gpio_api.obj",
+".\obj\api_gpio_ver.obj" 
+TO ".\obj\libApiGpio.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\api\sp1kGpio>copy obj\libApiGpio.LIB ..\..\..\lib\libApiGpio.LIB 
+已复制         1 个文件。
+".\obj\libApiGpio.LIB" - 0 Error(s), 0 Warning(s).

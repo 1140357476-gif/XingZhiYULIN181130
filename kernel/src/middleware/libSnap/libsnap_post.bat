@@ -1,0 +1,1 @@
+copy .\obj\libsnap.LIB ..\..\..\lib\libSnap.LIB

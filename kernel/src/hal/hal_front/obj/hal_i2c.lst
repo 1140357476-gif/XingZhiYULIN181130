@@ -1,0 +1,1064 @@
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE HAL_I2C
+OBJECT MODULE PLACED IN .\obj\hal_i2c.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE hal_i2c.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\
+                    -inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiz
+                    -ation) DEFINE(LIB_RELEASE) PRINT(.\obj\hal_i2c.lst) OBJECT(.\obj\hal_i2c.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21           
+  22          /**
+  23           * @file      hal_i2c.c
+  24           * @brief     hal i2c module api
+  25           * @author    Will Chiu
+  26           * @since     2010-01-01
+  27           * @date      2010-01-01
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #include "general.h"
+  34          #include "hal.h"
+  35          #include "hal_gpio.h"
+  36          #include "hal_i2c.h"
+  37          #include "hal_global.h"
+  38          #include "Reg_front.h"
+  39           
+  40          /**************************************************************************
+  41           *                           C O N S T A N T S                            *
+  42           **************************************************************************/
+  43          #define HAL_I2C_REG16_READ_VERIFY  0
+  44          
+  45          #define HAL_I2C_MAIN_DELAY  1
+  46          #define HAL_I2C_CLK_DELAY  1 
+  47          /**************************************************************************
+  48           *                              M A C R O S                               *
+  49           **************************************************************************/
+  50          /* debug, remove ";/K_SLASH  //" when you want to debug. */
+  51          #define DBG_PRINT_CMD_TABLE_SEND0;/K_SLASH  //printf
+  52          #define DBG_PRINT_CMD_TABLE_SEND1;/K_SLASH  //printf
+  53          #define DBG_PRINT_REG_READ0;/K_SLASH        //printf
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 2   
+
+  54          #define DBG_PRINT_REG_READ1;/K_SLASH        //printf
+  55          #define DBG_PRINT_REG16_READ0;/K_SLASH      //printf
+  56          #define DBG_PRINT_REG16_READ1;/K_SLASH      //printf
+  57          #define DBG_PRINT_BYTE_GPIO_WRITE;/K_SLASH  //printf
+  58          #define DBG_PRINT_BYTE_GPIO_READ;/K_SLASH   //printf
+  59          
+  60          #define HAL_I2C_IS_BUSY()  (XBYTE[REG_Front_Busy]       /*& 0x01*/)
+  61          
+  62          #define HAL_I2C_BUSY_WAIT() \
+  63                  while ( HAL_I2C_IS_BUSY() ); \
+  64          
+  65          #define SCK_H  XBYTE[REG_Front_Tggpioo] |= 0x10         /* sck output set to high. */
+  66          #define SCK_L  XBYTE[REG_Front_Tggpioo] &= ~0x10        /* sck output set to low. */
+  67          #define SDA_H  XBYTE[REG_Front_Tggpioo] |= 0x20         /* sda output set to high. */
+  68          #define SDA_L  XBYTE[REG_Front_Tggpioo] &= ~0x20        /* sda output set to low. */
+  69          #define SDA_O  XBYTE[REG_Front_Tggpiooen] |= 0x20       /* sda direction set to output. */
+  70          #define SDA_I  XBYTE[REG_Front_Tggpiooen] &= ~0x20      /* sda direction set to input. */
+  71          #define SDA_R  (XBYTE[REG_Front_Tggpioi] & 0x20)        /* sda read. */
+  72          
+  73          #if 0
+              #define MAIN_DELAY  HAL_10usWait(HAL_I2C_MAIN_DELAY)
+              #else
+  76          #define MAIN_DELAY
+  77          #endif
+  78          
+  79          #if 1  /* must be 1! otherwise read back value maybe wrong. */
+  80          #define CLK_DELAY  HAL_GlobalTimerWait10us(HAL_I2C_CLK_DELAY)
+  81          #else
+              #define CLK_DELAY
+              #endif
+  84          
+  85          #define TRANS_START \
+  86                  SCK_H; \
+  87                  SDA_O; \
+  88                  SDA_H; \
+  89                  CLK_DELAY; \
+  90                  SDA_L; \
+  91                  CLK_DELAY; \
+  92          
+  93          #define TRANS_STOP \
+  94                  SCK_H; \
+  95                  SDA_O; \
+  96                  SDA_L; \
+  97                  CLK_DELAY; \
+  98                  SDA_H; \
+  99                  CLK_DELAY; \ 
+ 100          /**************************************************************************
+ 101           *                          D A T A    T Y P E S                          *
+ 102           **************************************************************************/
+ 103           
+ 104          /**************************************************************************
+ 105           *                         G L O B A L    D A T A                         *
+ 106           **************************************************************************/
+ 107           
+ 108          /**************************************************************************
+ 109           *                 E X T E R N A L    R E F E R E N C E S                 *
+ 110           **************************************************************************/
+ 111          
+ 112          /**************************************************************************
+ 113           *                 I N T E R N A L    D E C L A R A T I O N S             *
+ 114           **************************************************************************/
+ 115          static void HAL_I2cByteGpioWrite(UINT8 val);
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 3   
+
+ 116          static void HAL_I2cWordGpioWrite(UINT16 *val);
+ 117          
+ 118          static UINT8 HAL_I2cByteGpioRead(void);
+ 119          static void HAL_I2cWordGpioRead(UINT8 *val); 
+ 120          
+ 121           
+ 122          /**************************************************************************
+ 123           *               F U N C T I O N    D E C L A R A T I O N S               *
+ 124           **************************************************************************/
+ 125          
+ 126          /**
+ 127           * @fn        void HAL_I2cDeviceAddrSet(UINT8 addr)
+ 128           * @brief     set i2c device (slave) address
+ 129           * @param     [in] addr: device (slave) address, 0x00~0xFF
+ 130           * @retval    NONE
+ 131           * @see       NULL
+ 132           * @author    Will Chiu
+ 133           * @since     2010-4-30
+ 134           * @todo      N/A
+ 135           * @bug       N/A
+ 136          */
+ 137          void
+ 138          HAL_I2cDeviceAddrSet(
+ 139                  UINT8 addr
+ 140          )
+ 141          {
+ 142   1              /* set Slaveaddr. */
+ 143   1              XBYTE[REG_Front_Slaveaddr] = addr;
+ 144   1      }
+ 145          
+ 146          /**
+ 147           * @fn        void HAL_I2cDeviceAddrGet(UINT8* pAddr)
+ 148           * @brief     Get i2c device (slave) address
+ 149           * @param     [out] pAddr: device (slave) address, 0x00~0xFF
+ 150           * @retval    NONE
+ 151           * @see       NULL
+ 152           * @author    Will Chiu
+ 153           * @since     2010-4-30
+ 154           * @todo      N/A
+ 155           * @bug       N/A
+ 156          */
+ 157          void
+ 158          HAL_I2cDeviceAddrGet(
+ 159                  UINT8* pAddr
+ 160          )
+ 161          {
+ 162   1              /* Get Slaveaddr. */
+ 163   1              if (pAddr) {
+ 164   2                      *pAddr = XBYTE[REG_Front_Slaveaddr];
+ 165   2              }
+ 166   1      }
+ 167          
+ 168          /**
+ 169           * @fn        UINT8 HAL_I2cRegClkCfgSet(UINT8 div)
+ 170           * @brief     set i2c reg clk configuration
+ 171           * @param     [in] regClkDiv : division factor, 0~31. reg_clk = (source/(regclkdiv+1))
+ 172           * @retval    return = SUCCESS / FAIL
+ 173           * @see       NULL
+ 174           * @author    Will Chiu
+ 175           * @since     2010-4-30
+ 176           * @todo      N/A
+ 177           * @bug       N/A
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 4   
+
+ 178          */
+ 179          void
+ 180          HAL_I2cRegClkCfgSet(
+ 181                  UINT8 regClkDiv
+ 182          )
+ 183          {
+ 184   1              if ( regClkDiv > 31 ) {
+ 185   2                      regClkDiv = 31;
+ 186   2              }
+ 187   1      
+ 188   1              XBYTE[0x2021] = regClkDiv;
+ 189   1      }
+ 190          
+ 191          /**
+ 192           * @fn        void HAL_I2cRegClkCfgGet(UINT8* pRegClkDiv)
+ 193           * @brief     get i2c reg clk configuration
+ 194           * @param     [out] pRegClkDiv : division factor, 0~31. reg_clk = (source/(regclkdiv+1))
+ 195           * @retval    NULL
+ 196           * @see       NULL
+ 197           * @author    Will Chiu
+ 198           * @since     2010-4-30
+ 199           * @todo      N/A
+ 200           * @bug       N/A
+ 201          */
+ 202          void
+ 203          HAL_I2cRegClkCfgGet(
+ 204                  UINT8* pRegClkDiv
+ 205          )
+ 206          {
+ 207   1              if (pRegClkDiv) {
+ 208   2                      *pRegClkDiv = XBYTE[0x2021];
+ 209   2              }
+ 210   1      }
+ 211          
+ 212          /**
+ 213           * @fn        UINT8 HAL_I2cClkCfgSet(UINT8 div)
+ 214           * @brief     set i2c clk configuration
+ 215           * @param     [in] div : division factor, 0~7. i2c_clk = reg_clk / (2 ^ (11 - div))
+ 216           * @retval    return = SUCCESS / FAIL
+ 217           * @see       NULL
+ 218           * @author    Will Chiu
+ 219           * @since     2010-4-30
+ 220           * @todo      N/A
+ 221           * @bug       N/A
+ 222          */
+ 223          void
+ 224          HAL_I2cClkCfgSet(
+ 225                  UINT8 div
+ 226          )
+ 227          {
+ 228   1              /* set Freq. */
+ 229   1              if ( div > 7) {
+ 230   2                      div = 7;
+ 231   2              }
+ 232   1              XBYTE[REG_Front_Freq] = div;
+ 233   1      
+ 234   1              /* set i2cclkinen & clkcentpos. */
+ 235   1              if ( div > 6 ) {
+ 236   2                      div = 6;
+ 237   2              }
+ 238   1              div = 0x01 << (6 - div);
+ 239   1              if ( div >= 0x10 ) {
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 5   
+
+ 240   2                      div--;
+ 241   2              }
+ 242   1              XBYTE[REG_Front_clkcentpos] = 0x80 | div;  /* i2cclkinen always 1. */
+ 243   1      }
+ 244          
+ 245          /**
+ 246           * @fn        void HAL_I2cClkCfgGet(UINT8* pDiv)
+ 247           * @brief     get i2c clk configuration
+ 248           * @param     [out] pDiv : division factor, 0~7. i2c_clk = reg_clk / (2 ^ (11 - div))
+ 249           * @retval    NULL
+ 250           * @see       NULL
+ 251           * @author    Will Chiu
+ 252           * @since     2010-4-30
+ 253           * @todo      N/A
+ 254           * @bug       N/A
+ 255          */
+ 256          void
+ 257          HAL_I2cClkCfgGet(
+ 258                  UINT8* pDiv
+ 259          )
+ 260          {
+ 261   1              if (pDiv) {
+ 262   2                      *pDiv = XBYTE[REG_Front_Freq];
+ 263   2              }
+ 264   1      }
+ 265          
+ 266          /**
+ 267           * @fn        UINT8 HAL_I2cCmdTableSend_Intr(UINT8 *cmdTbl, UINT8 cmdLen, UINT8 cmdTot, UINT8 transMode, U
+             -INT8 isr, UINT8 upd)
+ 268           * @brief     send command table to i2c interface
+ 269           * @param     [in] cmdTbl : command table
+ 270           * @param     [in] cmdLen : length of each command, 1~8, only used in normal mode
+ 271           * @param     [in] cmdTot : Amount of commands in the command table
+ 272           * @param     [in] transMode : transfer mode
+ 273           *                                                              0: normal mode
+ 274           *                                                              1: burst mode
+ 275           * @param     [in] isr : called by 
+ 276           *                                              0: regular function
+ 277           *                                              1: isr
+ 278           * @param     [in] upd : 
+ 279           *                                              0: immediately update
+ 280           *                                              1: sync to vsync falling
+ 281           * @retval    return = SUCCESS / FAIL
+ 282           * @see       NULL
+ 283           * @author    Will Chiu
+ 284           * @since     2010-4-30
+ 285           * @todo      N/A
+ 286           * @bug       N/A
+ 287          */
+ 288          UINT8
+ 289          HAL_I2cCmdTableSend_Intr(
+ 290                  UINT8 *cmdTbl,
+ 291                  UINT8 cmdLen,
+ 292                  UINT8 cmdTot,
+ 293                  UINT8 transMode,
+ 294                  UINT8 isr,
+ 295                  UINT8 upd
+ 296          )
+ 297          {
+ 298   1              UINT16 addrReg, dataReg;
+ 299   1              UINT8 sr, cnt;
+ 300   1              #if HAL_I2C_REG16_READ_VERIFY
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 6   
+
+                              UINT16 addrReg16;
+                              UINT8 dataW, dataR;
+                      #endif
+ 304   1      
+ 305   1              isr = isr;
+ 306   1              sr = sr;
+ 307   1      
+ 308   1              DBG_PRINT_CMD_TABLE_SEND0("HAL_I2cCmdTableSend 0x%06lX %bd %bd %bd %bd %bd\n",(UINT32)cmdTbl, cmdLen, cmd
+             -Tot, transMode, isr, upd);
+ 309   1      
+ 310   1              /* check validation. */
+ 311   1              if ( cmdTot == 0
+ 312   1              || (transMode == HAL_I2C_TRANS_MODE_NORMAL && (cmdLen == 0 || cmdLen > 8)) ) {
+ 313   2                      return FAIL;
+ 314   2              }
+ 315   1              
+ 316   1              #if 0//LinJieCheng intr not need ENTER_CRITICAL
+                      if ( !isr ) {
+                              ENTER_CRITICAL(sr);
+                      }
+                      #endif
+ 321   1              
+ 322   1              /* wait previous access done. */
+ 323   1              HAL_I2C_BUSY_WAIT();  /* busy wait must be before updating any reg. */
+ 324   1      
+ 325   1              /* set Transmode. */
+ 326   1              XBYTE[REG_Front_Transmode] = transMode;
+ 327   1      
+ 328   1              /* set Vdupdate, I2Csyncsel & I2csvd. */
+ 329   1              XBYTE[REG_Front_I2Csyncsel] = upd ? 0x11 : 0x00;  /* I2Csyncsel always 0. */
+ 330   1      
+ 331   1              /* send command table. */
+ 332   1              if ( transMode == HAL_I2C_TRANS_MODE_NORMAL ) {
+ 333   2                      /* set Wrcount. */
+ 334   2                      XBYTE[REG_Front_Wrcount] = (XBYTE[REG_Front_Wrcount] & ~0x07) | (cmdLen & 0x07);
+ 335   2      
+ 336   2                      while ( cmdTot > 0 ) {
+ 337   3                              #if HAL_I2C_REG16_READ_VERIFY
+                                              addrReg16 = (cmdTbl[0] << 8) | cmdTbl[1];
+                                              dataW = cmdTbl[2];
+                                      #endif
+ 341   3                              /* wait previous access done. */
+ 342   3                              HAL_I2C_BUSY_WAIT();  /* busy wait must be before updating any reg. */
+ 343   3      
+ 344   3                              /* set Addr0. */
+ 345   3                              DBG_PRINT_CMD_TABLE_SEND1(" A0=0x%02bX", *cmdTbl);
+ 346   3                              XBYTE[REG_Front_Addr0] = *(cmdTbl++);
+ 347   3      
+ 348   3                              /* set Data0 ~ Data7 (trigger write when set last data). */
+ 349   3                              dataReg = REG_Front_Data0;
+ 350   3                              for ( cnt = cmdLen; cnt > 0; cnt-- ) {
+ 351   4                                      DBG_PRINT_CMD_TABLE_SEND1(" D%u=0x%02bX", (dataReg-REG_Front_Data0)>>2, *cmdTbl);
+ 352   4                                      XBYTE[dataReg] = *(cmdTbl++);
+ 353   4                                      dataReg += 4;
+ 354   4                              }
+ 355   3                              DBG_PRINT_CMD_TABLE_SEND1("\n", 0);
+ 356   3      
+ 357   3                              #if HAL_I2C_REG16_READ_VERIFY
+                                              HAL_I2cReg16Read(&addrReg16, &dataR, 1, 1, 1, 0, 0);
+                                              printf("reg[0x%04X]= 0x%02bX=>0x%02bX :%s\n", addrReg16, dataW, dataR, dataW==dataR?"same":"diff");
+                                      #endif
+ 361   3      
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 7   
+
+ 362   3                              cmdTot--;
+ 363   3                      }
+ 364   2              }
+ 365   1              else {  /* HAL_I2C_TRANS_MODE_BURST. */
+ 366   2                      while ( cmdTot > 0 ) {
+ 367   3                              if ( cmdTot >= 8 ) {
+ 368   4                                      cnt = 8;
+ 369   4                                      cmdTot -= 8;
+ 370   4                              }
+ 371   3                              else {
+ 372   4                                      cnt = cmdTot;
+ 373   4                                      cmdTot = 0;
+ 374   4                              }
+ 375   3      
+ 376   3                              /* wait previous access done. */
+ 377   3                              HAL_I2C_BUSY_WAIT();  /* busy wait must be before updating any reg. */
+ 378   3      
+ 379   3                              /* set Wrcount. */
+ 380   3                              XBYTE[REG_Front_Wrcount] = (XBYTE[REG_Front_Wrcount] & ~0x07) | (cnt & 0x07);
+ 381   3      
+ 382   3                              addrReg = REG_Front_Addr0;
+ 383   3                              dataReg = REG_Front_Data0;
+ 384   3                              for ( ; cnt > 0; cnt-- ) {
+ 385   4                                      /* set Addr0~Addr7. */
+ 386   4                                      DBG_PRINT_CMD_TABLE_SEND1(" A%d=0x%02bX", (addrReg-REG_Front_Addr0)>>2, *cmdTbl);
+ 387   4                                      XBYTE[addrReg] = *(cmdTbl++);
+ 388   4                                      addrReg += 4;
+ 389   4      
+ 390   4                                      /* set Data0~Data7 (trigger write when set last data). */
+ 391   4                                      DBG_PRINT_CMD_TABLE_SEND1(" D%u=0x%02bX", (dataReg-REG_Front_Data0)>>2, *cmdTbl);
+ 392   4                                      XBYTE[dataReg] = *(cmdTbl++);
+ 393   4                                      dataReg += 4;
+ 394   4                              }
+ 395   3                              DBG_PRINT_CMD_TABLE_SEND1("\n", 0);
+ 396   3                      }
+ 397   2              }
+ 398   1      
+ 399   1              #if 0//LinJieCheng intr not need ENTER_CRITICAL
+                      if ( !isr ) {
+                              EXIT_CRITICAL(sr);
+                      }
+                      #endif
+ 404   1      
+ 405   1              XBYTE[REG_Front_Dummy0] = XBYTE[REG_Front_Slaveaddr];
+ 406   1              XBYTE[REG_Front_Dummy1] = XBYTE[REG_Front_ACKerr];
+ 407   1              XBYTE[REG_Front_Dummy2] = XBYTE[REG_Front_Addr0];
+ 408   1              XBYTE[REG_Front_Dummy3] = XBYTE[REG_Front_Data0];
+ 409   1      
+ 410   1              return SUCCESS;
+ 411   1      }
+ 412          
+ 413          /**
+ 414           * @fn        UINT8 HAL_I2cCmdTableSend(UINT8 *cmdTbl, UINT8 cmdLen, UINT8 cmdTot, UINT8 transMode, UINT8 
+             -isr, UINT8 upd)
+ 415           * @brief     send command table to i2c interface
+ 416           * @param     [in] cmdTbl : command table
+ 417           * @param     [in] cmdLen : length of each command, 1~8, only used in normal mode
+ 418           * @param     [in] cmdTot : how many commands in the command table
+ 419           * @param     [in] transMode : transfer mode, one of HAL_I2cTransMode_e
+ 420           * @param     [in] isr : called by 
+ 421           *                                                      0: regular function
+ 422           *                                                      1: isr
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 8   
+
+ 423           * @param     [in] upd
+ 424           *                                              0: immediately update
+ 425           *                                              1: sync to vsync falling
+ 426           * @retval    return = SUCCESS / FAIL
+ 427           * @see       NULL
+ 428           * @author    Will Chiu
+ 429           * @since     2010-4-30
+ 430           * @todo      N/A
+ 431           * @bug       N/A
+ 432          */
+ 433          UINT8
+ 434          HAL_I2cCmdTableSend(
+ 435                  UINT8 *cmdTbl,
+ 436                  UINT8 cmdLen,
+ 437                  UINT8 cmdTot,
+ 438                  UINT8 transMode,
+ 439                  UINT8 isr,
+ 440                  UINT8 upd
+ 441          )
+ 442          {
+ 443   1              UINT16 addrReg, dataReg;
+ 444   1              UINT8 sr, cnt;
+ 445   1              #if HAL_I2C_REG16_READ_VERIFY
+                              UINT16 addrReg16;
+                              UINT8 dataW, dataR;
+                      #endif
+ 449   1      
+ 450   1              DBG_PRINT_CMD_TABLE_SEND0("HAL_I2cCmdTableSend 0x%06lX %bd %bd %bd %bd %bd\n",(UINT32)cmdTbl, cmdLen, cmd
+             -Tot, transMode, isr, upd);
+ 451   1      
+ 452   1              /* check validation. */
+ 453   1              if ( cmdTot == 0
+ 454   1              || (transMode == HAL_I2C_TRANS_MODE_NORMAL && (cmdLen == 0 || cmdLen > 8)) ) {
+ 455   2                      return FAIL;
+ 456   2              }
+ 457   1      
+ 458   1              if ( !isr ) {
+ 459   2                      ENTER_CRITICAL(sr);
+ 460   2              }
+ 461   1      
+ 462   1              /* wait previous access done. */
+ 463   1              HAL_I2C_BUSY_WAIT();  /* busy wait must be before updating any reg. */
+ 464   1      
+ 465   1              /* set Transmode. */
+ 466   1              XBYTE[REG_Front_Transmode] = transMode;
+ 467   1      
+ 468   1              /* set Vdupdate, I2Csyncsel & I2csvd. */
+ 469   1              XBYTE[REG_Front_I2Csyncsel] = upd ? 0x11 : 0x00;  /* I2Csyncsel always 0. */
+ 470   1      
+ 471   1              /* send command table. */
+ 472   1              if ( transMode == HAL_I2C_TRANS_MODE_NORMAL ) {
+ 473   2                      /* set Wrcount. */
+ 474   2                      XBYTE[REG_Front_Wrcount] = (XBYTE[REG_Front_Wrcount] & ~0x07) | (cmdLen & 0x07);
+ 475   2      
+ 476   2                      while ( cmdTot > 0 ) {
+ 477   3                              #if HAL_I2C_REG16_READ_VERIFY
+                                              addrReg16 = (cmdTbl[0] << 8) | cmdTbl[1];
+                                              dataW = cmdTbl[2];
+                                      #endif
+ 481   3                              /* wait previous access done. */
+ 482   3                              HAL_I2C_BUSY_WAIT();  /* busy wait must be before updating any reg. */
+ 483   3      
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 9   
+
+ 484   3                              /* set Addr0. */
+ 485   3                              DBG_PRINT_CMD_TABLE_SEND1(" A0=0x%02bX", *cmdTbl);
+ 486   3                              XBYTE[REG_Front_Addr0] = *(cmdTbl++);
+ 487   3      
+ 488   3                              /* set Data0 ~ Data7 (trigger write when set last data). */
+ 489   3                              dataReg = REG_Front_Data0;
+ 490   3                              for ( cnt = cmdLen; cnt > 0; cnt-- ) {
+ 491   4                                      DBG_PRINT_CMD_TABLE_SEND1(" D%u=0x%02bX", (dataReg-REG_Front_Data0)>>2, *cmdTbl);
+ 492   4                                      XBYTE[dataReg] = *(cmdTbl++);
+ 493   4                                      dataReg += 4;
+ 494   4                              }
+ 495   3                              DBG_PRINT_CMD_TABLE_SEND1("\n", 0);
+ 496   3      
+ 497   3                              #if HAL_I2C_REG16_READ_VERIFY
+                                              HAL_I2cReg16Read(&addrReg16, &dataR, 1, 1, 1, 0, 0);
+                                              printf("reg[0x%04X]= 0x%02bX=>0x%02bX :%s\n", addrReg16, dataW, dataR, dataW==dataR?"same":"diff");
+                                      #endif
+ 501   3      
+ 502   3                              cmdTot--;
+ 503   3                      }
+ 504   2              }
+ 505   1              else {  /* HAL_I2C_TRANS_MODE_BURST. */
+ 506   2                      while ( cmdTot > 0 ) {
+ 507   3                              if ( cmdTot >= 8 ) {
+ 508   4                                      cnt = 8;
+ 509   4                                      cmdTot -= 8;
+ 510   4                              }
+ 511   3                              else {
+ 512   4                                      cnt = cmdTot;
+ 513   4                                      cmdTot = 0;
+ 514   4                              }
+ 515   3      
+ 516   3                              /* wait previous access done. */
+ 517   3                              HAL_I2C_BUSY_WAIT();  /* busy wait must be before updating any reg. */
+ 518   3      
+ 519   3                              /* set Wrcount. */
+ 520   3                              XBYTE[REG_Front_Wrcount] = (XBYTE[REG_Front_Wrcount] & ~0x07) | (cnt & 0x07);
+ 521   3      
+ 522   3                              addrReg = REG_Front_Addr0;
+ 523   3                              dataReg = REG_Front_Data0;
+ 524   3                              for ( ; cnt > 0; cnt-- ) {
+ 525   4                                      /* set Addr0~Addr7. */
+ 526   4                                      DBG_PRINT_CMD_TABLE_SEND1(" A%d=0x%02bX", (addrReg-REG_Front_Addr0)>>2, *cmdTbl);
+ 527   4                                      XBYTE[addrReg] = *(cmdTbl++);
+ 528   4                                      addrReg += 4;
+ 529   4      
+ 530   4                                      /* set Data0~Data7 (trigger write when set last data). */
+ 531   4                                      DBG_PRINT_CMD_TABLE_SEND1(" D%u=0x%02bX", (dataReg-REG_Front_Data0)>>2, *cmdTbl);
+ 532   4                                      XBYTE[dataReg] = *(cmdTbl++);
+ 533   4                                      dataReg += 4;
+ 534   4                              }
+ 535   3                              DBG_PRINT_CMD_TABLE_SEND1("\n", 0);
+ 536   3                      }
+ 537   2              }
+ 538   1      
+ 539   1              XBYTE[REG_Front_Dummy0] = XBYTE[REG_Front_Slaveaddr];
+ 540   1              XBYTE[REG_Front_Dummy1] = XBYTE[REG_Front_ACKerr];
+ 541   1              XBYTE[REG_Front_Dummy2] = XBYTE[REG_Front_Addr0];
+ 542   1              XBYTE[REG_Front_Dummy3] = XBYTE[REG_Front_Data0];
+ 543   1      
+ 544   1              if ( !isr ) {
+ 545   2                      EXIT_CRITICAL(sr);
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 10  
+
+ 546   2              }
+ 547   1      
+ 548   1              return SUCCESS;
+ 549   1      }
+ 550          
+ 551          /**
+ 552           * @fn        UINT8 HAL_I2cRegRead(UINT8 *addrTbl, UINT8 *dataTbl, UINT8 dataLen, UINT8 regTot, UINT8 subA
+             -ddrEn, UINT8 restartMode, UINT8 upd)
+ 553           * @brief     read desired register data from i2c interface
+ 554           * @param     [in] addrTbl : register address table
+ 555           * @param     [in] dataTbl : read back data
+ 556           * @param     [in] dataLen : how many bytes to read in each register, 1~8
+ 557           * @param     [in] regTot : how many registers to read
+ 558           * @param     [in] subAddrEn : sub-address 
+ 559           *                                                                      0: disabled
+ 560           *                                                                      1:enabled
+ 561           * @param     [in] restartMode : 
+ 562           *                                                              0: stop+start
+ 563           *                                                              1: repeat start
+ 564           * @param     [in] upd
+ 565           *                                              0: immediately update
+ 566           *                                              1: sync to vsync falling
+ 567           * @retval    return = SUCCESS / FAIL
+ 568           * @see       NULL
+ 569           * @author    Will Chiu
+ 570           * @since     2010-4-30
+ 571           * @todo      N/A
+ 572           * @bug       N/A
+ 573          */
+ 574          UINT8
+ 575          HAL_I2cRegRead(
+ 576                  UINT8 *addrTbl,
+ 577                  UINT8 *dataTbl,
+ 578                  UINT8 dataLen,
+ 579                  UINT8 regTot,
+ 580                  UINT8 subAddrEn,
+ 581                  UINT8 restartMode,
+ 582                  UINT8 upd
+ 583          )
+ 584          {
+ 585   1              UINT16 dataReg;
+ 586   1              UINT8 len;
+ 587   1      
+ 588   1      
+ 589   1              DBG_PRINT_REG_READ0("HAL_I2cRegRead 0x%06lX 0x%06lX %bd %bd %bd %bd %bd\n",(UINT32)addrTbl, (UINT32)dataT
+             -bl,dataLen, regTot, subAddrEn, restartMode, upd);
+ 590   1      
+ 591   1              /* check validation. */
+ 592   1              if ( regTot == 0 || dataLen == 0 || dataLen > 8 ) {
+ 593   2                      return FAIL;
+ 594   2              }
+ 595   1      
+ 596   1              /* wait previous access done. */
+ 597   1              HAL_I2C_BUSY_WAIT();  /* busy wait must be before updating any reg. */
+ 598   1      
+ 599   1              /* set Transmode. */
+ 600   1              XBYTE[REG_Front_Transmode] = 0;
+ 601   1      
+ 602   1              /* set Vdupdate, I2Csyncsel & I2csvd. */
+ 603   1              XBYTE[REG_Front_I2Csyncsel] = 0x10 | upd;  /* Vdupdate always 1, I2Csyncsel always 0. */
+ 604   1      
+ 605   1              /* set Rdcount. */
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 11  
+
+ 606   1              XBYTE[REG_Front_Wrcount] = (XBYTE[REG_Front_Wrcount] & ~0x70) | ((dataLen & 0x07) << 4);
+ 607   1      
+ 608   1              while ( regTot ) {
+ 609   2                      /* set Addr0. */
+ 610   2                      DBG_PRINT_REG_READ1(" A0=0x%02bX", *addrTbl);
+ 611   2                      XBYTE[REG_Front_Addr0] = *(addrTbl++);
+ 612   2      
+ 613   2                      /* set Prefetch, Restarten & Subaddren (trigger read). */
+ 614   2                      XBYTE[REG_Front_Subaddren] = 0x10 | (restartMode << 1) | subAddrEn;  /* Prefetch set 1 to trigger read. 
+             -*/
+ 615   2      
+ 616   2                      /* wait previous access done. */
+ 617   2                      HAL_I2C_BUSY_WAIT();  /* busy wait after trigger read. */
+ 618   2      
+ 619   2                      /* get read back data. */
+ 620   2                      dataReg = REG_Front_Data0;
+ 621   2                      len = dataLen;
+ 622   2                      while ( len > 0 ) {
+ 623   3                              DBG_PRINT_REG_READ1(" D%u=0x%02bX", (dataReg-REG_Front_Data0)>>2, XBYTE[dataReg]);
+ 624   3                              *(dataTbl++) = XBYTE[dataReg];
+ 625   3                              dataReg += 4;
+ 626   3      
+ 627   3                              len--;
+ 628   3                      }
+ 629   2                      DBG_PRINT_REG_READ1("\n", 0);
+ 630   2      
+ 631   2                      regTot--;
+ 632   2              }
+ 633   1      
+ 634   1              return SUCCESS;
+ 635   1      }
+ 636          
+ 637          /**
+ 638           * @fn        UINT8 HAL_I2cReg16Read(UINT16 *addrTbl, UINT8 *dataTbl, UINT8 dataLen, UINT8 regTot, UINT8 s
+             -ubAddrEn, UINT8 restartMode, UINT8 upd)
+ 639           * @brief     read desired 16-bit register data from i2c interface
+ 640           * @param     [out] addrTbl : 16-bit register address table
+ 641           * @param     [out] dataTbl : read back data
+ 642           * @param     [in] dataLen : how many bytes to read in each register, 1~8
+ 643           * @param     [in] regTot : how many registers to read
+ 644           * @param     [in] subAddrEn : sub-address 
+ 645           *                                                              0: disabled
+ 646           *                                                              1:enabled 
+ 647           * @param     [in] restartMode
+ 648           *                                                              0: stop+start
+ 649           *                                                              1: repeat starts
+ 650           * @param     [in] upd
+ 651           *                                              0: immediately update
+ 652           *                                              1: sync to vsync falling 
+ 653           * @retval    return = SUCCESS / FAIL
+ 654           * @see       NULL
+ 655           * @author    Will Chiu
+ 656           * @since     2010-4-30
+ 657           * @todo      N/A
+ 658           * @bug       N/A
+ 659          */
+ 660          UINT8
+ 661          HAL_I2cReg16Read(
+ 662                  UINT16 *addrTbl,
+ 663                  UINT8 *dataTbl,
+ 664                  UINT8 dataLen,
+ 665                  UINT8 regTot,
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 12  
+
+ 666                  UINT8 subAddrEn,
+ 667                  UINT8 restartMode,
+ 668                  UINT8 upd
+ 669          )
+ 670          {
+ 671   1              UINT8 devAddrR, devAddrW, len, dataR;
+ 672   1      
+ 673   1              upd=upd;
+ 674   1      
+ 675   1              DBG_PRINT_REG16_READ0("HAL_I2cReg16Read 0x%06lX 0x%06lX %bd %bd %bd %bd %bd\n",(UINT32)addrTbl, (UINT32)d
+             -ataTbl,dataLen, regTot, subAddrEn, restartMode, upd);
+ 676   1      
+ 677   1              /* check validation. */
+ 678   1              if ( regTot == 0 || dataLen == 0 || dataLen > 8 ) {
+ 679   2                      return FAIL;
+ 680   2              }
+ 681   1      
+ 682   1              /* wait previous access done. */
+ 683   1              HAL_I2C_BUSY_WAIT();  /* busy wait must be before updating any reg. */
+ 684   1      
+ 685   1              /* set tggpio[5:4] (i2c_sda, i2c_sck) to gpio pin output mode. */
+ 686   1              XBYTE[REG_Front_Tggpiosel] |= 0x30;
+ 687   1              XBYTE[REG_Front_Tggpiooen] |= 0x30;
+ 688   1      
+ 689   1              devAddrR = XBYTE[REG_Front_Slaveaddr] | 0x01;
+ 690   1              devAddrW = XBYTE[REG_Front_Slaveaddr] & ~0x01;
+ 691   1      
+ 692   1              while ( regTot ) {
+ 693   2                      if ( subAddrEn ) {
+ 694   3                              TRANS_START;
+ 695   3                              MAIN_DELAY;
+ 696   3      
+ 697   3                              /* send device write addr. */
+ 698   3                              HAL_I2cByteGpioWrite(devAddrW);
+ 699   3                              MAIN_DELAY;
+ 700   3      
+ 701   3                              /* send reg addr. */
+ 702   3                              DBG_PRINT_REG16_READ1(" A0=0x%04X", *addrTbl);
+ 703   3                              HAL_I2cByteGpioWrite(*addrTbl >> 8);
+ 704   3                              MAIN_DELAY;
+ 705   3                              HAL_I2cByteGpioWrite(*addrTbl & 0xFF);
+ 706   3                              MAIN_DELAY;
+ 707   3                              addrTbl++;
+ 708   3      
+ 709   3                              if ( !restartMode ) {
+ 710   4                                      TRANS_STOP;
+ 711   4                                      MAIN_DELAY;
+ 712   4                              }
+ 713   3                      }
+ 714   2      
+ 715   2                      TRANS_START;
+ 716   2                      MAIN_DELAY;
+ 717   2      
+ 718   2                      /* send device read addr. */
+ 719   2                      HAL_I2cByteGpioWrite(devAddrR);
+ 720   2                      MAIN_DELAY;
+ 721   2      
+ 722   2                      /* get read back data. */
+ 723   2                      len = dataLen;
+ 724   2                      while ( len > 0 ) {
+ 725   3                              dataR = HAL_I2cByteGpioRead();
+ 726   3                              MAIN_DELAY;
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 13  
+
+ 727   3                              DBG_PRINT_REG16_READ1(" D%bu=0x%02bX", dataLen - len, dataR);
+ 728   3                              *(dataTbl++) = dataR;
+ 729   3      
+ 730   3                              len--;
+ 731   3                      }
+ 732   2                      DBG_PRINT_REG16_READ1("\n", 0);
+ 733   2      
+ 734   2                      TRANS_STOP;
+ 735   2      
+ 736   2                      regTot--;
+ 737   2              }
+ 738   1      
+ 739   1              /* restore tggpio[5:4] (i2c_sda, i2c_sck) to function pin. */
+ 740   1              XBYTE[REG_Front_Tggpiosel] &= ~0x30;
+ 741   1      
+ 742   1              return SUCCESS;
+ 743   1      }
+ 744          
+ 745          UINT8 
+ 746          HAL_I2cReg16Read16(
+ 747                  UINT16 *addrTbl,
+ 748                  UINT8 *dataTbl,
+ 749                  UINT8 dataLen,
+ 750                  UINT8 regTot,
+ 751                  UINT8 subAddrEn,
+ 752                  UINT8 restartMode,
+ 753                  UINT8 upd
+ 754          )
+ 755          {
+ 756   1              UINT8 devAddrR, devAddrW, len, dataR[2];
+ 757   1      
+ 758   1              upd = upd;
+ 759   1      
+ 760   1              DBG_PRINT_REG16_READ0("HAL_I2cReg16Read 0x%06lX 0x%06lX %bd %bd %bd %bd %bd\n", (UINT32)addrTbl, (UINT32)
+             -dataTbl, dataLen, regTot, subAddrEn, restartMode, upd);
+ 761   1      
+ 762   1      
+ 763   1              /* check validation. */
+ 764   1              if ( regTot == 0 || dataLen == 0 || dataLen > 8 ) {
+ 765   2                      return FAIL;
+ 766   2              }
+ 767   1      
+ 768   1              /* wait previous access done. */
+ 769   1              HAL_I2C_BUSY_WAIT();  /* busy wait must be before updating any reg. */
+ 770   1      
+ 771   1              /* set tggpio[5:4] (i2c_sda, i2c_sck) to gpio pin output mode. */
+ 772   1              XBYTE[REG_Front_Tggpiosel] |= 0x30;
+ 773   1              XBYTE[REG_Front_Tggpiooen] |= 0x30;
+ 774   1      
+ 775   1              devAddrR = XBYTE[REG_Front_Slaveaddr] | 0x01;
+ 776   1              devAddrW = XBYTE[REG_Front_Slaveaddr] & ~0x01;
+ 777   1      
+ 778   1              while ( regTot ) {
+ 779   2                      if ( subAddrEn ) {
+ 780   3                              TRANS_START;
+ 781   3                              MAIN_DELAY;
+ 782   3      
+ 783   3                              /* send device write addr. */
+ 784   3                              HAL_I2cByteGpioWrite(devAddrW);
+ 785   3                              MAIN_DELAY;
+ 786   3      
+ 787   3                              /* send reg addr. */
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 14  
+
+ 788   3                              DBG_PRINT_REG16_READ1(" A0=0x%04X", *addrTbl);
+ 789   3                              HAL_I2cByteGpioWrite(*addrTbl >> 8);
+ 790   3                              MAIN_DELAY;
+ 791   3                              HAL_I2cByteGpioWrite(*addrTbl & 0xFF);
+ 792   3                              MAIN_DELAY;
+ 793   3                              addrTbl++;
+ 794   3      
+ 795   3                              if ( !restartMode ) {
+ 796   4                                      TRANS_STOP;
+ 797   4                                      MAIN_DELAY;
+ 798   4                              }
+ 799   3                      }
+ 800   2      
+ 801   2                      TRANS_START;
+ 802   2                      MAIN_DELAY;
+ 803   2      
+ 804   2                      /* send device read addr. */
+ 805   2                      HAL_I2cByteGpioWrite(devAddrR);
+ 806   2                      MAIN_DELAY;
+ 807   2      
+ 808   2                      /* get read back data. */
+ 809   2                      len = dataLen;
+ 810   2                      while ( len > 0 ) {
+ 811   3                              HAL_I2cWordGpioRead(dataR);
+ 812   3                              MAIN_DELAY;
+ 813   3                              
+ 814   3                              *(dataTbl++) = dataR[0];
+ 815   3                  *(dataTbl++) = dataR[1];
+ 816   3                              
+ 817   3                              len--;
+ 818   3                      }
+ 819   2                      DBG_PRINT_REG16_READ1("\n", 0);
+ 820   2      
+ 821   2                      TRANS_STOP;
+ 822   2      
+ 823   2                      regTot--;
+ 824   2              }
+ 825   1      
+ 826   1              /* restore tggpio[5:4] (i2c_sda, i2c_sck) to function pin. */
+ 827   1              XBYTE[REG_Front_Tggpiosel] &= ~0x30;
+ 828   1      
+ 829   1              return SUCCESS;
+ 830   1      }
+ 831          
+ 832          
+ 833          
+ 834          /**
+ 835           * @fn        void HAL_I2cByteGpioWrite(UINT8 val)
+ 836           * @brief     write a byte via gpio simulated i2c interface.
+ 837           * @param     [in] val : written data
+ 838           * @retval    NONE
+ 839           * @see       NULL
+ 840           * @author    Will Chiu
+ 841           * @since     2010-4-30
+ 842           * @todo      N/A
+ 843           * @bug       N/A
+ 844          */
+ 845          static void
+ 846          HAL_I2cByteGpioWrite(
+ 847                  UINT8 val
+ 848          )
+ 849          {
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 15  
+
+ 850   1              UINT8 i;
+ 851   1      
+ 852   1      
+ 853   1              DBG_PRINT_BYTE_GPIO_WRITE("HAL_I2cByteGpioWrite 0x%02bX\n", val);
+ 854   1      
+ 855   1      //      SCK_L;
+ 856   1              SDA_O;
+ 857   1      //      SDA_L;
+ 858   1              CLK_DELAY;
+ 859   1      
+ 860   1              for ( i = 8+1; i > 0; i-- ) {  /* "+1" is ack (9th bit, don't care bit). */
+ 861   2                      SCK_L;
+ 862   2                      if ( val & 0x80 ) {
+ 863   3                              SDA_H;
+ 864   3                      }
+ 865   2                      else {
+ 866   3                              SDA_L;
+ 867   3                      }
+ 868   2                      CLK_DELAY;
+ 869   2                      SCK_H;
+ 870   2                      CLK_DELAY;
+ 871   2                      val <<= 1;
+ 872   2              }
+ 873   1              SCK_L;
+ 874   1      }
+ 875          
+ 876          /**
+ 877           * @fn        UINT8 HAL_I2cByteGpioRead(void)
+ 878           * @brief     read a byte via gpio simulated i2c interface
+ 879           * @param     NONE
+ 880           * @retval    return = read data
+ 881           * @see       NULL
+ 882           * @author    Will Chiu
+ 883           * @since     2010-4-30
+ 884           * @todo      N/A
+ 885           * @bug       N/A
+ 886          */
+ 887          static UINT8
+ 888          HAL_I2cByteGpioRead(
+ 889                  void
+ 890          )
+ 891          {
+ 892   1              UINT8 i, val;
+ 893   1      
+ 894   1      
+ 895   1      //      SCK_L;
+ 896   1              SDA_I;
+ 897   1              CLK_DELAY;
+ 898   1      
+ 899   1              for ( i = 8; i > 0; i-- ) {
+ 900   2                      val <<= 1;
+ 901   2                      SCK_L;
+ 902   2                      CLK_DELAY;
+ 903   2                      SCK_H;
+ 904   2                      CLK_DELAY;
+ 905   2                      if ( SDA_R ) {
+ 906   3                              val |= 0x01;
+ 907   3                      }
+ 908   2                      else {
+ 909   3                              val &= ~0x01;
+ 910   3                      }
+ 911   2              }
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 16  
+
+ 912   1              SCK_L;
+ 913   1              SDA_O;
+ 914   1              SDA_H;  /* 9th bit is ack, always high. */
+ 915   1              CLK_DELAY;
+ 916   1              SCK_H;
+ 917   1              CLK_DELAY;
+ 918   1              SCK_L;
+ 919   1      
+ 920   1              DBG_PRINT_BYTE_GPIO_READ("HAL_I2cByteGpioRead 0x%02bX\n", val);
+ 921   1      
+ 922   1              return val;
+ 923   1      }
+ 924          
+ 925          /**
+ 926           * @brief       read 2 bytes via gpio simulated i2c interface.
+ 927           * @param       None.
+ 928           * @retval      return = read data.
+ 929           * @see
+ 930           * @author      Matt Wang
+ 931           * @since       2008-12-26
+ 932           * @todo        N/A
+ 933           * @bug         N/A
+ 934          */
+ 935          static void
+ 936          HAL_I2cWordGpioRead(
+ 937                  UINT8 *val
+ 938          )
+ 939          {
+ 940   1              UINT8 i;
+ 941   1      
+ 942   1      
+ 943   1      //      SCK_L;
+ 944   1              SDA_I;
+ 945   1              CLK_DELAY;
+ 946   1      
+ 947   1              for ( i = 8; i > 0; i-- ) {
+ 948   2                      val[0] <<= 1;
+ 949   2                      SCK_L;
+ 950   2                      CLK_DELAY;
+ 951   2                      SCK_H;
+ 952   2                      CLK_DELAY;
+ 953   2                      if ( SDA_R ) {
+ 954   3                              val[0] |= 0x01;
+ 955   3                      }
+ 956   2                      else {
+ 957   3                              val[0] &= ~0x01;
+ 958   3                      }
+ 959   2              }
+ 960   1              SCK_L;
+ 961   1              SDA_O;
+ 962   1              SDA_L;  /* 9th bit is ack, always Low. */
+ 963   1              CLK_DELAY;
+ 964   1              SCK_H;
+ 965   1              CLK_DELAY;
+ 966   1              SCK_L;
+ 967   1      
+ 968   1              SDA_I;
+ 969   1              CLK_DELAY;
+ 970   1              for ( i = 8; i > 0; i-- ) {
+ 971   2                      val[1] <<= 1;
+ 972   2                      SCK_L;
+ 973   2                      CLK_DELAY;
+C51 COMPILER V8.08   HAL_I2C                                                               09/21/2019 10:52:17 PAGE 17  
+
+ 974   2                      SCK_H;
+ 975   2                      CLK_DELAY;
+ 976   2                      if ( SDA_R ) {
+ 977   3                              val[1] |= 0x01;
+ 978   3                      }
+ 979   2                      else {
+ 980   3                              val[1] &= ~0x01;
+ 981   3                      }
+ 982   2              }
+ 983   1              SCK_L;
+ 984   1              SDA_O;
+ 985   1              SDA_H;       /* Nack */
+ 986   1              CLK_DELAY;
+ 987   1              SCK_H;
+ 988   1              CLK_DELAY;
+ 989   1              SCK_L;
+ 990   1              
+ 991   1      }
+ 992          
+ 993          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1886    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      79
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

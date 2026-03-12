@@ -1,0 +1,21 @@
+Build target 'libcmd'
+compiling cmd_misc.c...
+compiling cmd_main.c...
+compiling cmd_def.c...
+compiling libcmd_ver.c...
+creating library .\obj\libcmd.LIB...
+TRANSFER
+".\obj\cmd_misc.obj",
+".\obj\cmd_main.obj",
+".\obj\cmd_def.obj",
+".\obj\libcmd_ver.obj" 
+TO ".\obj\libcmd.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\libcmd_post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libCmd>copy obj\libcmd.LIB ..\..\..\lib\libCmd.LIB 
+已复制         1 个文件。
+".\obj\libcmd.LIB" - 0 Error(s), 0 Warning(s).

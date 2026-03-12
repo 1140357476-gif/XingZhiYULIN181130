@@ -1,0 +1,25 @@
+Build target 'gui'
+compiling gui_api.c...
+compiling gui_core.c...
+compiling gui_dbg.c...
+compiling gui_evt.c...
+compiling gui_tp.c...
+compiling gui_ver.c...
+creating library .\obj\libGui.LIB...
+TRANSFER
+".\obj\gui_api.obj",
+".\obj\gui_core.obj",
+".\obj\gui_dbg.obj",
+".\obj\gui_evt.obj",
+".\obj\gui_tp.obj",
+".\obj\gui_ver.obj" 
+TO ".\obj\libGui.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libGui>copy .\obj\libGui.LIB ..\..\..\lib\libGui.LIB 
+已复制         1 个文件。
+".\obj\libGui.LIB" - 0 Error(s), 0 Warning(s).

@@ -1,0 +1,23 @@
+Build target 'global'
+compiling device.c...
+compiling infodata.c...
+compiling initio.c...
+compiling global_ver.c...
+compiling global_init.c...
+creating library .\obj\global.LIB...
+TRANSFER
+".\obj\device.obj",
+".\obj\infodata.obj",
+".\obj\initio.obj",
+".\obj\global_ver.obj",
+".\obj\global_init.obj" 
+TO ".\obj\global.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\postLib.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libGlobal>copy .\obj\global.lib ..\..\..\lib\libSysGlobal.LIB 
+已复制         1 个文件。
+".\obj\global.LIB" - 0 Error(s), 0 Warning(s).

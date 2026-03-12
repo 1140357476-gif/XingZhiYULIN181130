@@ -1,0 +1,466 @@
+C51 COMPILER V8.08   GLOBAL_INIT                                                           06/16/2022 10:11:50 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE GLOBAL_INIT
+OBJECT MODULE PLACED IN .\obj\global_init.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE global_init.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..
+                    -\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\cust
+                    -omization) DEFINE(LIB_RELEASE) PRINT(.\obj\global_init.lst) OBJECT(.\obj\global_init.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21          
+  22          /**
+  23           * @file      global_init.c
+  24           * @brief     Brief
+  25           * @author    Phil Lin
+  26           * @since     2010-01-01
+  27           * @date      2010-01-01
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #define __FILE __FILE_ID_GLOBAL_INIT__
+  34          #include "general.h"
+  35          #define SYS_INIT_INTERNAL // for system initialization internal use
+  36          
+  37          #include "hal_global.h"
+  38          #include "hal_dram.h"
+  39          #include "hal_usb.h"
+  40          #include "hal_device.h"
+  41          
+  42          #include "reg_def.h"
+  43          #include "global_init.h"
+  44          #include "os_api.h"
+  45          #include "os_custom.h"
+  46          #include "os_msg.h"
+  47          #include "cmd.h"
+  48          #include "func_init_def.h"
+  49          #include "timer.h"
+  50          #include "solution.h"
+  51          #include "initio.h"
+  52          #include "gpio.h"
+  53          #include "ctlsetup.h"
+C51 COMPILER V8.08   GLOBAL_INIT                                                           06/16/2022 10:11:50 PAGE 2   
+
+  54          #include "bulkout.h"
+  55          #include "usbmsdc2.h"
+  56          #include "main.h"
+  57          #include "uiflow.h"
+  58          #include "cardopt.h"
+  59          #include "class.h"
+  60          #include "dbg_file_list.h"
+  61          #include "dbg_def.h"
+  62          
+  63          #include "sp1k_gpio_api.h"
+  64          #include "sp1k_aud_api.h"
+  65          #include "sp1k_disk_api.h"
+  66          #include "sp1k_util_api.h"
+  67          #include "sp1k_hal_api.h"
+  68          #include "sp1k_zoom_api.h"
+  69          /**************************************************************************
+  70           *                           C O N S T A N T S                            *
+  71           **************************************************************************/
+  72          
+  73          /**************************************************************************
+  74           *                              M A C R O S                               *
+  75           **************************************************************************/
+  76          
+  77          /**************************************************************************
+  78           *                          D A T A    T Y P E S                          *
+  79           **************************************************************************/
+  80          
+  81          /**************************************************************************
+  82           *                         G L O B A L    D A T A                         *
+  83           **************************************************************************/
+  84          UINT8 xdata bUsbPwr;
+  85          xdata UINT8  G_UI_USBConnect;
+  86          xdata UINT16 G_UIStatus;
+  87          /**************************************************************************
+  88           *                 E X T E R N A L    R E F E R E N C E S                 *
+  89           **************************************************************************/
+  90          extern SYS_INIT_DCL pFuncInit code funcInitArray[];
+  91          extern SYS_INIT_DCL pFuncInit code funcInitMain;
+  92          
+  93          extern UINT8 xdata G_ucPktStorIntrf;
+  94          extern UINT8 xdata G_MLUN_CardSupport;
+  95          extern xdata UINT8 G_USBAudioSetInterface;
+  96          extern UINT8 HAL_TpPreCfg(void);
+  97          extern UINT8 zoomDevInit(void);
+  98          /**************************************************************************
+  99           *               F U N C T I O N    D E C L A R A T I O N S               *
+ 100           **************************************************************************/
+ 101          /**
+ 102           * @fn        void uartInit(void)
+ 103           * @brief     uartInit
+ 104           * @param     NONE
+ 105           * @retval    NONE
+ 106           * @see       NULL
+ 107           * @author    Phil Lin
+ 108           * @since     2011-2-15
+ 109           * @todo      N/A
+ 110           * @bug       N/A
+ 111          */
+ 112          static void
+ 113          uartInit(
+ 114                  void
+ 115          )
+C51 COMPILER V8.08   GLOBAL_INIT                                                           06/16/2022 10:11:50 PAGE 3   
+
+ 116          {
+ 117   1              /* The baudrate set in "startup.a51" */
+ 118   1      
+ 119   1              HAL_GlobalUartSet(1);                           /* Pin mux selection for RX/TX */
+ 120   1      
+ 121   1              globalInitPrintf("\niCatLite\n");       /* First debug message in power on process */
+ 122   1      }
+ 123          
+ 124          /**
+ 125           * @fn        void cpuInit(void)
+ 126           * @brief     cpuInit
+ 127           * @param     NONE
+ 128           * @retval    NONE
+ 129           * @see       NULL
+ 130           * @author    Phil Lin
+ 131           * @since     2011-2-15
+ 132           * @todo      N/A
+ 133           * @bug       N/A
+ 134          */
+ 135          static void
+ 136          cpuInit(
+ 137                  void
+ 138          )
+ 139          {
+ 140   1          TCON = 0x40;                    //TCON:  IT0=0 INT0 negative edge trigger
+ 141   1                                          //       IE0=0 INT0 interrupt flag
+ 142   1                                          //       IT1=0 INT1 negative level trigger
+ 143   1                                          //       IE1=0 INT1 interrupt flag
+ 144   1                                          //       TR0=0 TIMER0 disable
+ 145   1                                          //       TF0=0 TIMER0 overflow flag
+ 146   1                                          //       TR1=1 TIMER1 enable
+ 147   1                                          //       TF1=0 TIMER1 overflow flag
+ 148   1      
+ 149   1          IP = 0x03;                      //IP:    PX0=1 INT0 priority level
+ 150   1                                          //       PT0=1 TIMER0 priority level
+ 151   1                                          //       PX1=0 INT1 priority level
+ 152   1                                          //       PT1=0 TIMER1 priority level
+ 153   1                                          //       PS=0  Serial Port priority level
+ 154   1                                          //       PT2=0 Timer2 priority level
+ 155   1      
+ 156   1          IE = 0x81;                      //IE:    EX0=1 INT0 interrupt enable
+ 157   1                                          //       ET0=0 TIMER0 interrupt disable
+ 158   1                                          //       EX1=0 INT1 interrupt disable
+ 159   1                                          //       ET1=0 TIMER1 interrupt disable
+ 160   1                                          //       ES=0  Serial Port interrupt disable
+ 161   1                                          //       ET2=0 TIMER2 interrupt disable
+ 162   1                                          //       EA=1  All interrupts enable
+ 163   1      
+ 164   1          TMOD = 0x11;                    //TMOD:  Timer0 M1M0=1 (Mode1=16-bit counter)
+ 165   1                                          //       Timer0 C/T~=0 (Timer)
+ 166   1                                          //       Timer0 GATE=0
+ 167   1                                          //       Timer1 M1M0=2 (Mode2=8-bit counter)
+ 168   1                                          //       Timer1 C/T~=0 (Timer)
+ 169   1                                          //       Timer1 GATE=0
+ 170   1      
+ 171   1              IT1 = 1;                                                // it determines the EX1 trigger method
+ 172   1      
+ 173   1              TH1 = K_Timer1IntervalHi;
+ 174   1              TL1 = K_Timer1IntervalLo;
+ 175   1      }
+ 176          
+ 177          /**
+C51 COMPILER V8.08   GLOBAL_INIT                                                           06/16/2022 10:11:50 PAGE 4   
+
+ 178           * @fn        void dramInit(void)
+ 179           * @brief     dramInit
+ 180           * @param     NONE
+ 181           * @retval    NONE
+ 182           * @see       NULL
+ 183           * @author    Phil Lin
+ 184           * @since     2011-2-15
+ 185           * @todo      N/A
+ 186           * @bug       N/A
+ 187          */
+ 188          static void
+ 189          dramInit(
+ 190                  void
+ 191          )
+ 192          {
+ 193   1              /* Dram access priority setting */
+ 194   1              XBYTE[REG_Dram_Master0b_Sel] = 0x00;    /* set CDSP priority more than display */
+ 195   1      
+ 196   1              XBYTE[REG_Dram_SdckMode] &= ~0x40;/*ma14 output enable,must set when dram is 16*16*/
+ 197   1              /* Code sentry setting */ //Phil move to "sysMemAddrUpdate"
+ 198   1              /* protect 1 word firstly, then for all code area after system memeory initial */
+ 199   1              HAL_DramCodeSentry(0x00, 0x00, 0x00);
+ 200   1      
+ 201   1              /* watch dog timer initial */
+ 202   1              dbgWdtCfg(1, WDT_PROC_DBG_ALL, WDT_TIME_OUT);
+ 203   1      
+ 204   1              /* global timer initial */
+ 205   1              HAL_GlobalTimerInit();
+ 206   1      }
+ 207          
+ 208          /**
+ 209           * @fn        void gpioInit(void)
+ 210           * @brief     gpioInit
+ 211           * @param     NONE
+ 212           * @retval    NONE
+ 213           * @see       NULL
+ 214           * @author    Phil Lin
+ 215           * @since     2011-2-15
+ 216           * @todo      N/A
+ 217           * @bug       N/A
+ 218          */
+ 219          static void
+ 220          gpioInit(
+ 221                  void
+ 222          )
+ 223          {
+ 224   1              XBYTE[0x201a] &= 0xf0;   /* Mux-pin function : GPIO 28~31 */
+ 225   1      
+ 226   1              XBYTE[0x2474] = 0x01;
+ 227   1              
+ 228   1              if((pkgChipIdGet()== 0x1627)||(pkgChipIdGet()== 0x1626))
+ 229   1              {
+ 230   2                      XBYTE[0x2009] = 0x00;//only for 1627
+ 231   2                      XBYTE[0x2049] = 0xA9;
+ 232   2                      XBYTE[0x204A] = 0x56;
+ 233   2                      XBYTE[0x2060] = 0x56;//mantis for 42697
+ 234   2              }
+ 235   1      
+ 236   1              #ifndef LIB_RELEASE
+                              #if(_HW_SOLUTION_ == _HW_EVB_)
+                                      XBYTE[0x2048] = 0x75;//only increasing driving for EVB
+                              #endif
+C51 COMPILER V8.08   GLOBAL_INIT                                                           06/16/2022 10:11:50 PAGE 5   
+
+                      #endif
+ 241   1      
+ 242   1              #if defined(AMCAP_OPTION) || defined(ICAT_OPTION)
+                      //#ifdef ICAT_OPTION
+                              bUsbPwr = 0;
+              
+                              //if (prjDbgMode) {
+                              //      bUsbPwr = !bUsbPwr;
+                              //}
+                      #else
+ 250   1      
+ 251   1                      #if(_HW_SOLUTION_ == _HW_CUSTOM_MODEL_A_||_HW_SOLUTION_ == _HW_CUSTOM_MODEL_B_)
+                                      if (sp1kBtnChk(SP1K_BTN_MODE) != KEY_STATUS_PRESSED) {
+                                              bUsbPwr = 0;
+                                      } else {
+                                              bUsbPwr = 1;
+                                      }
+                              #else
+ 258   1                              if (sp1kBtnChk(SP1K_BTN_S2) != KEY_STATUS_PRESSED) {
+ 259   2                                      bUsbPwr = 0;
+ 260   2                              } else {
+ 261   2                                      bUsbPwr = 1;
+ 262   2                              }
+ 263   1                      #endif
+ 264   1      
+ 265   1                      if (prjDbgMode) {
+ 266   2                              bUsbPwr = !bUsbPwr;
+ 267   2                      }
+ 268   1              #endif //ICAT_OPTION
+ 269   1      
+ 270   1              sp1kAdcInit();
+ 271   1      }
+ 272          /**
+ 273           * @fn        void usbInit(void)
+ 274           * @brief     usbInit
+ 275           * @param     NONE
+ 276           * @retval    NONE
+ 277           * @see       NULL
+ 278           * @author    Phil Lin
+ 279           * @since     2011-2-15
+ 280           * @todo      N/A
+ 281           * @bug       N/A
+ 282          */
+ 283          static void
+ 284          usbInit(
+ 285                  void
+ 286          )
+ 287          {
+ 288   1              G_ucPktStorIntrf = K_StorageInterface1; //current packet belongs to which storage interface
+ 289   1              G_ucCtrlPhase    = K_CommandPhase;
+ 290   1              G_ucBulkPhase    = K_CommandPhase;
+ 291   1              G_USBAudioSetInterface = 0; //CX add
+ 292   1      
+ 293   1      #if (USBMSDC_OPTION == 2)
+ 294   1              G_USBMSDC_usSizeProcessed = 0;
+ 295   1              G_USBMSDC_ucSenseCodeIdx = 0x00;
+ 296   1              G_USBMSDC_ucCSWStatus = K_USBMSDC_CommandPassed;
+ 297   1              G_UIStatus = 0;//K_UISTATUS_USBMODE_PCCAM; //for prjmode!for video pv size 6/8
+ 298   1      #endif
+ 299   1      
+ 300   1      #if 0
+                      gUsbMode = K_UIOPTION_STORAGE_SIDC;
+C51 COMPILER V8.08   GLOBAL_INIT                                                           06/16/2022 10:11:50 PAGE 6   
+
+              #else
+ 303   1          gUsbMode = K_UIOPTION_STORAGE_MSDC;
+ 304   1      #endif
+ 305   1      
+ 306   1              G_MLUN_CardSupport = K_CARD_TYPE;
+ 307   1      
+ 308   1              XBYTE[REG_Usb_TransactionEn] &= 0xf9;                   //reject (NAK)
+ 309   1                                                                              //next EP0 Out packet
+ 310   1                                                                              //next EP0 In packet
+ 311   1      
+ 312   1              XBYTE[REG_Usb_EpAckIntSts] = 0xff;                      //Clear all status
+ 313   1              XBYTE[REG_Usb_IntSts] = 0xff;                   //clear status
+ 314   1              XBYTE[REG_Usb_EpAckIntEn] = 0x07;                       //enable interrupt for
+ 315   1                                                                              //EP0 Setup packet OK
+ 316   1                                                                              //EP0 Out packet OK
+ 317   1                                                                              //EP0 In packet OK
+ 318   1              XBYTE[REG_Usb_IntEn] |= 0x01;                   //USBRstVTEn
+ 319   1      #if 1
+ 320   1              XBYTE[REG_Usb_Status] = 0x00;                   //00:Enable HS, 02:Force FS, disable SoftPlugOut !!
+ 321   1      #else
+                      XBYTE[REG_Usb_Status] = 0x02;                   //00:Enable HS, 02:Force FS, disable SoftPlugOut !!
+              #endif
+ 324   1              //XBYTE[0x2045] |= 0x01;                        //enable GPIO8 Falling interrupt (USB detcter)
+ 325   1              //XBYTE[0x207B] &= ~0x01;                       //clear GPIO8 Finter event
+ 326   1              XBYTE[0x2044] |= 0x08;                  //enable GPIO3 Falling interrupt (USB detcter)
+ 327   1              XBYTE[0x207A] &= ~0x08;                 //clear GPIO3 Finter event
+ 328   1      
+ 329   1      #if(K_AUDIOINTER)
+ 330   1          XBYTE[REG_Usb_Alt_If1_NumMax] = 0x05;                       /* Set alternating max to 5 */
+ 331   1          XBYTE[REG_Usb_UsbMode] = 0x01;  //0x256F
+ 332   1          XBYTE[REG_Usb_LogicEp1_Disable] = 0xe0;  //0x2530
+ 333   1      #else
+                  XBYTE[REG_Usb_Alt_If1_NumMax] = 0x08;                       /* Set alternating max to 8 */
+                  XBYTE[REG_Usb_UsbMode] = 0x03;
+                  XBYTE[REG_Usb_LogicEp1_Disable] = 0x00;
+              #endif
+ 338   1      
+ 339   1              HAL_UsbSwPlugOut();
+ 340   1          G_UI_USBConnect = K_UI_USB_DISCONNECT;
+ 341   1      }
+ 342          
+ 343          /**
+ 344           * @fn        void hostInit(void)
+ 345           * @brief     hostInit
+ 346           * @param     NONE
+ 347           * @retval    NONE
+ 348           * @see       NULL
+ 349           * @author    Phil Lin
+ 350           * @since     2011-2-16
+ 351           * @todo      N/A
+ 352           * @bug       N/A
+ 353          */
+ 354          static void
+ 355          hostInit(
+ 356                  void
+ 357          )
+ 358          {
+ 359   1              UINT8 cnt = 0;
+ 360   1              pFuncInit* pf = &funcInitArray[0];
+ 361   1      
+ 362   1              /* check the array size */
+ 363   1              //ASSERT(sizeof(funcInitArray) / sizeof(pFuncInit) < FUNC_SYS_INIT_MAX, 0);
+C51 COMPILER V8.08   GLOBAL_INIT                                                           06/16/2022 10:11:50 PAGE 7   
+
+ 364   1      
+ 365   1              while(*pf) {
+ 366   2                      (*pf)();
+ 367   2                      pf++;
+ 368   2                      if (++cnt >= FUNC_SYS_INIT_MAX) {
+ 369   3                              /* funcInitArray configure error */
+ 370   3                              ASSERT(0, 0);
+ 371   3                      }
+ 372   2              }
+ 373   1      }
+ 374          
+ 375          /**
+ 376           * @fn        void globalInit(void)
+ 377           * @brief     globalInit
+ 378           * @param     NONE
+ 379           * @retval    NONE
+ 380           * @see       NULL
+ 381           * @author    Phil Lin
+ 382           * @since     2011-2-15
+ 383           * @todo      N/A
+ 384           * @bug       N/A
+ 385          */
+ 386          void
+ 387          globalInit(
+ 388                  void
+ 389          )
+ 390          {
+ 391   1              pFuncInit *pFuncInitMain = &funcInitMain;
+ 392   1      
+ 393   1              uartInit();                                          /* Uart initial */
+ 394   1      
+ 395   1              cpuInit();                                           /* 8051 initial */
+ 396   1      
+ 397   1              dramInit();                                          /* Dram related function initial */
+ 398   1      
+ 399   1              gpioInit();                                          /* GPIO initial */
+ 400   1      
+ 401   1              hostInit();                                          /* host initial callback */
+ 402   1      
+ 403   1              #if 0 //for NEW ZOOM function 20131213
+                      zoomDevInit();     /*Add for v2.1.8 compatibility*/
+                      sp1kZoomDevActSet(SP1K_ZOOM_LOGI_VIDEO_MODE,SP1K_ZOOM_LOGI_NONBLOCKING_TYPE);   //  fix mantis 45825
+                      #endif
+ 407   1      
+ 408   1              usbInit();                                           /* Usb initial */
+ 409   1      
+ 410   1              osInit();                                            /* system basic service initial */
+ 411   1              osTaskCreate(osTaskIdle, OS_PRIO_ACTIVE_FUNC);
+ 412   1              osMsgInit();
+ 413   1              cmdInit();
+ 414   1      
+ 415   1              sp1kDevInit();                                       /* device initial */
+ 416   1              sp1kAudioPlayInit();
+ 417   1              sp1kRTCInit();
+ 418   1              sp1kDiskMemInit();
+ 419   1      
+ 420   1              ASSERT(pFuncInitMain, 0);                            /* jump to host device initial flow */
+ 421   1              (*pFuncInitMain)();
+ 422   1              HAL_TpPreCfg();
+ 423   1      }
+
+
+C51 COMPILER V8.08   GLOBAL_INIT                                                           06/16/2022 10:11:50 PAGE 8   
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    507    ----
+   CONSTANT SIZE    =     11    ----
+   XDATA SIZE       =      4       7
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

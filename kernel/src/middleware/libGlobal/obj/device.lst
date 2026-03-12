@@ -1,0 +1,203 @@
+C51 COMPILER V8.08   DEVICE                                                                06/16/2022 10:11:49 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE DEVICE
+OBJECT MODULE PLACED IN .\obj\device.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE device.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\i
+                    -nc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiza
+                    -tion) DEFINE(LIB_RELEASE) PRINT(.\obj\device.lst) OBJECT(.\obj\device.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21           
+  22          /**
+  23           * @file      device.c
+  24           * @brief     for device application
+  25           * @author    Phil Lin
+  26           * @since     2010-01-01
+  27           * @date      2010-01-01
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #include "general.h"
+  34          #include "gpio.h"
+  35          #include "smcfunc.h"
+  36          #include "dos32.h"
+  37          #include "sp1k_gpio_api.h" 
+  38          /**************************************************************************
+  39           *                           C O N S T A N T S                            *
+  40           **************************************************************************/
+  41           
+  42          /**************************************************************************
+  43           *                              M A C R O S                               *
+  44           **************************************************************************/
+  45          
+  46          /**************************************************************************
+  47           *                          D A T A    T Y P E S                          *
+  48           **************************************************************************/
+  49           
+  50          /**************************************************************************
+  51           *                         G L O B A L    D A T A                         *
+  52           **************************************************************************/
+  53           static devAttr_t xdata sSysDev[DEV_ID_MAX];
+C51 COMPILER V8.08   DEVICE                                                                06/16/2022 10:11:49 PAGE 2   
+
+  54          /**************************************************************************
+  55           *                 E X T E R N A L    R E F E R E N C E S                 *
+  56           **************************************************************************/
+  57           
+  58          /**************************************************************************
+  59           *               F U N C T I O N    D E C L A R A T I O N S               *
+  60           **************************************************************************/
+  61          
+  62          //-----------------------------------------------------------------------------
+  63          // sp1kDevInit
+  64          //-----------------------------------------------------------------------------
+  65          /**
+  66           * @fn        UINT8 sp1kDevInit(void)
+  67           * @brief     sp1kDevInit
+  68           * @param     NONE
+  69           * @retval    return = SUCCESS / FAIL
+  70           * @see       NULL
+  71           * @author    Phil Lin
+  72           * @since     2010-5-21
+  73           * @todo      N/A
+  74           * @bug       N/A
+  75          */
+  76          UINT8 sp1kDevInit(void)
+  77          {
+  78   1              devAttr_t* pDev = sSysDev;
+  79   1              UINT8 DevNum = DEV_ID_MAX;
+  80   1              UINT8 i;
+  81   1      
+  82   1              for (i = 0; i < DevNum; i++) {
+  83   2                      pDev[i].devId = i;
+  84   2                      pDev[i].devEn = 0;
+  85   2                      pDev[i].devSts = DEV_STS_DISCONNECTED;
+  86   2                      pDev[i].devType = DEV_TYPE_UNKNOWN;
+  87   2                      //strcpy(pDev[i].devDrv, "0001");
+  88   2              }
+  89   1      
+  90   1              /* Disk attrib initialization */
+  91   1              if (DOS_DosRamStsGet() == TRUE) {
+  92   2                      pDev[DEV_ID_DISK].devType = DEV_TYPE_DISK_DRAM;
+  93   2              } else {
+  94   2                      pDev[DEV_ID_DISK].devType = sp1kDiskTypeGet();
+  95   2              }
+  96   1      
+  97   1              /* Panel / TV attrib initialization */
+  98   1              if(!sp1kTV_PlugGet()) {
+  99   2      
+ 100   2                      pDev[DEV_ID_PANEL].devSts = DEV_STS_CONNECTED;
+ 101   2                      pDev[DEV_ID_PANEL].devEn = 0;
+ 102   2                      pDev[DEV_ID_TV].devSts = DEV_STS_CONNECTED;
+ 103   2                      pDev[DEV_ID_TV].devEn = 1;
+ 104   2                      pDev[DEV_ID_TV].devType = DEV_TYPE_TV_COM;
+ 105   2                      printf("init TV\n");
+ 106   2              } else {
+ 107   2                      pDev[DEV_ID_PANEL].devSts = DEV_STS_CONNECTED;
+ 108   2                      pDev[DEV_ID_PANEL].devEn = 1;
+ 109   2                      pDev[DEV_ID_PANEL].devType = DEV_TYPE_PANEL_COM;
+ 110   2                      pDev[DEV_ID_TV].devSts = DEV_STS_DISCONNECTED;
+ 111   2                      pDev[DEV_ID_TV].devEn = 0;
+ 112   2              }
+ 113   1      
+ 114   1              return SUCCESS;
+ 115   1      }
+C51 COMPILER V8.08   DEVICE                                                                06/16/2022 10:11:49 PAGE 3   
+
+ 116          
+ 117          //-----------------------------------------------------------------------------
+ 118          // sp1kDevHdlGet
+ 119          //-----------------------------------------------------------------------------
+ 120          /**
+ 121           * @fn        devAttr_t sp1kDevHdlGet(void)
+ 122           * @brief     sp1kDevHdlGet
+ 123           * @param     NONE
+ 124           * @retval    return = SUCCESS / FAIL
+ 125           * @see       NULL
+ 126           * @author    Phil Lin
+ 127           * @since     2010-5-21
+ 128           * @todo      N/A
+ 129           * @bug       N/A
+ 130          */
+ 131          devAttr_t* sp1kDevHdlGet(void)
+ 132          {
+ 133   1              return &sSysDev[0];
+ 134   1      }
+ 135          
+ 136          //-----------------------------------------------------------------------------
+ 137          // sp1kDevHdlGet
+ 138          //-----------------------------------------------------------------------------
+ 139          /**
+ 140           * @fn        UINT8 sp1kDevInfoUpdate(devId_t devId, st pDevAttr)
+ 141           * @brief     sp1kDevInfoUpdate
+ 142           * @param     [in] devId
+ 143           * @param     [in] pDevAttr
+ 144           * @retval    return = SUCCESS / FAIL
+ 145           * @see       NULL
+ 146           * @author    Phil Lin
+ 147           * @since     2010-5-21
+ 148           * @todo      N/A
+ 149           * @bug       N/A
+ 150          */
+ 151          UINT8 sp1kDevInfoUpdate(devId_t devId, devAttr_t* const pDevAttr)
+ 152          {
+ 153   1              devAttr_t* pDev = sSysDev;
+ 154   1              UINT8 DevNum = DEV_ID_MAX;
+ 155   1      
+ 156   1              if (devId > DevNum || pDev == NULL) {
+ 157   2                      return FAIL;
+ 158   2              }       
+ 159   1      
+ 160   1              //pDevAttr[devId].devId = pDev->devId;
+ 161   1              pDevAttr[devId].devEn = pDev->devEn;
+ 162   1              pDevAttr[devId].devSts = pDev->devSts;
+ 163   1              //pDevAttr[devId].devDrv = pDev->devDrv;
+ 164   1      
+ 165   1              return SUCCESS;
+ 166   1      }
+ 167          
+ 168          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    344    ----
+   CONSTANT SIZE    =      9    ----
+   XDATA SIZE       =     36      12
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+C51 COMPILER V8.08   DEVICE                                                                06/16/2022 10:11:49 PAGE 4   
+
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

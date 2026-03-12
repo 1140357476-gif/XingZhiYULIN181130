@@ -1,0 +1,37 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libStorage\libStorage.uv2
+Project File Date:  06/18/2014
+
+<h2>Output:</h2>
+Build target 'libStorage_nand'
+compiling nand_autoflow.c...
+compiling nand_core.c...
+nand\nand_core.c(81): message C320: "Load disk driver NAND"
+compiling nand_fw_program.c...
+compiling nand_isp.c...
+compiling smc_core.c...
+compiling smc_hw.c...
+compiling smc_rw2.c...
+compiling smc_rw.c...
+compiling nand_ver.c...
+creating library .\obj\libStorage_nand.LIB...
+TRANSFER
+".\obj\nand_autoflow.obj",
+".\obj\nand_core.obj",
+".\obj\nand_fw_program.obj",
+".\obj\nand_isp.obj",
+".\obj\smc_core.obj",
+".\obj\smc_hw.obj",
+".\obj\smc_rw2.obj",
+".\obj\smc_rw.obj",
+".\obj\nand_ver.obj" 
+TO ".\obj\libStorage_nand.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat nand
+已复制         1 个文件。
+".\obj\libStorage_nand.LIB" - 0 Error(s), 0 Warning(s).

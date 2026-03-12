@@ -1,0 +1,19 @@
+Build target 'libDS'
+compiling date_stamp.c...
+compiling ds_ver.c...
+compiling stamp.c...
+creating library .\obj\libDS.LIB...
+TRANSFER
+".\obj\date_stamp.obj",
+".\obj\ds_ver.obj",
+".\obj\stamp.obj" 
+TO ".\obj\libDS.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libDateStamp>copy obj\libDS.LIB ..\..\..\lib\libDS.LIB 
+已复制         1 个文件。
+".\obj\libDS.LIB" - 0 Error(s), 0 Warning(s).

@@ -1,0 +1,91 @@
+C51 COMPILER V8.08   AF_VER                                                                06/24/2022 11:07:26 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE AF_VER
+OBJECT MODULE PLACED IN .\obj\Af_ver.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE Af_ver.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\i
+                    -nc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiza
+                    -tion) DEFINE(LIB_RELEASE) PRINT(.\obj\Af_ver.lst) OBJECT(.\obj\Af_ver.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2002-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           *      af01, 20120510 LinJieCheng
+  22           *              a. modify number of version
+  23           *      af02, 20120605 LinJieCheng
+  24           *              a. add signal af window focus flow
+  25           *
+  26           **************************************************************************/
+  27          
+  28          /**************************************************************************
+  29           *                            H E A D E R   F I L E S
+  30           **************************************************************************/
+  31          #include "general.h"
+  32          
+  33          /**************************************************************************
+  34           *                            G L O B A L   D A T A
+  35           **************************************************************************/
+  36          static UINT8 code verStr[] = "$af02";
+  37          
+  38          /**************************************************************************
+  39           *
+  40           *  Function Name: afLibVerGet
+  41           *
+  42           *  Purposes: Get current libaray's version.
+  43           *
+  44           *  Descriptions:
+  45           *
+  46           *  Arguments:
+  47           *
+  48           *  Returns:
+  49           *
+  50           *  See also:
+  51           *
+  52           **************************************************************************/
+  53          UINT8 *
+C51 COMPILER V8.08   AF_VER                                                                06/24/2022 11:07:26 PAGE 2   
+
+  54          libAfVerGet(
+  55                  void
+  56          )
+  57          {
+  58   1              return (verStr + 3);
+  59   1      }
+  60          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,930 @@
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE TIMELAPSE
+OBJECT MODULE PLACED IN .\obj\timelapse.obj
+COMPILER INVOKED BY: e:\Keil\C51\BIN\C51.EXE timelapse.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\.
+                    -.\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\custom
+                    -ization) DEFINE(LIB_RELEASE) PRINT(.\obj\timelapse.lst) OBJECT(.\obj\timelapse.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2007-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           **************************************************************************/
+  22          /**
+  23           * @file                timelapse.c
+  24           * @brief               for timelapses
+  25           * @author              Ted Chiu, Matt Wang
+  26           * @since               2008-03-14
+  27           * @date                2008-10-31
+  28           */
+  29          /**************************************************************************
+  30          *                                                  H E A D E R   F I L E S
+  31          **************************************************************************/
+  32          #include "general.h"
+  33          #include "common.h"
+  34          #include "timelapse.h"
+  35          #include "video_clip.h"
+  36          #include "doslink.h"
+  37          #include "dos32.h"
+  38          #include "dosusr.h"
+  39          #include "initio.h"
+  40          #include "cardlink.h"
+  41          #include "sp1k_rsvblk_api.h"
+  42          #include "sdramhw.h"
+  43          #include "os_msg.h"
+  44          #include "fileindex.h"
+  45          #include "pb_general.h"
+  46          #include "pb_api.h"
+  47          #include "hal_dram.h"
+  48          #include "video_pb.h"
+  49          #include "dcf_api.h"
+  50          #include "hal_gprm.h"
+  51          #include "vfs_api.h"
+  52          #include "dbg_mem.h"
+  53          #include "hal_jpeg.h"
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 2   
+
+  54          /**************************************************************************
+  55           *                              C O N S T A N T S
+  56           **************************************************************************/
+  57          #define __FILE    __FILE_ID_TIMELAPSE__
+  58          #define DBG_SLASH /
+  59          
+  60          #ifndef _TimeLapsePintf
+  61          #define _TimeLapsePintf /DBG_SLASH
+  62          #endif
+  63          #define MOVI_LIST_HDR_SIZE 0xc  //LIST SIZE MOVI
+  64          #define SD_Size_4G ((UINT32)0xffffffff)
+  65          #define CUSTOM_INFO_OFFSET      0x1e0
+  66          #define HDRIDXOFFSET 0x200
+  67          #define CLUSTERSIZE DOS_ClusterSizeGet()
+  68          /**************************************************************************
+  69           *                              M A C R O S 
+  70           **************************************************************************/
+  71          
+  72          /**************************************************************************
+  73           *                              D A T A    T Y P E S
+  74           **************************************************************************/
+  75          //to reduce parameters, should reverted at the begining of each operation(_Entry, _AddData, _Stop)
+  76          typedef struct timelapseAvi_s { 
+  77                  UINT32 moviOffset;
+  78                  UINT32 hdr_Start_Cluster;
+  79                  UINT32 hdr_Last_Cluster;
+  80                  UINT32 movi_Start_Cluster;
+  81                  UINT32 movi_Last_Cluster; 
+  82                  UINT32 idx_Start_Cluster;
+  83                  UINT32 idx_Last_Cluster;
+  84                  UINT32 idxSize;
+  85                  UINT32 hdrIdxOffset;
+  86                  UINT32 hdrIdxSkipCluster;
+  87                  UINT32 check_Sum;
+  88          }timelapseAvi_t;
+  89          
+  90          /**************************************************************************
+  91           *                              G L O B A L   D A T A
+  92           **************************************************************************/
+  93          UINT16 xdata timelapseParam[TIMELAPSE_PAR_MAX];
+  94          UINT32 dbgCnt;
+  95          /**************************************************************************
+  96           *                              E X T E R N A L    R E F E R E N C E S 
+  97           **************************************************************************/
+  98          extern UINT8 DOS_FileCurrInfoGet(UINT8 fno, UINT8 mode, UINT8 *buf);
+  99          extern void jpegYQTableGen(SINT32 quality,      UINT8 *qtable);
+ 100          extern void jpegUVQTableGen(SINT32 quality, UINT8 *qtable);
+ 101          /**************************************************************************
+ 102           *                              E X T E R N A L    R E F E R E N C E S 
+ 103           **************************************************************************/
+ 104          extern DOS dos;
+ 105          /**************************************************************************
+ 106           *                              I N T E R N A L    F U N C T I O N    D E C L A R A T I O N S 
+ 107           **************************************************************************/
+ 108          void timelapse_ModifyHdr( UINT8 fno,UINT32 dramAddrW,UINT32 hdrCluster,UINT32 movCluster,UINT32 idxCluster
+             -,UINT32 cnt);
+ 109          
+ 110          /**************************************************************************
+ 111           *                              F U N C T I O N   D E F I N I T I O N
+ 112           **************************************************************************/
+ 113          static UINT8 timelapse_FileRead(UINT8 fno, UINT32 buf, UINT32 cnt, UINT32 pos, UINT32 cluster){
+ 114   1              xdata FILE *file;
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 3   
+
+ 115   1              //UINT32 clusterSize = DOS_ClusterSizeGet();
+ 116   1              file  = (FILE *)&dos.file[fno];
+ 117   1              //file->pos = pos;//%clusterSize;
+ 118   1              //file->mode = 'a';
+ 119   1              if(cluster){
+ 120   2                      file->pos = pos;
+ 121   2                      file->CurrCluster = cluster;
+ 122   2              }
+ 123   1              return DOS_FileRead(fno,buf,cnt,pos);
+ 124   1      }
+ 125          
+ 126          static UINT8 timelapse_FileWrite(UINT8 fno, UINT32 buf, UINT32 cnt, UINT32 pos, UINT32 cluster){
+ 127   1              xdata FILE *file;
+ 128   1              //UINT32 clusterSize = DOS_ClusterSizeGet();
+ 129   1              file  = (FILE *)&dos.file[fno];
+ 130   1              //file->pos = pos;//%clusterSize;
+ 131   1              //file->CurrCluster = file.FirstCluster;
+ 132   1              file->mode = 'a';
+ 133   1              //printf("%lx,%lx\n",cluster,file->CurrCluster);
+ 134   1              if(cluster){
+ 135   2                      file->CurrCluster = cluster;
+ 136   2                      file->pos = pos;
+ 137   2              }else{
+ 138   2                      file->CurrCluster = file->FirstCluster;
+ 139   2                      file->pos = pos;
+ 140   2              }
+ 141   1              return DOS_FileWrite(fno,buf,cnt);
+ 142   1      }
+ 143          
+ 144          static void timelapse_ReadDram(UINT32 addr,UINT8* buf,UINT32 size,UINT8 fmt){
+ 145   1              UINT32 i = size/2;
+ 146   1              HAL_DramSetAddr(addr,K_SDRAM_Prefetch);
+ 147   1              if(fmt==0){
+ 148   2                      while(i--){     
+ 149   3                              HAL_DramWordDataRead(buf++,buf++);
+ 150   3                      }
+ 151   2              }else if(fmt==1){
+ 152   2                      while(i--){
+ 153   3                              HAL_DramWordDataRead(buf+1,buf+0);
+ 154   3                              buf+=2;
+ 155   3                      }
+ 156   2              }else if(fmt==2){
+ 157   2                      i/=2;
+ 158   2                      while(i--){     
+ 159   3                              HAL_DramWordDataRead(buf+3,buf+2);
+ 160   3                              HAL_DramWordDataRead(buf+1,buf+0);
+ 161   3                              buf+=4;
+ 162   3                      }
+ 163   2              }
+ 164   1      }
+ 165          
+ 166          static void timelapse_WriteDram(UINT32 addr,UINT8* buf,UINT32 size,UINT8 fmt){
+ 167   1              UINT32 i = size/2;
+ 168   1              HAL_DramSetAddr(addr,K_SDRAM_NoPrefetch);
+ 169   1              if(fmt==0){
+ 170   2                      while(i--){     
+ 171   3                              HAL_DramWordDataWrite(*buf++,*buf++);
+ 172   3                      }
+ 173   2              }else if(fmt==1){
+ 174   2                      while(i--){     
+ 175   3                              HAL_DramWordDataWrite(buf[1],buf[0]);
+ 176   3                              buf+=2;
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 4   
+
+ 177   3                      }
+ 178   2              }else if(fmt==2){
+ 179   2                      i/=2;
+ 180   2                      while(i--){
+ 181   3                              HAL_DramWordDataWrite(buf[3],buf[2]);
+ 182   3                              HAL_DramWordDataWrite(buf[1],buf[0]);
+ 183   3                              buf+=4;
+ 184   3                      }
+ 185   2              }
+ 186   1      }
+ 187          
+ 188          static void timelapse_FillDramLong(UINT32 address, UINT32 value) USING_0
+ 189          {
+ 190   1              HAL_DramStartAddrSet(address, K_SDRAM_NoPrefetch );
+ 191   1              HAL_DramWordDataWrite((UINT8)value,(UINT8)(value>>8));
+ 192   1              HAL_DramWordDataWrite((UINT8)(value>>16),(UINT8)(value>>24));
+ 193   1      }
+ 194          
+ 195          UINT8 timelapse_ParamSet(UINT8 paraId, UINT16 value)
+ 196          {
+ 197   1              if (paraId >= TIMELAPSE_PAR_MAX) {
+ 198   2                      return FAIL;
+ 199   2              }
+ 200   1              
+ 201   1              timelapseParam[paraId] = value;
+ 202   1              return SUCCESS;
+ 203   1      }
+ 204          
+ 205          UINT16 timelapse_ParamGet(UINT8 paraId)
+ 206          {
+ 207   1              if (paraId >= TIMELAPSE_PAR_MAX) {
+ 208   2                      return 0;
+ 209   2              }
+ 210   1      
+ 211   1              return timelapseParam[paraId];
+ 212   1      }
+ 213          static void timelapse_WriteIdxToDram( UINT32 idxAddr)
+ 214          {
+ 215   1              /*
+ 216   1              0x69,0x64,0x78,0x31,   //idx
+ 217   1              */
+ 218   1              HAL_DramSetAddr(idxAddr, K_SDRAM_NoPrefetch );
+ 219   1              HAL_DramWriteByte(0x69,0x64);
+ 220   1              HAL_DramWriteByte(0x78,0x31);
+ 221   1              HAL_DramWriteByte(0x00,0x00);
+ 222   1              HAL_DramWriteByte(0x00,0x00);
+ 223   1      }
+ 224          
+ 225          static void timelapse_WriteMoviToDram( UINT32 movAddr )
+ 226          {
+ 227   1              /*
+ 228   1              0x4C, 0x49, 0x53, 0x54,    //-Id = "LIST"
+ 229   1              0x38, 0xA0, 0x06, 0x00,    //-Size = 0x????????
+ 230   1              0x6D, 0x6F, 0x76, 0x69,   //movi
+ 231   1              */
+ 232   1              HAL_DramSetAddr(movAddr,K_SDRAM_NoPrefetch);
+ 233   1              HAL_DramWriteByte(0x4C,0x49);
+ 234   1              HAL_DramWriteByte(0x53,0x54);
+ 235   1              HAL_DramWriteByte(0x00,0x00);
+ 236   1              HAL_DramWriteByte(0x00,0x00);
+ 237   1              HAL_DramWriteByte(0x6D,0x6F);
+ 238   1              HAL_DramWriteByte(0x76,0x69);
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 5   
+
+ 239   1      }
+ 240          
+ 241          static void timelapseWriteVidIndex2Dram(UINT32 MoviOfset, UINT32 size , UINT32 AVIIdxAddr) USING_0
+ 242          {
+ 243   1      
+ 244   1              HAL_DramStartAddrSet(AVIIdxAddr, K_SDRAM_NoPrefetch );
+ 245   1              HAL_DramWordDataWrite(0x30,0x30);
+ 246   1              HAL_DramWordDataWrite(0x64,0x63);
+ 247   1              HAL_DramWordDataWrite(0x10,0x00);
+ 248   1              HAL_DramWordDataWrite(0x00,0x00);
+ 249   1      
+ 250   1              HAL_DramWordDataWrite(READ8(MoviOfset, 3),READ8(MoviOfset, 2));
+ 251   1              HAL_DramWordDataWrite(READ8(MoviOfset, 1),READ8(MoviOfset, 0));
+ 252   1              HAL_DramWordDataWrite(READ8(size, 3),READ8(size, 2));
+ 253   1              HAL_DramWordDataWrite(READ8(size, 1),READ8(size, 0));
+ 254   1              
+ 255   1              //IndexNum += 16;
+ 256   1      }
+ 257          
+ 258          static UINT8 timelapse_DiskCheck( UINT8 fno,UINT32 movSize)
+ 259          {       
+ 260   1              UINT32 clusterSize;
+ 261   1              UINT32 freeSize;
+ 262   1              UINT32 usedSize;
+ 263   1              UINT32 reqSize;
+ 264   1      
+ 265   1              clusterSize = DOS_ClusterSizeGet();     //Byte
+ 266   1              freeSize = DOS_GetDiskSpace();//Kb
+ 267   1              
+ 268   1              reqSize = (movSize + clusterSize)>>10;//Kb
+ 269   1              usedSize = dos.file[fno].size>>10;//Kb
+ 270   1              usedSize += reqSize;
+ 271   1              
+ 272   1              if (reqSize> freeSize) {
+ 273   2                      //osMsgPost(SP1K_MSG_MEDIA_REC_DISK_FULL);
+ 274   2                      printf("Card full!!\n");
+ 275   2                      return TIMELAPSE_CARDFULL;
+ 276   2              }
+ 277   1      
+ 278   1              if(usedSize >=( SD_Size_4G>>10)){
+ 279   2                      //osMsgPost(SP1K_MSG_MEDIA_REC_DISK_FULL);
+ 280   2                      printf("File size > 4G!!!\n");
+ 281   2                      return TIMELAPSE_MAX_FILESIZE;
+ 282   2              }
+ 283   1              
+ 284   1              return TIMELAPSE_SUCCESS;
+ 285   1      }
+ 286          
+ 287          static void timelapse_CheckSum_Get(timelapseAvi_t *avi)
+ 288          {
+ 289   1              avi->check_Sum = avi->moviOffset + avi->hdr_Start_Cluster + avi->hdr_Last_Cluster
+ 290   1                      + avi->movi_Start_Cluster + avi->movi_Last_Cluster + avi->idx_Start_Cluster
+ 291   1                      +avi->idx_Last_Cluster + avi->idxSize + avi->hdrIdxOffset + avi->hdrIdxSkipCluster;
+ 292   1      }
+ 293          
+ 294          static void timelapse_WriteAviInfo( UINT8 fno,UINT32 fileAddr ,timelapseAvi_t aviInfo )
+ 295          {
+ 296   1              UINT32 offset = 0x150, startPos;
+ 297   1              UINT8 *avibuf = NULL;
+ 298   1              UINT16 bufLenth;
+ 299   1              UINT8 buf[2];
+ 300   1              
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 6   
+
+ 301   1              avibuf = (UINT8*)&aviInfo;
+ 302   1              bufLenth = sizeof(aviInfo);
+ 303   1              
+ 304   1              startPos = offset & ~(UINT32)511;    
+ 305   1          offset = offset % 512;
+ 306   1      
+ 307   1              timelapse_FileRead(fno,fileAddr<<1,0x200,0,aviInfo.hdr_Start_Cluster);
+ 308   1          DOS_FileSeek(fno, startPos, SEEK_SET);           
+ 309   1              
+ 310   1          if(offset & 1){ //first odd byte
+ 311   2              offset >>= 1;
+ 312   2                      HAL_DramSetAddr(fileAddr+offset, K_SDRAM_Prefetch );
+ 313   2                      HAL_DramWordDataRead(&buf[0], &buf[1]);
+ 314   2             
+ 315   2              buf[1] = *avibuf ++;
+ 316   2              bufLenth --;
+ 317   2              //printf("+%bx,%bx\n", buf[0],buf[1]);
+ 318   2      
+ 319   2              HAL_DramSetAddr( fileAddr+offset, K_SDRAM_NoPrefetch);
+ 320   2              HAL_DramWordDataWrite(buf[0], buf[1]);
+ 321   2              offset ++;
+ 322   2          }
+ 323   1          else{
+ 324   2              offset >>= 1;
+ 325   2              HAL_DramSetAddr( fileAddr+offset, K_SDRAM_NoPrefetch);
+ 326   2          }
+ 327   1      
+ 328   1          while(bufLenth>1){
+ 329   2              buf[0] = *avibuf ++;
+ 330   2              buf[1] = *avibuf ++;
+ 331   2              //printf("%bx,%bx\n", buf[0],buf[1]);
+ 332   2              HAL_DramWordDataWrite(buf[0], buf[1]);
+ 333   2              bufLenth -= 2;
+ 334   2              offset ++;
+ 335   2          }
+ 336   1      
+ 337   1          if(bufLenth){// last odd byte
+ 338   2             HAL_DramSetAddr(fileAddr+offset, K_SDRAM_Prefetch );
+ 339   2             HAL_DramWordDataRead(&buf[0], &buf[1]);
+ 340   2      
+ 341   2              buf[0] = *avibuf;
+ 342   2              //printf("-%bx,%bx\n", buf[0],buf[1]);
+ 343   2              
+ 344   2             HAL_DramSetAddr( fileAddr+offset, K_SDRAM_NoPrefetch);
+ 345   2             HAL_DramWordDataWrite(buf[0], buf[1]);
+ 346   2          }
+ 347   1                              
+ 348   1          //ret = DOS_FileCurrSectorWrite(fno, fileAddr);  //
+ 349   1              DOS_FileWrite(fno, fileAddr<<1, 0x200);
+ 350   1      }
+ 351          
+ 352          static UINT8 timelapse_Check_Sum(timelapseAvi_t *aviInfo)
+ 353          {
+ 354   1              UINT32 sum;
+ 355   1              
+ 356   1              sum = aviInfo->moviOffset + aviInfo->hdr_Start_Cluster + aviInfo->hdr_Last_Cluster
+ 357   1                      + aviInfo->movi_Start_Cluster + aviInfo->movi_Last_Cluster + aviInfo->idx_Start_Cluster
+ 358   1                      +aviInfo->idx_Last_Cluster + aviInfo->idxSize +aviInfo->hdrIdxOffset
+ 359   1                      + aviInfo->hdrIdxSkipCluster;
+ 360   1              
+ 361   1              //printf("sum1=%ld,sum2=%ld\n",sum,aviInfo->check_Sum);
+ 362   1              if(aviInfo->check_Sum != sum){
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 7   
+
+ 363   2                      printf("check sum fail!\n");
+ 364   2                      return FAIL;
+ 365   2              }
+ 366   1              return SUCCESS;
+ 367   1      }
+ 368          
+ 369          static UINT32 timelapse_ReadAviInfo( UINT8 fno,UINT32 fileAddr,timelapseAvi_t *tlsInfo )
+ 370          {
+ 371   1              UINT8 ret = SUCCESS;
+ 372   1              UINT8 parity_Check = 0 ;
+ 373   1              UINT32 offset = 0x150;
+ 374   1              UINT8 buf[2];
+ 375   1              UINT8 *avibuf = NULL;
+ 376   1              UINT32 aviLenth;
+ 377   1              
+ 378   1              avibuf = (UINT8 *)tlsInfo;//tmp;
+ 379   1              aviLenth = sizeof(timelapseAvi_t);
+ 380   1          offset = offset % 512;
+ 381   1              DOS_FileSeek(fno,0,SEEK_SET);
+ 382   1              DOS_FileRead(fno, fileAddr<<1,0x200, 0);
+ 383   1              //dumpData(0x200, (UINT8*)fileAddr,1);
+ 384   1          if(offset & 1){ //first odd byte
+ 385   2              offset >>= 1;
+ 386   2              HAL_DramSetAddr(fileAddr+offset, K_SDRAM_Prefetch );
+ 387   2              HAL_DramWordDataRead(&buf[0], &buf[1]);
+ 388   2      
+ 389   2              *avibuf ++ = buf[1];
+ 390   2              aviLenth --;
+ 391   2      
+ 392   2              offset ++;
+ 393   2          }
+ 394   1          else{
+ 395   2              offset >>= 1;
+ 396   2              HAL_DramSetAddr(fileAddr+offset, K_SDRAM_Prefetch );
+ 397   2          }
+ 398   1      
+ 399   1          while(aviLenth>1){
+ 400   2              HAL_DramWordDataRead(&buf[0], &buf[1]);
+ 401   2                      //printf("buf[0]=%bx,buf[1]=%bx\n",buf[0],buf[1]);
+ 402   2              *avibuf++ = buf[0];
+ 403   2              *avibuf++ = buf[1];
+ 404   2      
+ 405   2              aviLenth -= 2;
+ 406   2              offset ++;
+ 407   2          }
+ 408   1      
+ 409   1          if(aviLenth){// last odd byte
+ 410   2              HAL_DramSetAddr(fileAddr+offset, K_SDRAM_Prefetch );
+ 411   2              HAL_DramWordDataRead(&buf[0], &buf[1]);
+ 412   2              *avibuf ++ = buf[0];
+ 413   2          }
+ 414   1              ret = timelapse_Check_Sum( tlsInfo );
+ 415   1              
+ 416   1              return ret;     
+ 417   1      }
+ 418          
+ 419          static UINT8 timelapse_ExpendSpace(UINT8 fno,UINT32 dataAddr, UINT32 *lstCluster,UINT32 dataLenth)
+ 420          {
+ 421   1              UINT32 startCluster,currCluser=0,nextCluster,firstCluster;
+ 422   1              UINT32 gainCluster,datClusterCnt,clusterSize;
+ 423   1              UINT32 sector;
+ 424   1              UINT8 i;
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 8   
+
+ 425   1              UINT8 sts = SUCCESS;
+ 426   1      
+ 427   1              clusterSize = DOS_ClusterSizeGet();
+ 428   1              datClusterCnt = dataLenth/clusterSize;
+ 429   1          //printf("need=%ld\n",datClusterCnt);
+ 430   1              while(datClusterCnt){
+ 431   2                       gainCluster = FAT_FreeClusterGet(dos.CurrDrv,datClusterCnt,&nextCluster);
+ 432   2                      // printf("get=%ld\n",gainCluster);
+ 433   2                       startCluster = nextCluster;
+ 434   2                       if(currCluser==0){
+ 435   3                              currCluser =nextCluster++;
+ 436   3                              i=1;
+ 437   3                              firstCluster = currCluser;
+ 438   3                       }
+ 439   2                       else{
+ 440   3                              i=0;
+ 441   3                       }
+ 442   2                       
+ 443   2                      /* create FAT list ... */
+ 444   2                      for(;i<gainCluster;i++){        
+ 445   3                              //printf("%bu,%lx->%lx\n",i,currCluser,nextCluster);
+ 446   3                              FAT_TableWrite(dos.CurrDrv, currCluser, nextCluster);
+ 447   3                              currCluser = nextCluster++;
+ 448   3                      }
+ 449   2                      
+ 450   2                      FAT_TableWrite(dos.CurrDrv, currCluser, dos.disk.FAT_EOFValue);
+ 451   2                      sector = FAT_Cluster2Sector(dos.CurrDrv, startCluster); 
+ 452   2                      sts = DOS_SectorWrite(dos.CurrDrv,sector,(UINT32)gainCluster*clusterSize/512,dataAddr); 
+ 453   2                      if(sts != TRUE){
+ 454   3                              //printf("write error:Line=%d\n",__LINE__);
+ 455   3                              return FAIL;
+ 456   3                      }
+ 457   2                      dataAddr+=(UINT32)gainCluster*clusterSize/2;
+ 458   2                      if( gainCluster>=datClusterCnt ){
+ 459   3                              break;
+ 460   3                      }
+ 461   2                       datClusterCnt -= gainCluster;
+ 462   2              }
+ 463   1              
+ 464   1              nextCluster = FAT_TableRead(dos.CurrDrv,*lstCluster);
+ 465   1              FAT_TableWrite(dos.CurrDrv,*lstCluster,firstCluster);
+ 466   1              FAT_TableWrite(dos.CurrDrv,currCluser,nextCluster);
+ 467   1              
+ 468   1              dos.file[fno].size+=dataLenth;
+ 469   1              *lstCluster = currCluser;//return last cluster
+ 470   1      
+ 471   1              return SUCCESS;
+ 472   1      }
+ 473          
+ 474          /* return movi last cluster */
+ 475          static UINT8 timelapse_AppendMoviList( UINT8 fno,UINT32 dataAddr,UINT32 *lstMovCluster,UINT32 dataLenth )
+ 476          {
+ 477   1              UINT8 ret;
+ 478   1      
+ 479   1              /* Write 0xdc */
+ 480   1              //timelapse_FillDramLong(dataAddr, 0x63643030);
+ 481   1              timelapse_FillDramLong(dataAddr+ 2, dataLenth-8);//dataLenth -= 8; //not include 00dc ..
+ 482   1              
+ 483   1              ret = timelapse_ExpendSpace(fno,dataAddr,lstMovCluster,dataLenth);
+ 484   1              if(ret!=SUCCESS){
+ 485   2                      return FAIL;
+ 486   2              }
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 9   
+
+ 487   1              
+ 488   1              return SUCCESS;
+ 489   1      }
+ 490          
+ 491          static UINT8 timelapse_FilterFile(UINT8 *fileName)
+ 492          {
+ 493   1              /* patch:deal with WGI file,this method is not recommand ,the 
+ 494   1                 best method is DCF can support WGI type */
+ 495   1              if( USR_IsOurFileExt(fileName,MEDIA_AVI) == TRUE){
+ 496   2                      //printf("Avi!\n");
+ 497   2                      return FAIL;    
+ 498   2              }else if(USR_IsOurFileExt(fileName,MEDIA_WAV) == TRUE){
+ 499   2                      //printf("Jpg!\n");
+ 500   2                      return FAIL;    
+ 501   2              }else if(USR_IsOurFileExt(fileName,MEDIA_JPG) == TRUE){
+ 502   2                      //printf("Wav!\n");
+ 503   2                      return FAIL;
+ 504   2              }
+ 505   1              
+ 506   1              return SUCCESS;
+ 507   1      
+ 508   1      }
+ 509          
+ 510          /* brief: add one frame information */
+ 511          UINT8 timelapse_AppendFrame(UINT32 startBufAddrW, UINT32 dataLength )
+ 512          {
+ 513   1              UINT8 fhandle;
+ 514   1              UINT16 fileIndex = 1;
+ 515   1              UINT32 gainCluster = 0;
+ 516   1              UINT32 curr=0;
+ 517   1              UINT32 moviSize;
+ 518   1              UINT32 moviListSize;
+ 519   1              UINT32 clusterSize;
+ 520   1              UINT32 dataOffset = 0x200; //0x200 for read AVI informatin from header
+ 521   1              UINT32 junkSize,junkOffset;
+ 522   1              //UINT32 time0,time1;
+ 523   1              timelapseAvi_t timelapeAVI;
+ 524   1              PBFile_t pFileInfo;
+ 525   1              UINT32 idxSize =0;
+ 526   1              UINT32 tmp;
+ 527   1              UINT8 ret;
+ 528   1      
+ 529   1              printf("dbg_%ld\n",++dbgCnt);
+ 530   1              //HAL_ReadGTimer(&time0);
+ 531   1              clusterSize = DOS_ClusterSizeGet();
+ 532   1              startBufAddrW-=dataOffset;
+ 533   1              
+ 534   1              dataLength = (dataLength +1)&~1;
+ 535   1              moviSize = (dataLength+clusterSize-1)&~(clusterSize-1);
+ 536   1              junkSize = dataLength%clusterSize;
+ 537   1              junkSize = clusterSize - junkSize;
+ 538   1              junkOffset = dataOffset+dataLength/2;
+ 539   1      
+ 540   1              if( dcfTLSAssignFolder()){
+ 541   2                      //printf("fail:L=%d\n",__LINE__);
+ 542   2                      return FAIL;
+ 543   2              }
+ 544   1              if ((pbFileInfoGet(G_USR_FileCount, &pFileInfo) != SUCCESS) ) {
+ 545   2                      return FAIL;
+ 546   2              }
+ 547   1              ret = timelapse_FilterFile(pFileInfo.FileName);
+ 548   1              if(ret != SUCCESS){
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 10  
+
+ 549   2                      return FAIL;
+ 550   2              }
+ 551   1              fhandle = DOS_FileOpen(pFileInfo.FileName, 'r');
+ 552   1              if (fhandle == 0){
+ 553   2                      return FAIL;
+ 554   2              }
+ 555   1              
+ 556   1              /*get last avi info from current avi chunk */
+ 557   1              ret = timelapse_ReadAviInfo(fhandle,startBufAddrW,&timelapeAVI);
+ 558   1              if( ret != SUCCESS ){
+ 559   2                      DOS_FileClose(fhandle);
+ 560   2                      return FAIL;
+ 561   2              }       
+ 562   1              ret = timelapse_DiskCheck(fhandle, moviSize);
+ 563   1              if(ret != TIMELAPSE_SUCCESS){
+ 564   2                      DOS_FileClose(fhandle);
+ 565   2                      return ret;
+ 566   2              }
+ 567   1              /* fill junk data */
+ 568   1              if(junkSize){
+ 569   2                      HAL_GprmDramFill(startBufAddrW+junkOffset, junkSize, 0);
+ 570   2              }
+ 571   1              ret = timelapse_AppendMoviList(fhandle,startBufAddrW+dataOffset,&timelapeAVI.movi_Last_Cluster,moviSize);
+ 572   1              if(ret == FAIL){
+ 573   2                      return FAIL;
+ 574   2              }
+ 575   1              /* append movi List */
+ 576   1              timelapse_FileRead(fhandle,startBufAddrW<<1,0x200, 0,timelapeAVI.movi_Start_Cluster);
+ 577   1              timelapse_ReadDram(startBufAddrW+2,(UINT8*)&moviListSize,sizeof(UINT32),2);
+ 578   1              moviListSize += moviSize;
+ 579   1              timelapse_WriteDram(startBufAddrW+2,(UINT8*)&moviListSize,sizeof(UINT32),2);//modify movi list size
+ 580   1              timelapse_FileWrite(fhandle,startBufAddrW<<1,0x200,0,timelapeAVI.movi_Start_Cluster);
+ 581   1              
+ 582   1          /***************************Add file index and header index *************************/
+ 583   1              moviSize-=8;
+ 584   1              timelapeAVI.moviOffset+=8;
+ 585   1              /* modify index list container size */  
+ 586   1              timelapse_FileRead(fhandle,startBufAddrW<<1,0x200, 0,timelapeAVI.idx_Start_Cluster);
+ 587   1              timelapse_ReadDram(startBufAddrW + 2,(UINT8*)&idxSize,sizeof(UINT32),2);
+ 588   1              idxSize+=16;
+ 589   1              timelapse_WriteDram(startBufAddrW + 2, (UINT8*)&idxSize,sizeof(UINT32),2);
+ 590   1              timelapse_FileWrite(fhandle,startBufAddrW<<1,0x200, 0,timelapeAVI.idx_Start_Cluster);
+ 591   1      
+ 592   1              /* modify index List */
+ 593   1              fastFileSeekEnd(fhandle,timelapeAVI.idx_Last_Cluster);
+ 594   1              HAL_GprmDramFill(startBufAddrW, clusterSize, 0); //attention here
+ 595   1              timelapseWriteVidIndex2Dram(timelapeAVI.moviOffset,  moviSize, startBufAddrW);
+ 596   1              DOS_FileWrite(fhandle,startBufAddrW<<1,16);
+ 597   1              DOS_FileCurrInfoGet(fhandle,0, (UINT8*)&timelapeAVI.idx_Last_Cluster);
+ 598   1              
+ 599   1              /* header index */
+ 600   1              if(((timelapeAVI.hdrIdxOffset+16)/clusterSize)>timelapeAVI.hdrIdxSkipCluster){
+ 601   2                      //printf("^_^\n");
+ 602   2                      tmp = clusterSize - timelapeAVI.hdrIdxOffset%clusterSize;
+ 603   2                      timelapse_FileWrite(fhandle,startBufAddrW<<1,tmp, timelapeAVI.hdrIdxOffset,timelapeAVI.hdr_Last_Cluster)
+             -;
+ 604   2                      ret = timelapse_ExpendSpace(fhandle,startBufAddrW+(tmp>>1),&timelapeAVI.hdr_Last_Cluster,clusterSize);
+ 605   2                      if(ret!=SUCCESS){
+ 606   3                              return FAIL;
+ 607   3                      }
+ 608   2                      
+ 609   2                      timelapeAVI.hdrIdxSkipCluster++;
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 11  
+
+ 610   2                      //printf("first=%lx,%lx\n",timelapeAVI.hdr_Last_Cluster,timelapeAVI.hdrIdxSkipCluster);
+ 611   2              }else{
+ 612   2                      timelapse_FileWrite(fhandle,startBufAddrW<<1,16, timelapeAVI.hdrIdxOffset,timelapeAVI.hdr_Last_Cluster);
+ 613   2              }
+ 614   1              timelapse_FileRead(fhandle,startBufAddrW<<1,0x200, 0x200,timelapeAVI.hdr_Start_Cluster);
+ 615   1              timelapse_WriteDram(startBufAddrW+2, (UINT8*)&idxSize,sizeof(UINT32),2);
+ 616   1              timelapse_FileWrite(fhandle,startBufAddrW<<1,0x200, 0x200,timelapeAVI.hdr_Start_Cluster);
+ 617   1              
+ 618   1              timelapeAVI.moviOffset += moviSize;
+ 619   1              timelapeAVI.idxSize += 16;
+ 620   1              timelapeAVI.hdrIdxOffset+=16;
+ 621   1              /************************************************************************************/
+ 622   1              
+ 623   1              timelapse_ModifyHdr(fhandle,startBufAddrW,timelapeAVI.hdr_Start_Cluster,timelapeAVI.movi_Start_Cluster,ti
+             -melapeAVI.idx_Start_Cluster,timelapeAVI.hdrIdxSkipCluster);
+ 624   1              timelapse_CheckSum_Get(&timelapeAVI);
+ 625   1              //printf("sec=%lx,%lx\n",timelapeAVI.hdr_Last_Cluster,timelapeAVI.hdrIdxSkipCluster);
+ 626   1              timelapse_WriteAviInfo(fhandle,startBufAddrW,timelapeAVI);
+ 627   1      
+ 628   1              //printf("finish\n");
+ 629   1              DOS_FileClose(fhandle);
+ 630   1              //HAL_ReadGTimer(&time1);
+ 631   1              //printf("cost time=%ld\n",time1-time0);
+ 632   1              
+ 633   1              return TIMELAPSE_SUCCESS;
+ 634   1      }
+ 635          
+ 636          static void timelapse_InitHdr(UINT32 hdrAddrW, UINT16 width, UINT16 height)
+ 637          {
+ 638   1              UINT32 tmp32;
+ 639   1              
+ 640   1              sp1kNandRsvRead(RES_AVIHeader_PCM, hdrAddrW<<1);
+ 641   1      
+ 642   1              //for test
+ 643   1              tmp32 = 512;
+ 644   1              timelapse_FillDramLong(hdrAddrW+(0x04>>1), tmp32);
+ 645   1      
+ 646   1              //mainHeader: dwMicroSecPerFrame
+ 647   1              if(!timelapseParam[TIMELAPSE_PAR_FPS]){
+ 648   2                      timelapseParam[TIMELAPSE_PAR_FPS] = 2;//default frame = 2
+ 649   2              }
+ 650   1              tmp32 = 1000000/timelapseParam[TIMELAPSE_PAR_FPS];
+ 651   1              timelapse_FillDramLong(hdrAddrW+(0x20>>1), tmp32);
+ 652   1              //streams, mask aud stream
+ 653   1              tmp32 = 1;
+ 654   1              timelapse_FillDramLong(hdrAddrW+(0x38>>1), tmp32);
+ 655   1              //width, height
+ 656   1              timelapse_FillDramLong(hdrAddrW+(0x40>>1), width);
+ 657   1              timelapse_FillDramLong(hdrAddrW+(0x44>>1), height);
+ 658   1              
+ 659   1              //strh: reserved3
+ 660   1              tmp32 = height;
+ 661   1              tmp32 = (tmp32 << 16) + width;
+ 662   1              timelapse_FillDramLong(hdrAddrW+(0xA0>>1), tmp32);
+ 663   1      
+ 664   1              //strf:widht, height
+ 665   1              timelapse_FillDramLong(hdrAddrW+(0xB0>>1), width);
+ 666   1              timelapse_FillDramLong(hdrAddrW+(0xB4>>1), height);
+ 667   1              //biSizeImage
+ 668   1              tmp32 = (UINT32)width*height*3;
+ 669   1              timelapse_FillDramLong(hdrAddrW+(0xC0>>1), tmp32);
+ 670   1      
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 12  
+
+ 671   1              //mask aud stream
+ 672   1              tmp32 = 0x4B4E554A; //JUNK
+ 673   1              timelapse_FillDramLong(hdrAddrW+(0xD4>>1), tmp32);      
+ 674   1      
+ 675   1              //modidy audio stream flag
+ 676   1              tmp32 = 0x7364756E;//nuds//0x66736C74;//tlsf
+ 677   1              timelapse_FillDramLong(hdrAddrW+(0xE8>>1), tmp32);      
+ 678   1              
+ 679   1              //custom info
+ 680   1              tmp32 = timelapseParam[TIMELAPSE_PAR_SNAPGAP];
+ 681   1              HAL_DramSetAddr(hdrAddrW+(CUSTOM_INFO_OFFSET>>1), K_SDRAM_NoPrefetch );
+ 682   1              HAL_DramWordDataWrite((UINT8)tmp32,(UINT8)(tmp32>>8));
+ 683   1      }
+ 684          
+ 685          static void timelapse_ModifyHdr( UINT8 fno,UINT32 dramAddrW,UINT32 hdrCluster,UINT32 movCluster,UINT32 idx
+             -Cluster,UINT32 cnt)
+ 686          {
+ 687   1              UINT32 fileSize;
+ 688   1              UINT32 frames, scale, rate, fps;
+ 689   1              UINT32 hdrSize;
+ 690   1              UINT32 clusterSize;
+ 691   1              UINT32 movSize,idxSize;
+ 692   1              
+ 693   1              clusterSize = DOS_ClusterSizeGet();
+ 694   1              hdrSize = clusterSize*(cnt+1);
+ 695   1      
+ 696   1              /* Read movi List size */
+ 697   1              timelapse_FileRead(fno,dramAddrW<<1,0x200,0,movCluster);
+ 698   1              timelapse_ReadDram(dramAddrW + 2,(UINT8*)&movSize,sizeof(UINT32),2);
+ 699   1              movSize+=8;
+ 700   1      
+ 701   1              /* Read index List size */
+ 702   1              timelapse_FileRead(fno,dramAddrW<<1,0x200,0,idxCluster);
+ 703   1              timelapse_ReadDram(dramAddrW + 2,(UINT8*)&idxSize,sizeof(UINT32),2);
+ 704   1      
+ 705   1              /* Read AVI header */
+ 706   1              timelapse_FileRead(fno,dramAddrW<<1,1024,0,hdrCluster);
+ 707   1      
+ 708   1              //printf("mov=%lx,idx=%lx\n",movSize,idxSize);
+ 709   1              fileSize = hdrSize + movSize + (idxSize+8) - 8;// avi.hdrSize + avi.moviSize + (avi.lastIdxSize + 8) - 8;
+ 710   1              timelapse_FillDramLong(dramAddrW+(4>>1), fileSize);
+ 711   1              hdrSize = hdrSize - 0x14;       
+ 712   1              timelapse_FillDramLong(dramAddrW+(0x10>>1),hdrSize);
+ 713   1              
+ 714   1              frames = idxSize / 16; // no audio
+ 715   1              fps = videoPbReadDword(dramAddrW+ (0x20>>1));
+ 716   1              rate = 1000000;//frames * 1000 ;
+ 717   1              scale = fps; //(UINT32)((float)fps * frames / 1000);
+ 718   1                      
+ 719   1              timelapse_FillDramLong(dramAddrW+(0x30>>1), frames);
+ 720   1              timelapse_FillDramLong(dramAddrW+(0x80>>1), scale);
+ 721   1              timelapse_FillDramLong(dramAddrW+(0x84>>1), rate);
+ 722   1              timelapse_FillDramLong(dramAddrW+(0x8C>>1), frames);
+ 723   1      
+ 724   1              /* cluster size - 0x140; real junk include index and cluster alignment  */
+ 725   1              timelapse_FillDramLong(dramAddrW+(0x13C>>1), hdrSize-0x140+0x14);//videoFillDramLong(dramAddrW+(0x13C>>1)
+             -, junkSize);
+ 726   1              timelapse_FillDramLong(dramAddrW+(0x204>>1), idxSize);
+ 727   1      
+ 728   1              timelapse_FileWrite(fno,dramAddrW<<1,1024,0,hdrCluster);
+ 729   1      }
+ 730          
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 13  
+
+ 731          static void timelapse_ModifyMovi( UINT8 fd, UINT32 dramAddrW,UINT32 moviSize,UINT32 moviCluster)
+ 732          {       
+ 733   1              timelapse_FileRead(fd,dramAddrW<<1,0x200,0,moviCluster);
+ 734   1              timelapse_FillDramLong(dramAddrW + 2, moviSize +4 );
+ 735   1              timelapse_FileWrite(fd,dramAddrW<<1,0x200,0,moviCluster);
+ 736   1      }
+ 737          
+ 738          /* create AVI file from dram */
+ 739          UINT8 timelapse_Entry(UINT32 dramAddrW, UINT16 width, UINT16 height,UINT32 vlcSize)
+ 740          {
+ 741   1              UINT32 freeSize;
+ 742   1              UINT32 offset;
+ 743   1              timelapseAvi_t avi;
+ 744   1              UINT8 fd;
+ 745   1              UINT8 aviName[12];
+ 746   1              UINT32 sizeByCluster = 0;
+ 747   1              UINT32 clusterSize;
+ 748   1              UINT32 realSize,tmp;
+ 749   1              UINT32 aviSize;
+ 750   1              UINT32 junkSize,junkOffset;
+ 751   1      
+ 752   1              dbgCnt = 1;
+ 753   1              if( dcfTLSAssignFolder()){
+ 754   2                      return FAIL;
+ 755   2                      //printf("fail:L=%d\n",__LINE__);
+ 756   2              }
+ 757   1              
+ 758   1              freeSize = DOS_GetDiskSpace();
+ 759   1              if(freeSize < 0x800 ){ // reserved size 0x200000
+ 760   2                      return FAIL;
+ 761   2              }
+ 762   1              dcfFileIndexUpdate();
+ 763   1              /* rename AVI name */
+ 764   1              dcfMediaNameGet(aviName, G_USR_FileIndex,MEDIA_TLS);
+ 765   1              fd = DOS_FileOpen(aviName, 'w');
+ 766   1              if (fd == 0){
+ 767   2                      return FAIL;
+ 768   2              }
+ 769   1              avi.moviOffset = 4;
+ 770   1              clusterSize = DOS_ClusterSizeGet();
+ 771   1      
+ 772   1              /* reverse some space for avi header */
+ 773   1              dramAddrW = dramAddrW- ((clusterSize+MOVI_LIST_HDR_SIZE)>>1);
+ 774   1      
+ 775   1              /* movi list 0x4C 49 53 54  F8 FF 4B 00   6D 6F 76 69 ,20 bytes */
+ 776   1              tmp= (vlcSize + MOVI_LIST_HDR_SIZE + clusterSize-1)&~(clusterSize-1);//cluster aligment
+ 777   1              realSize = tmp - MOVI_LIST_HDR_SIZE -8; //not include 0xdc
+ 778   1      
+ 779   1              /* load avi header List and init header */
+ 780   1              timelapse_InitHdr(dramAddrW, width, height);
+ 781   1              /* Write header index */
+ 782   1              timelapse_WriteIdxToDram(dramAddrW+(HDRIDXOFFSET>>1));
+ 783   1              timelapse_FillDramLong(dramAddrW +(HDRIDXOFFSET>>1)+ 2, 16);
+ 784   1              timelapseWriteVidIndex2Dram(avi.moviOffset, realSize, dramAddrW +(HDRIDXOFFSET>>1)+ 4);
+ 785   1              
+ 786   1              sizeByCluster += clusterSize;
+ 787   1              /* load movi List */
+ 788   1              offset = clusterSize>>1;
+ 789   1              sizeByCluster +=tmp;
+ 790   1              timelapse_WriteMoviToDram(dramAddrW+offset);
+ 791   1              //timelapse_FillDramLong(dramAddrW + offset + 6, 0x63643030);
+ 792   1              timelapse_FillDramLong(dramAddrW + offset + 6 + 2, realSize);
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 14  
+
+ 793   1              
+ 794   1              /* Add movi junk */
+ 795   1              tmp = (vlcSize+1)&~1;
+ 796   1              junkSize = (tmp+12) % clusterSize;
+ 797   1              junkSize = clusterSize - junkSize;
+ 798   1              junkOffset = offset +(tmp+12)/2;
+ 799   1              if(junkSize){
+ 800   2                      HAL_GprmDramFill(dramAddrW+junkOffset, junkSize, 0);
+ 801   2              }
+ 802   1              
+ 803   1              /* Write to card */
+ 804   1              DOS_FileWrite(fd,dramAddrW<<1,sizeByCluster);
+ 805   1              avi.hdr_Last_Cluster = dos.file[fd].FirstCluster;
+ 806   1              avi.hdr_Start_Cluster = avi.hdr_Last_Cluster;
+ 807   1              avi.movi_Last_Cluster = dos.file[fd].LastCluster;
+ 808   1              avi.movi_Start_Cluster = FAT_TableRead(dos.CurrDrv,avi.hdr_Last_Cluster);
+ 809   1              avi.hdrIdxOffset = HDRIDXOFFSET+ 8+16;
+ 810   1              avi.hdrIdxSkipCluster = 0;
+ 811   1              
+ 812   1              /* Write index */
+ 813   1              DOS_FileSeek(fd, 0, SEEK_END);
+ 814   1              timelapse_WriteIdxToDram(dramAddrW);
+ 815   1              timelapse_FillDramLong(dramAddrW + 2, 16);
+ 816   1              timelapseWriteVidIndex2Dram(avi.moviOffset, realSize, dramAddrW + 4);
+ 817   1              DOS_FileWrite(fd,dramAddrW<<1,24);
+ 818   1              avi.idx_Last_Cluster = dos.file[fd].LastCluster;
+ 819   1              avi.idx_Start_Cluster = avi.idx_Last_Cluster;
+ 820   1              
+ 821   1              /* modify header */
+ 822   1              avi.moviOffset += realSize;
+ 823   1              avi.idxSize = 16;       
+ 824   1      
+ 825   1              timelapse_ModifyMovi(fd,dramAddrW,realSize+8,avi.movi_Start_Cluster);
+ 826   1              timelapse_ModifyHdr(fd,dramAddrW,avi.hdr_Start_Cluster,avi.movi_Start_Cluster,avi.idx_Start_Cluster,avi.h
+             -drIdxSkipCluster);
+ 827   1              
+ 828   1              /* Save AVI information */
+ 829   1              timelapse_CheckSum_Get(&avi);
+ 830   1              timelapse_WriteAviInfo(fd,dramAddrW,avi);
+ 831   1              aviSize = vfsFileSizeGet(fd);
+ 832   1              DOS_FileClose(fd);
+ 833   1              
+ 834   1              dcfFileIndexUpdate();
+ 835   1              dcfNewFileDramFdbParameterUpdate(K_DCF_WGI_TYPE ,aviSize);
+ 836   1      
+ 837   1              return SUCCESS;
+ 838   1      }
+ 839          
+ 840          void timelapse_AddFrameHdr(UINT32 addr,UINT16 width,UINT16 height,UINT8 qIdx)
+ 841          {
+ 842   1              UINT8 qtable[130];
+ 843   1              UINT32 dramAddr = addr +16;
+ 844   1              UINT32 tmpAddr;
+ 845   1              qtable[0] = 0;
+ 846   1              qtable[65] = 1;
+ 847   1      
+ 848   1              tmpAddr = addr-0x200;
+ 849   1              sp1kNandRsvRead(0xb,tmpAddr<<1);
+ 850   1              HAL_GprmDramDma(tmpAddr<<1,addr<<1,0x104,1);
+ 851   1              HAL_DmaSetSramAddr(0x0000);
+ 852   1              HAL_DmaSetDramAddr(addr);
+ 853   1              HAL_DmaDo(0,1,0x0104,0,0);
+C51 COMPILER V8.08   TIMELAPSE                                                             12/31/2019 16:16:09 PAGE 15  
+
+ 854   1              XBYTE[0x38E8] = (UINT8)(height>>8);
+ 855   1              XBYTE[0x38E9] = (UINT8)(height);
+ 856   1              
+ 857   1              XBYTE[0x38EA] = (UINT8)(width>>8);
+ 858   1              XBYTE[0x38EB] = (UINT8)(width);
+ 859   1              HAL_DmaSetSramAddr(0x0000);   
+ 860   1              HAL_DmaSetDramAddr(addr);
+ 861   1              HAL_DmaDo(1,0,0x0104,0,0);
+ 862   1      
+ 863   1              // generation qtable 
+ 864   1              jpegYQTableGen((SINT32)qIdx, qtable +1 );
+ 865   1              jpegUVQTableGen((SINT32)qIdx, qtable +66);
+ 866   1              HAL_DramDmaWrite(qtable, dramAddr, 130, 1);
+ 867   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   7891    ----
+   CONSTANT SIZE    =     58    ----
+   XDATA SIZE       =      8     745
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

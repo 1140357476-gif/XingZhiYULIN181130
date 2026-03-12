@@ -1,0 +1,447 @@
+
+#ifndef __REG_CDSP_H__
+#define __REG_CDSP_H__
+
+
+
+/**************************************************************************
+ *                  R E G I S T E R  A D D R E S S
+ **************************************************************************/ 
+//CPU Read/Write SRAM
+#define REG_Cdsp_macroSel        (0x2100)
+#define REG_Cdsp_macropagsel     (0x2101)
+#define REG_Cdsp_switchclk       (0x2104)
+#define REG_Cdsp_snapraw         (0x2106)
+
+//Front2CDSP
+#define REG_Cdsp_FrontSramen          (0x2108)  
+#define REG_Cdsp_FrontDummyline       (0x2109)
+#define REG_Cdsp_FrontFintval         (0x210a)
+#define REG_Cdsp_FrontFintvalen       (0x210b)
+#define REG_Cdsp_FrontFbufsize_low    (0x210c)
+#define REG_Cdsp_FrontFbufsize_high   (0x210d)
+#define REG_Cdsp_FrontSol2vldsize     (0x210e)
+
+//WB Offset
+#define REG_Cdsp_pixsel          (0x2110)
+#define REG_Cdsp_wboffseten      (0x2114)
+#define REG_Cdsp_wbovalidon      (0x2115)
+#define REG_Cdsp_proffset_low    (0x2118)
+#define REG_Cdsp_proffset_high   (0x2119)
+#define REG_Cdsp_pgroffset_low   (0x211a)
+#define REG_Cdsp_pgroffset_high  (0x211b)
+#define REG_Cdsp_pboffset_low    (0x211c)
+#define REG_Cdsp_pboffset_high   (0x211d)
+#define REG_Cdsp_pgboffset_low   (0x211e)
+#define REG_Cdsp_pgboffset_high  (0x211f)
+
+//Lens Shading
+#define REG_Cdsp_LscLsstepfact     (0x2120)
+#define REG_Cdsp_LscChmode         (0x2121)
+#define REG_Cdsp_LscLsbitmode      (0x2122)
+#define REG_Cdsp_LscLstblhsize     (0x2123)
+#define REG_Cdsp_LscLsxmoffset     (0x2124)
+#define REG_Cdsp_LscLsymoffset     (0x2126)
+#define REG_Cdsp_LscLsxmoinc       (0x2128)
+#define REG_Cdsp_LscLsymoinc       (0x2129)
+
+//Preview Bad Pixel Compensation
+#define REG_Cdsp_badpixen           (0x2130)
+#define REG_Cdsp_bphitcount_low     (0x2132)
+#define REG_Cdsp_bphitcount_high    (0x2133)
+#define REG_Cdsp_badbaseaddr_byte0  (0x2134)
+#define REG_Cdsp_badbaseaddr_byte1  (0x2135)
+#define REG_Cdsp_badbaseaddr_byte2  (0x2136)
+#define REG_Cdsp_badbaseaddr_byte3  (0x2137)
+
+//Image Cropping
+#define REG_Cdsp_Cropen             (0x2138)
+#define REG_Cdsp_pcrophoffset_low   (0x213c)
+#define REG_Cdsp_pcrophoffset_high  (0x213d)
+#define REG_Cdsp_pcrophsize_low     (0x213e)
+#define REG_Cdsp_pcrophsize_high    (0x213f)
+#define REG_Cdsp_pcropvoffset_low   (0x2140)
+#define REG_Cdsp_pcropvoffset_high  (0x2141)
+#define REG_Cdsp_pcropvsize_low     (0x2142)
+#define REG_Cdsp_pcropvsize_high    (0x2143)
+
+//RGB Horizontal Scale
+#define REG_Cdsp_HRGBscalesvden        (0x2144)
+#define REG_Cdsp_HRGBscaleen           (0x2145)
+#define REG_Cdsp_HRGBscaleinieve_low   (0x2148)
+#define REG_Cdsp_HRGBscaleinieve_high  (0x2149)
+#define REG_Cdsp_HRGBscaleiniodd_low   (0x214A)
+#define REG_Cdsp_HRGBscaleiniodd_high  (0x214B)
+#define REG_Cdsp_HRGBscalefactor_low   (0x214C)
+#define REG_Cdsp_HRGBscalefactor_high  (0x214D)
+
+//WB Gain
+#define REG_Cdsp_gain_en         (0x2150)
+#define REG_Cdsp_prgain_low      (0x2154)
+#define REG_Cdsp_prgain_high     (0x2155)
+#define REG_Cdsp_pgrgain_low     (0x2156)
+#define REG_Cdsp_pgrgain_high    (0x2157)
+#define REG_Cdsp_pbgain_low      (0x2158)
+#define REG_Cdsp_pbgain_high     (0x2159)
+#define REG_Cdsp_pgbgain_low     (0x215a)
+#define REG_Cdsp_pgbgain_high    (0x215b)
+#define REG_Cdsp_pdigialglogain  (0x215c)
+
+//Gamma
+#define REG_Cdsp_Lutgammaen      (0x2160)
+
+//Interpolation
+#define REG_Cdsp_intplmirror     (0x2168)
+#define REG_Cdsp_Intpltest       (0x2169)
+#define REG_Cdsp_intlvalidinon   (0x216a)
+#define REG_Cdsp_intpllowthr     (0x216c)
+#define REG_Cdsp_Intpledgthr     (0x216d)
+#define REG_Cdsp_intplslntthr    (0x216e)
+#define REG_Cdsp_intplftropt     (0x216f)
+
+//Hue Correction
+#define REG_Cdsp_huecorren        (0x2170)
+#define REG_Cdsp_hcangx_low     (0x2174)
+#define REG_Cdsp_hcangx_high    (0x2175)
+#define REG_Cdsp_hcn12x         (0x2176)
+#define REG_Cdsp_hcn34x         (0x2177)
+#define REG_Cdsp_hcshx          (0x2178)
+#define REG_Cdsp_hcangy_low     (0x217a)
+#define REG_Cdsp_hcangy_high    (0x217b)
+#define REG_Cdsp_hcn12y         (0x217c)
+#define REG_Cdsp_hcn34y         (0x217d)
+#define REG_Cdsp_hcshy          (0x217e)
+#define REG_Cdsp_ythrz          (0x2180)
+#define REG_Cdsp_hcangz_low     (0x2184)
+#define REG_Cdsp_hcangz_high    (0x2185)
+#define REG_Cdsp_hcn12z         (0x2186)
+#define REG_Cdsp_hcn34z         (0x2187)
+#define REG_Cdsp_hcshz          (0x2188)
+
+//Color Matrix
+#define REG_Cdsp_Colcorren        (0x2190)
+#define REG_Cdsp_ColorM_A00_low   (0x2192)
+#define REG_Cdsp_ColorM_A00_high  (0x2193)
+#define REG_Cdsp_ColorM_A01_low   (0x2194)
+#define REG_Cdsp_ColorM_A01_high  (0x2195)
+#define REG_Cdsp_ColorM_A02_low   (0x2196)
+#define REG_Cdsp_ColorM_A02_high  (0x2197)
+#define REG_Cdsp_ColorM_A10_low   (0x2198)
+#define REG_Cdsp_ColorM_A10_high  (0x2199)
+#define REG_Cdsp_ColorM_A11_low   (0x219a)
+#define REG_Cdsp_ColorM_A11_high  (0x219b)
+#define REG_Cdsp_ColorM_A12_low   (0x219c)
+#define REG_Cdsp_ColorM_A12_high  (0x219d)
+#define REG_Cdsp_ColorM_A20_low   (0x219e)
+#define REG_Cdsp_ColorM_A20_high  (0x219f)
+#define REG_Cdsp_ColorM_A21_low   (0x21a0)
+#define REG_Cdsp_ColorM_A21_high  (0x21a1)
+#define REG_Cdsp_ColorM_A22_low   (0x21a2)
+#define REG_Cdsp_ColorM_A22_high  (0x21a3)
+
+//RB Linear Clamp
+#define REG_Cdsp_rbclamp      (0x21a4)
+#define REG_Cdsp_rbclampen    (0x21a5)
+
+//YUV422 to YUV444
+#define REG_Cdsp_yuvinserten  (0x21a8)
+
+//YUV Sat Hue
+#define REG_Cdsp_YbYcen       (0x21b0)
+#define REG_Cdsp_Yb           (0x21b4)
+#define REG_Cdsp_Yc           (0x21b5)
+#define REG_Cdsp_Ythr         (0x21b6)
+#define REG_Cdsp_UVsat        (0x21b7)
+#define REG_Cdsp_huesin1data  (0x21b8)
+#define REG_Cdsp_huecosdata   (0x21b9)
+#define REG_Cdsp_huesin2data  (0x21ba)
+#define REG_Cdsp_UOffset      (0x21bc)
+#define REG_Cdsp_VOffset      (0x21bd)
+
+//YUV Horizontal Size
+#define REG_Cdsp_YUVscalesvden         (0x2144)
+#define REG_Cdsp_YUVhscaleen           (0x21c0)
+#define REG_Cdsp_YUVhscalefactor_low   (0x21c4)
+#define REG_Cdsp_YUVhscalefactor_high  (0x21c5)
+#define REG_Cdsp_Yhscaleaccini_low     (0x21c6)
+#define REG_Cdsp_Yhscaleaccini_high    (0x21c7)
+
+//YUV Vertical Size
+#define REG_Cdsp_YUVvscaleen           (0x21c8)
+#define REG_Cdsp_YUVvscalefactor_low   (0x21cc)
+#define REG_Cdsp_YUVvscalefactor_high  (0x21cd)
+#define REG_Cdsp_Yvscaleaccini_low     (0x21ce)
+#define REG_Cdsp_Yvscaleaccini_high    (0x21cf)
+
+//Edge Enhancement & Suppression
+#define REG_Cdsp_EdgeEn      (0x21d0)
+#define REG_Cdsp_EsmirEn     (0x21d1)
+#define REG_Cdsp_Yhtclamp    (0x21d2)
+#define REG_Cdsp_Yhdiv       (0x21d3)
+#define REG_Cdsp_ygain0      (0x21d4)
+#define REG_Cdsp_ygain1      (0x21d5)
+#define REG_Cdsp_yhtlowthr   (0x21d6)
+#define REG_Cdsp_yhthighthr  (0x21d7)
+#define REG_Cdsp_yhtbw       (0x21d8)
+#define REG_Cdsp_ftr0        (0x21d9)
+#define REG_Cdsp_ftr5        (0x21da)
+#define REG_Cdsp_ftr4        (0x21db)
+#define REG_Cdsp_ftr3        (0x21dc)
+#define REG_Cdsp_ftr2        (0x21dd)
+#define REG_Cdsp_ftr1        (0x21de)
+#define REG_Cdsp_Medmode     (0x21df)
+
+//Interrupt
+#define REG_Cdsp_Cdspinten16  (0x21ea)
+#define REG_Cdsp_Cdspevt16    (0x21eb)
+#define REG_Cdsp_Cdspinten_lo (0x21ec)
+#define REG_Cdsp_Cdspinten_hi (0x21ed)
+#define REG_Cdsp_evnt1        (0x21ee)
+#define REG_Cdsp_evnt2        (0x21ef)
+
+//misc
+#define REG_Cdsp_rstcdsp             (0x21f0)
+#define REG_Cdsp_vdupdate            (0x21f1)
+#define REG_Cdsp_Bistmode            (0x21f2)
+#define REG_Cdsp_Bistfinish          (0x21f3)
+#define REG_Cdsp_fail0               (0x21f4)
+#define REG_Cdsp_fail1               (0x21f5)
+#define REG_Cdsp_fail2               (0x21f6)
+#define REG_Cdsp_fail3               (0x21f7)
+#define REG_Cdsp_disgatedv1xclk_low  (0x21f8)
+#define REG_Cdsp_disgatedv1xclk_high (0x21f9)
+#define REG_Cdsp_disgatedmclk        (0x21fa)
+#define REG_Cdsp_disgatedsclk        (0x21fb)
+#define REG_Cdsp_Probemode           (0x21fc)
+#define REG_Cdsp_Probesel            (0x21fd)
+#define REG_Cdsp_cdspprobe           (0x21fe)
+
+//AF Window Control
+#define REG_Cdsp_AFwinen        (0x2200)
+#define REG_Cdsp_AFrgbmode      (0x2201)
+//#define REG_Cdsp_AFGain         (0x2202)
+#define REG_Cdsp_AFfilterwt     (0x2203)
+#define REG_Cdsp_AFcoringthr    (0x2204)
+#define REG_Cdsp_AFcoringvalue  (0x2205)
+//#define REG_Cdsp_AFnoisethr     (0x2206)
+#define REG_Cdsp_AFhstart_low   (0x2208)
+#define REG_Cdsp_AFhstart_high  (0x2209)
+#define REG_Cdsp_AFhend_low     (0x220a)
+#define REG_Cdsp_AFhend_high    (0x220b)
+#define REG_Cdsp_AFvstart_low   (0x220c)
+#define REG_Cdsp_AFvstart_high  (0x220d)
+#define REG_Cdsp_AFvend_low     (0x220e)
+#define REG_Cdsp_AFvend_high    (0x220f)
+#define REG_Cdsp_AFvalue_byte0  (0x2210)
+#define REG_Cdsp_AFvalue_byte1  (0x2211)
+#define REG_Cdsp_AFvalue_byte2  (0x2212)
+#define REG_Cdsp_AFvalue_byte3  (0x2213)
+
+//AWB Window Control
+#define REG_Cdsp_AWBwinen              (0x2220)
+#define REG_Cdsp_AWBscaleen            (0x2222)
+#define REG_Cdsp_AWBhstar_low          (0x2224)
+#define REG_Cdsp_AWBhstar_high         (0x2225)
+#define REG_Cdsp_AWBhend_low           (0x2226)
+#define REG_Cdsp_AWBhend_high          (0x2227)
+#define REG_Cdsp_AWBvstart_low         (0x2228)
+#define REG_Cdsp_AWBvstart_high        (0x2229)
+#define REG_Cdsp_AWBvend_low           (0x222a)
+#define REG_Cdsp_AWBvend_high          (0x222b)
+#define REG_Cdsp_AWBhscalefactor_low   (0x222c)
+#define REG_Cdsp_AWBhscalefactor_high  (0x222d)
+#define REG_Cdsp_AWBvscalefactor_low   (0x222e)
+#define REG_Cdsp_AWBvscalefactor_high  (0x222f)
+#define REG_Cdsp_AWBWinaddr_Byte0      (0x2230)
+#define REG_Cdsp_AWBWinaddr_Byte1      (0x2231)
+#define REG_Cdsp_AWBWinaddr_Byte2      (0x2232)
+#define REG_Cdsp_AWBWinaddr_Byte3      (0x2233)
+#define REG_Cdsp_AWBWinrgain           (0x2234)
+#define REG_Cdsp_AWBWinbgain           (0x2235)
+#define REG_Cdsp_AWBGainsvd            (0x2236)
+
+//AE/RGB Window Control
+#define REG_Cdsp_AEwinen          (0x2240)
+#define REG_Cdsp_AEhaccfactor     (0x2243)
+#define REG_Cdsp_AEhoffset_low    (0x2244)
+#define REG_Cdsp_AEhoffset_high   (0x2245)
+#define REG_Cdsp_AEvoffset_low    (0x2246)
+#define REG_Cdsp_AEvoffset_high   (0x2247)
+#define REG_Cdsp_AEhsize          (0x2248)
+#define REG_Cdsp_AEvsize          (0x2249)
+#define REG_Cdsp_AEintvl          (0x224a)
+#define REG_Cdsp_AEwincnt         (0x224b)
+#define REG_Cdsp_AEWinaddr_Byte0  (0x224c)
+#define REG_Cdsp_AEWinaddr_Byte1  (0x224d)
+#define REG_Cdsp_AEWinaddr_Byte2  (0x224e)
+#define REG_Cdsp_AEWinaddr_Byte3  (0x224f)
+
+//Edge Window
+#define REG_Cdsp_Edgewinen              (0x2250)
+#define REG_Cdsp_Edgewinthrh            (0x2251)
+#define REG_Cdsp_Edgewinthrv            (0x2252)
+#define REG_Cdsp_Edgehoffset            (0x2253)
+#define REG_Cdsp_Edgevoffset            (0x2254)
+#define REG_Cdsp_Edgehsize              (0x2255)
+#define REG_Cdsp_Edgevsize              (0x2256)
+#define REG_Cdsp_Edgehwincnt            (0x2257)
+#define REG_Cdsp_Edgewinhmap            (0x228a)
+#define REG_Cdsp_Edgewinvmap            (0x228b)
+
+//Video Second Path
+#define REG_Cdsp_skipwr1          (0x2258)
+#define REG_Cdsp_clamphsizeen1    (0x2259)
+
+#define REG_Cdsp_whoffset1_low    (0x225a)
+#define REG_Cdsp_whoffset1_high   (0x225b)
+#define REG_Cdsp_wvoffset1_low    (0x225c)
+#define REG_Cdsp_wvoffset1_high   (0x225d)
+#define REG_Cdsp_clamphsize1_low  (0x225e)
+#define REG_Cdsp_clamphsize1_high (0x225f)
+
+
+//Video Path
+#define REG_Cdsp_Remode           (0x2260)
+#define REG_Cdsp_Rerange          (0x2261)
+#define REG_Cdsp_Dvtestcnt        (0x2262)
+#define REG_Cdsp_mirrorline       (0x2264)
+#define REG_Cdsp_Skippixel        (0x2265)
+#define REG_Cdsp_Rhsize_low       (0x2266)
+#define REG_Cdsp_Rhsize_high      (0x2267)
+#define REG_Cdsp_Rhoffset_low     (0x2268)
+#define REG_Cdsp_Rhoffset_high    (0x2269)
+#define REG_Cdsp_Rvsize_low       (0x226a)
+#define REG_Cdsp_Rvsize_high      (0x226b)
+#define REG_Cdsp_Rvoffset_low     (0x226c)
+#define REG_Cdsp_Rvoffset_high    (0x226d)
+#define REG_Cdsp_Lintval_low      (0x226e)
+#define REG_Cdsp_Lintval_high     (0x226f)
+#define REG_Cdsp_imgmode          (0x2276)
+#define REG_Cdsp_pSkipwr          (0x2277)
+#define REG_Cdsp_Whoffset_low     (0x2278)
+#define REG_Cdsp_Whoffset_high    (0x2279)
+#define REG_Cdsp_Wvoffset_low     (0x227a)
+#define REG_Cdsp_Wvoffset_high    (0x227b)
+#define REG_Cdsp_Clamphsize_low   (0x227c)
+#define REG_Cdsp_Clamphsize_high  (0x227d)
+#define REG_Cdsp_clamphsizeen     (0x227e)
+#define REG_Cdsp_Clampvsize_low   (0x2280)
+#define REG_Cdsp_Clampvsize_high  (0x2281)
+#define REG_Cdsp_clampvsizeen     (0x2282)
+
+#define REG_Cdsp_ClampSizeSvd     (0x2284)
+//image source select
+#define REG_Cdsp_CoreImgSrc		  (0x2286) 	
+#define REG_Cdsp_CorePixSel		  (0x2287) 		
+#define REG_Cdsp_SourceSel        (0x2288)
+#define REG_Cdsp_RawCurY		  (0x2289)
+
+/* Temporal Denoise */
+#define REG_Cdsp_3Dtden               (0x2290)
+#define REG_Cdsp_3Dtdlowyval          (0x2291)
+#define REG_Cdsp_3Dtdhighyval         (0x2292)
+#define REG_Cdsp_3Dtdlowythr          (0x2293)
+#define REG_Cdsp_3Dtdywid             (0x2294)
+#define REG_Cdsp_3Dtdlowuvval         (0x2295)
+#define REG_Cdsp_3Dtdhighuvval        (0x2296)
+#define REG_Cdsp_3Dtdlowuvthr         (0x2297)
+#define REG_Cdsp_3Dtduvwid        	  (0x2298)
+#define REG_Cdsp_3Dsnapsubwidth_low   (0x229a)
+#define REG_Cdsp_3Dsnapsubwidth_high  (0x229b)
+#define REG_Cdsp_3Ddarksubthr         (0x229c)
+#define REG_Cdsp_3Ddarksubmode        (0x229d)
+
+
+//Y Coring
+#define REG_Cdsp_Ycoring0          (0x22a0)
+#define REG_Cdsp_Ycoring1          (0x22a1)
+#define REG_Cdsp_Ycoring2          (0x22a2)
+#define REG_Cdsp_Ycoring3          (0x22a3)
+#define REG_Cdsp_Ycoring4          (0x22a4)
+#define REG_Cdsp_Ycoring5          (0x22a5)
+#define REG_Cdsp_Ycoring6          (0x22a6)
+#define REG_Cdsp_Ycoring7          (0x22a7)
+#define REG_Cdsp_Ycoring8          (0x22a8)
+#define REG_Cdsp_Ycoring9          (0x22a9)
+#define REG_Cdsp_Ycoring10         (0x22aa)
+#define REG_Cdsp_Ycoring11         (0x22ab)
+#define REG_Cdsp_Ycoring12         (0x22ac)
+#define REG_Cdsp_Ycoring13         (0x22ad)
+#define REG_Cdsp_Ycoring14         (0x22ae)
+#define REG_Cdsp_Ycoring15         (0x22af)
+#define REG_Cdsp_YWeighting        (0x22b0)
+
+
+
+// YUV Horizontal Size (second path)
+#define REG_Cdsp_YUVhscaleen2             (0x22c0)
+#define REG_Cdsp_YUV2ndpathen             (0x22c1)
+#define REG_Cdsp_YUVhscalefactor2_low     (0x22c4)
+#define REG_Cdsp_YUVhscalefactor2_high    (0x22c5)
+#define REG_Cdsp_YUVhscaleaccini2_low     (0x22c6)
+#define REG_Cdsp_YUVhscaleaccini2_high    (0x22c7)
+
+// YUV Vertical Size (second path)
+#define REG_Cdsp_YUVvscaleen2             (0x22c8)
+#define REG_Cdsp_YUVvscalefactor2_low     (0x22cc)
+#define REG_Cdsp_YUVvscalefactor2_high    (0x22cd)
+#define REG_Cdsp_YUVvscaleaccini2_low     (0x22ce)
+#define REG_Cdsp_YUVvscaleaccini2_high    (0x22cf)
+
+// WDR
+#define REG_Cdsp_WDRen                    (0x22d0)
+#define REG_Cdsp_WDRyga                   (0x22d1)
+#define REG_Cdsp_WDRqs                    (0x22d2)
+#define REG_Cdsp_WDRes                    (0x22d3)
+#define REG_Cdsp_WDRyqthr                 (0x22d4)
+#define REG_Cdsp_WDRyoff                  (0x22d5)
+#define REG_Cdsp_WDRyqf_low               (0x22d6)
+#define REG_Cdsp_WDRyqf_high              (0x22d7)
+#define REG_Cdsp_WDRqfslope_low           (0x22d8)
+#define REG_Cdsp_WDRqfslope_high          (0x22d9)
+#define REG_Cdsp_WDRcbfthr_low            (0x22da)
+#define REG_Cdsp_WDRcbfthr_high           (0x22db)
+#define REG_Cdsp_WDRcrfthr_low            (0x22dc)
+#define REG_Cdsp_WDRcrfthr_high           (0x22dd)
+
+
+/* Image Report Size */
+#define REG_Cdsp_RstSize				  (0x22ef) 	
+
+#define REG_Cdsp_ImgSrcHSize_low		  (0x22f0) 	
+#define REG_Cdsp_ImgSrcHSize_high		  (0x22f1)
+#define REG_Cdsp_ImgSrcVSize_low		  (0x22f2) 	
+#define REG_Cdsp_ImgSrcVSize_high		  (0x22f3)
+#define REG_Cdsp_rhScaleHSize_low		  (0x22f4) 	
+#define REG_Cdsp_rhScaleHSize_high		  (0x22f5)
+#define REG_Cdsp_rhScaleVSize_low		  (0x22f6) 	
+#define REG_Cdsp_rhScaleVSize_high		  (0x22f7)
+#define REG_Cdsp_YUVMHSize_low		  	  (0x22f8) 	
+#define REG_Cdsp_YUVMHSize_high			  (0x22f9)
+#define REG_Cdsp_YUVMVSize_low		  	  (0x22fa) 	
+#define REG_Cdsp_YUVMVSize_high			  (0x22fb)
+#define REG_Cdsp_esHSize_low		  	  (0x22fc) 	
+#define REG_Cdsp_esHSize_high			  (0x22fd)
+#define REG_Cdsp_esVSize_low		  	  (0x22fe) 	
+#define REG_Cdsp_esVSize_high			  (0x22ff)
+#define REG_Cdsp_CoreHSize_low		  	  (0x22b4) 	
+#define REG_Cdsp_CoreHSize_high			  (0x22b5)
+#define REG_Cdsp_CoreVSize_low		  	  (0x22b6) 	
+#define REG_Cdsp_CoreVSize_high			  (0x22b7)
+#define REG_Cdsp_vsHSize_low		  	  (0x22b8) 	
+#define REG_Cdsp_vsHSize_high			  (0x22b9)
+#define REG_Cdsp_vsVSize_low		  	  (0x22ba) 	
+#define REG_Cdsp_vsVSize_high			  (0x22bb)
+#define REG_Cdsp_vs2HSize_low		  	  (0x22bc) 	
+#define REG_Cdsp_vs2HSize_high			  (0x22bd)
+#define REG_Cdsp_vs2VSize_low		  	  (0x22be) 	
+#define REG_Cdsp_vs2VSize_high			  (0x22bf)
+
+
+
+
+
+
+
+#endif
+

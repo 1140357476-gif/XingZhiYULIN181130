@@ -1,0 +1,319 @@
+C51 COMPILER V8.08   TIMER                                                                 06/16/2022 10:11:56 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE TIMER
+NO OBJECT MODULE REQUESTED
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE timer.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\in
+                    -c\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customizat
+                    -ion) DEFINE(LIB_RELEASE) PRINT(.\obj\timer.lst) SRC(.\obj\timer.SRC)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2008-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           **************************************************************************/
+  22           
+  23          //=============================================================================
+  24          //Header file
+  25          //=============================================================================
+  26          #define TMR_TASK_INTERNAL
+  27          #include "general.h"
+  28          #include "timer.h"
+  29          
+  30          #include "os_api.h"
+  31          //#include "os_msg.h"
+  32          #include "tmr_svc.h"
+  33          #include "key_scan.h"
+  34          #include "func_timer_def.h"
+  35          //=============================================================================
+  36          //Symbol
+  37          //=============================================================================
+  38          extern void adctest(void);
+  39          //-----------------------------------------------------------------------------
+  40          //Constant
+  41          //-----------------------------------------------------------------------------
+  42          
+  43          //-----------------------------------------------------------------------------
+  44          //Variable
+  45          //-----------------------------------------------------------------------------
+  46          
+  47          static UINT8 xdata Tmr0Stamp;
+  48          
+  49          static UINT32 xdata Tmr1ReloadVal;
+  50          static pFuncTmr1 xdata Tmr1PFunc;
+  51          static UINT8* xdata Tmr1PFuncPara;
+  52          static UINT32 xdata InitVal;
+  53          static UINT32 xdata TimeTick;
+C51 COMPILER V8.08   TIMER                                                                 06/16/2022 10:11:56 PAGE 2   
+
+  54          extern UINT8 TestFlag;
+  55          
+  56          extern TMR_TASK_DCL pFuncTmr0 code timerFuncCallList0[];
+  57          extern TMR_TASK_DCL pFuncTmr1 code timerFuncCallList1[];
+  58          //=============================================================================
+  59          //Program
+  60          //=============================================================================
+  61          //-----------------------------------------------------------------------------
+  62          //                               TIMER0
+  63          //-----------------------------------------------------------------------------
+  64          //-----------------------------------------------------------------------------
+  65          //TIMER0
+  66          //-----------------------------------------------------------------------------
+  67          void TIMER0_Routine(void)
+  68          {
+  69   1              TIMER0_Handler();     //Timer tick: 5ms
+  70   1      }
+  71          
+  72          //-----------------------------------------------------------------------------
+  73          //TIMER0_Handler
+  74          //-----------------------------------------------------------------------------
+  75          void TIMER0_Handler(void) USING_2
+  76          {
+  77   1              UINT8 i;
+  78   1              pFuncTmr0 code* ppFunc;
+  79   1      
+  80   1              if (!(--Tmr0Stamp))
+  81   1              {
+  82   2                      //5ms * 2 
+  83   2                      Tmr0Stamp = K_TIMER_PERIOD;
+  84   2              
+  85   2                      osTimeTick();
+  86   2      
+  87   2                      /* customized timer task */
+  88   2                      i = TMR0_TASK_MAX;
+  89   2                      ppFunc = &timerFuncCallList0[0];
+  90   2                      do {
+  91   3                              if (*ppFunc) {
+  92   4                                      (*ppFunc)();
+  93   4                              } else {
+  94   4                                      break;
+  95   4                              }
+  96   3                              ppFunc++;
+  97   3                      } while (--i);
+  98   2      
+  99   2              tmrSvc_APO_Intr();
+ 100   2              tmrSvc_PowerOffProc_Intr();
+ 101   2                      
+ 102   2      #if (UI_TEST)           
+ 103   2      
+ 104   2      #else
+                              adctest();
+              #endif          
+ 107   2      
+ 108   2              }
+ 109   1      }
+ 110          
+ 111          //-----------------------------------------------------------------------------
+ 112          //TIMER0_Start
+ 113          //-----------------------------------------------------------------------------
+ 114          void TIMER0_Start(void) USING_0
+ 115          {
+C51 COMPILER V8.08   TIMER                                                                 06/16/2022 10:11:56 PAGE 3   
+
+ 116   1              Tmr0Stamp = K_TIMER_PERIOD;
+ 117   1      
+ 118   1              //start timer
+ 119   1              ET0 = 1;                //IE:    TIMER0 interrupt enable
+ 120   1              TR0 = 1;                //TCON:  TIMER0 enable
+ 121   1      }
+ 122          
+ 123          //-----------------------------------------------------------------------------
+ 124          //TIMER0_Stop
+ 125          //-----------------------------------------------------------------------------
+ 126          void TIMER0_Stop(void) USING_0
+ 127          {
+ 128   1           //stop timer
+ 129   1           TR0 = 0;                //TCON:  TIMER0 disable
+ 130   1           ET0 = 0;                //IE:    TIMER0 interrupt disable
+ 131   1      }
+ 132          
+ 133          //-----------------------------------------------------------------------------
+ 134          //                               TIMER1
+ 135          //-----------------------------------------------------------------------------
+ 136          //-----------------------------------------------------------------------------
+ 137          //TIMER1
+ 138          //-----------------------------------------------------------------------------
+ 139          void TIMER1_Routine(void)
+ 140          {
+ 141   1          //EX0 = 0;
+ 142   1          TIMER1_Handler();     //TIMER1 handler
+ 143   1          //EX0 = 1;
+ 144   1      }
+ 145          
+ 146          //-----------------------------------------------------------------------------
+ 147          //TIMER1_Handler
+ 148          //-----------------------------------------------------------------------------
+ 149          void TIMER1_Handler(void) USING_3
+ 150          {
+ 151   1              pFuncTmr1* ptr;
+ 152   1              
+ 153   1              TR1 = 0 ;
+ 154   1              
+ 155   1              // add by phil for correcting the call tree for function pointer S      
+ 156   1              if (TR1) {
+ 157   2                      ptr = timerFuncCallList1;
+ 158   2                      //ptr = intrFuncArray;
+ 159   2              }
+ 160   1              // add by phil for correcting the call tree for function pointer E      
+ 161   1              
+ 162   1              TL1 = READ8(InitVal, 3);
+ 163   1              TH1 = READ8(InitVal, 2);
+ 164   1              if (TimeTick) {
+ 165   2                      TimeTick--;
+ 166   2              } else {
+ 167   2                      TimeTick = Tmr1ReloadVal;
+ 168   2                      if (Tmr1PFunc != NULL) {
+ 169   3                              Tmr1PFunc(Tmr1PFuncPara);
+ 170   3                      }
+ 171   2              }
+ 172   1                      
+ 173   1              TR1 = 1 ;
+ 174   1      }
+ 175          
+ 176          
+ 177          //-----------------------------------------------------------------------------
+C51 COMPILER V8.08   TIMER                                                                 06/16/2022 10:11:56 PAGE 4   
+
+ 178          //TIMER1_Start
+ 179          //-----------------------------------------------------------------------------
+ 180          void TIMER1_Start(void) USING_3
+ 181          {
+ 182   1          //start timer
+ 183   1          ET1 = 1;                //IE:    TIMER1 interrupt enable
+ 184   1          TR1 = 1;                //TCON:  TIMER1 enable
+ 185   1      }
+ 186          
+ 187          //-----------------------------------------------------------------------------
+ 188          //TIMER1_Stop
+ 189          //-----------------------------------------------------------------------------
+ 190          void TIMER1_Stop(void) USING_3
+ 191          {
+ 192   1          ET1 = 0;                //IE:    TIMER1 interrupt disable
+ 193   1          TR1 = 0;                //TCON:  TIMER1 disable
+ 194   1      }
+ 195          
+ 196          void TIMER1_Config(UINT32 Period, pFuncTmr1 pFunc, UINT8* pFuncPara)
+ 197          {
+ 198   1              UINT32 CpuClk;
+ 199   1              
+ 200   1              TMOD &= 0x0f;
+ 201   1              TMOD |= 0x10;
+ 202   1              TF1=0;
+ 203   1                              
+ 204   1              if ((!Period) || (pFunc == (void (*)())NULL)) {
+ 205   2                      return;
+ 206   2              }
+ 207   1      
+ 208   1              Tmr1ReloadVal = Period;
+ 209   1              Tmr1PFunc = pFunc;
+ 210   1              Tmr1PFuncPara = pFuncPara;
+ 211   1      
+ 212   1              CpuClk=522000000UL/(XBYTE[0x2024]+1);
+ 213   1      
+ 214   1              InitVal = 65536UL -  CpuClk / 12000UL;
+ 215   1              TimeTick = Tmr1ReloadVal;
+ 216   1              TL1 = READ8(InitVal, 3);
+ 217   1              TH1 = READ8(InitVal, 2);
+ 218   1              
+ 219   1      }
+ 220          
+ 221          #if 0
+              //--------------------------------------------------------------------------------------------------------
+             --------------------------------
+              //DELAY_10us
+              //--------------------------------------------------------------------------------------------------------
+             --------------------------------
+              void DELAY_10us(void) USING_0
+              {
+              #pragma asm     
+                   MOV     R6,#010        
+              DELAY_10us_1:                           ;10 * 6 * (4 / 24M) s = 10 us
+                   NOP                                ;1 Instr. Cycles
+                   NOP                                ;1 Instr. Cycles
+                   NOP                                ;1 Instr. Cycles
+                   DJNZ    R6,DELAY_10us_1                 ;3 Instr. Cycles
+              #pragma endasm
+              }       
+              //--------------------------------------------------------------------------------------------------------
+             --------------------------------
+C51 COMPILER V8.08   TIMER                                                                 06/16/2022 10:11:56 PAGE 5   
+
+              //DELAY_1ms
+              //--------------------------------------------------------------------------------------------------------
+             --------------------------------
+              void DELAY_1ms(void) USING_0
+              {
+              #pragma asm     
+                      MOV     R5,#010                         
+              DELAY_1ms_1:    
+                   MOV     R6,#100        
+              DELAY_1ms_2:                            ;100 * 6 * (4 / 24M) s = 100 us
+                   NOP                                ;1 Instr. Cycles
+                   NOP                                ;1 Instr. Cycles
+                   NOP                                ;1 Instr. Cycles
+                   DJNZ    R6,DELAY_1ms_2                  ;3 Instr. Cycles
+                   DJNZ    R5,DELAY_1ms_1                  ;3 Instr. Cycles
+              #pragma endasm
+              }       
+              //#endif
+              
+              //--------------------------------------------------------------------------------------------------------
+             --------------------------------
+              //DELAY_1s
+              //--------------------------------------------------------------------------------------------------------
+             --------------------------------
+              void DELAY_1s(void) USING_0
+              {
+              #pragma asm     
+                      MOV     R4,#100                         
+              DELAY_1s_1:     
+                      MOV     R5,#100                         
+              DELAY_1s_2:     
+                   MOV     R6,#100        
+              DELAY_1s_3:                             ;100 * 6 * (4 / 24M) s = 100 us
+                   NOP                                ;1 Instr. Cycles
+                   NOP                                ;1 Instr. Cycles
+                   NOP                                ;1 Instr. Cycles
+                   DJNZ    R6,DELAY_1s_3              ;3 Instr. Cycles
+                   DJNZ    R5,DELAY_1s_2              ;3 Instr. Cycles
+                   DJNZ    R4,DELAY_1s_1              ;3 Instr. Cycles
+              #pragma endasm
+              }       
+              #endif
+ 276          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    360    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     18      15
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

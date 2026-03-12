@@ -1,0 +1,672 @@
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE PB_DZOOM
+OBJECT MODULE PLACED IN .\obj\pb_dzoom.obj
+COMPILER INVOKED BY: e:\Keil\C51\BIN\C51.EXE pb_dzoom.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..
+                    -\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customi
+                    -zation) DEFINE(LIB_RELEASE) PRINT(.\obj\pb_dzoom.lst) OBJECT(.\obj\pb_dzoom.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *                 Copyright(c) 2010 by i-Catch Technology Co., Ltd.                      *
+   3           *                                                                                                                                                *
+   4           *      This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *      nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *      Ltd. This software may only be used in accordance with the                        *
+   7           *      corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *      distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                                                                                                *
+  10           *      This Copyright notice "M U S T" not be removed or modified without        *
+  11           *      prior written consent of i-Catch Technology Co., Ltd.                             *
+  12           *                                                                                                                                                *
+  13           *      i-Catch Technology Co., Ltd. reserves the right to modify this            *
+  14           *      software without notice.                                                                                          *
+  15           *                                                                                                                                                *
+  16           *      i-Catch Technology Co., Ltd.                                                                              *
+  17           *      19-1, Innovation First Road, Science-Based Industrial Park,               *
+  18           *      Hsin-Chu, Taiwan, R.O.C.                                                                                          *
+  19           *                                                                                                                                                *
+  20           *************************************************************************/
+  21           
+  22          /**
+  23           * @file          pb_dzoom.c
+  24           * @brief         play back digital zoom base function
+  25           * @author        TQ.zhang
+  26           * @since         2010-05-05
+  27           * @date          2010-05-05
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                                                H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #include "general.h"
+  34          #include "os_msg.h"
+  35          #include "hal_disp.h"
+  36          #include "hal_jpeg.h"
+  37          #include "disp_api.h"
+  38          #include "pb_general.h"
+  39          #include "pb_api.h"
+  40          #include "pb_debug.h"
+  41          #include "initio.h"
+  42          #include "exiffunc.h"
+  43          //#include "exifhdr.h"
+  44          #include "doslink.h"
+  45          #include "cardlink.h"
+  46          #include "hal_cdsp.h"
+  47          #include "hal.h"
+  48          #include "hal_dram.h"
+  49          #include "snap_qtable.h"
+  50          #include "vfs_api.h"
+  51          #include "hal_dram.h"
+  52          #include "reg_def.h"
+  53          #include "app_msg.h"
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 2   
+
+  54          #include "Hal_gprm.h"
+  55          #include "hal_disp.h"
+  56          
+  57          #include "utility.h"
+  58          
+  59          #include "exif_def.h"
+  60          #include "exif_entry.h"
+  61          /**************************************************************************
+  62           *                                                       C O N S T A N T S                                                        *
+  63           **************************************************************************/
+  64           
+  65          /**************************************************************************
+  66           *                                                              M A C R O S                                                       *
+  67           **************************************************************************/
+  68          #if (!STILL_LIB_PB_DMY)
+  69          #define PB_DZOOM_SMOOTH
+  70          #define PB_DZOOM_STEP   4
+  71          
+  72          #define PB_DZOOM_FACTOR_MAX     4
+  73          #define PB_DZOOM_DEC_WIDTH      960//864//1024  //display max width
+  74          #define PB_DZOOM_DEC_HEIGHT     720//648//768           //display max height
+  75          
+  76          #define PB_DZOOM_DISP_BUFF      K_SDRAM_ImagePlaybackBufAddr
+  77          
+  78          #if 1
+  79          #define PB_CHECK_ABORT()        do {\
+  80                                                                          if(osMsgSeek(SP1K_MSG_KEY_PRESS_LEFT) ||osMsgSeek(SP1K_MSG_KEY_PRESS_RIGHT)) {\
+  81                                                                                  return FAIL;\
+  82                                                                          }\
+  83                                                                  } while(0)
+  84          #else
+              #define PB_CHECK_ABORT()        do {if(osMsgQuery()) {return FAIL;}} while(0)
+              #endif
+  87          
+  88          /**************************************************************************
+  89           *                                                      D A T A    T Y P E S                                              *
+  90           **************************************************************************/
+  91           
+  92          /**************************************************************************
+  93           *                                                 G L O B A L    D A T A                                                 *
+  94           **************************************************************************/
+  95          UINT8 xdata pbDZoomSts;
+  96          //UINT8 facSts = 0;
+  97          
+  98          /**************************************************************************
+  99           *                                 E X T E R N A L        R E F E R E N C E S                             *
+ 100           **************************************************************************/
+ 101          extern void dispImgWinSet(UINT16 xoff, UINT16 yoff, UINT16 w, UINT16 h);
+ 102          extern UINT8 SDRAM_Dram2Sram(UINT32 ramAddr, UINT8 *sramAddr, UINT16 siz);
+ 103          
+ 104          extern PBFile_t xdata MediaInfo;
+ 105          //extern xdata  UINT32  G_DOS_FileSize;
+ 106          extern xdata UINT8 exifVlcAtOdd;
+ 107          extern xdata UINT8 exifAppN;
+ 108          extern xdata UINT32 exifQvYTblAddr;
+ 109          extern xdata UINT32 exifQvUVTblAddr;
+ 110          extern xdata UINT8 exifQvVlcAtOdd;
+ 111          
+ 112          #endif
+ 113          
+ 114          /**************************************************************************
+ 115           *                               F U N C T I O N        D E C L A R A T I O N S                           *
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 3   
+
+ 116           **************************************************************************/
+ 117          
+ 118          //=============================================================================
+ 119          //Program
+ 120          //=============================================================================
+ 121          //-----------------------------------------------------------------------------
+ 122          //pbDZoomFactorSet()
+ 123          //-----------------------------------------------------------------------------
+ 124          /**
+ 125           * @fn        void pbDZoomFactorSet(UINT16 Factor)
+ 126           * @brief     pbDZoomFactorSet
+ 127           * @param     [in] Factor : set zoom factor
+ 128           * @retval    NONE
+ 129           * @see       NULL
+ 130           * @author    Tq.Zhang
+ 131           * @since     2010-5-6
+ 132           * @todo      N/A
+ 133           * @bug       N/A
+ 134          */
+ 135          #if STILL_LIB_PB_DMY
+              void pbDZoomFactorSet(UINT16 Factor) USING_0
+              {
+                      Factor=Factor;
+              }
+              #else
+ 141          
+ 142          void pbDZoomFactorSet(UINT16 Factor) USING_0
+ 143          {
+ 144   1              UINT16 decWidth;
+ 145   1              UINT16 decHeight;
+ 146   1              //UINT8 dev;
+ 147   1              //UINT8 sts;
+ 148   1              
+ 149   1              if (pbDZoomSts != TRUE) {
+ 150   2                      pbDZoomStart();
+ 151   2              }
+ 152   1              #if 0
+                      sts = Factor / 100;
+                      dev = dispDevActGet();
+                      
+                      if(dev != 1){
+                              pbDecodeSizeGet(&decWidth, &decHeight);
+                      }
+                      if(dev == 1 ){
+                              pbDecodeSizeGet(&decWidth, &decHeight);
+                              if(facSts != 1 ){
+                                      HAL_DispImgXyUpdate(decWidth, decHeight);
+                                      dispShow( PB_DZOOM_DISP_BUFF,decWidth, decHeight,Factor);
+                                      facSts  = 1;
+                                      return;
+                              }
+              
+                      }
+                      #else
+ 170   1              pbDecodeSizeGet(&decWidth, &decHeight);
+ 171   1              #endif
+ 172   1      
+ 173   1              #if 0
+                      HAL_DispScaleSet(decWidth, decHeight, Factor,0);
+                      HAL_DramZUpdateWait(HAL_DRAM_ZUPDATE_PB, 0);
+                      HAL_DramZfUpdTrig(HAL_DRAM_ZF_UPD_LAYER_PB);
+                      #else
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 4   
+
+ 178   1              HAL_DispScaleSet(decWidth, decHeight, Factor,0);
+ 179   1              HAL_DramZfUpdTrig(HAL_DRAM_ZF_UPD_LAYER_PB);
+ 180   1              HAL_DramZUpdateWait(HAL_DRAM_ZUPDATE_PB, 0);
+ 181   1              #endif
+ 182   1      
+ 183   1      }
+ 184          #endif
+ 185          
+ 186          /**
+ 187           * @fn        UINT8 pbImgPanSet(SINT16 stepX, SINT16 stepY)
+ 188           * @brief     for display pan set
+ 189           * @param     [in] stepX
+ 190           * @param     [in] stepY
+ 191           * @retval    return = SUCCESS / FAIL
+ 192           * @see       NULL
+ 193           * @author    Tq.Zhang
+ 194           * @since     2010-5-6
+ 195           * @todo      N/A
+ 196           * @bug       N/A
+ 197          */
+ 198          #if STILL_LIB_PB_DMY
+              UINT8 pbImgPanSet(SINT16 stepX, SINT16 stepY) USING_0
+              {
+                      stepX=stepX;
+                      stepY=stepY;
+                      return SUCCESS;
+              }
+              #else
+ 206          UINT8 pbImgPanSet(SINT16 stepX, SINT16 stepY) USING_0
+ 207          {
+ 208   1              UINT16 i;
+ 209   1              UINT8 ret = SUCCESS;
+ 210   1              SINT16 zoomStep;
+ 211   1      
+ 212   1              //printf("x %d, y%d\n", stepX, stepY);
+ 213   1              if (!stepX && !stepY) {
+ 214   2                      ret = HAL_DispImgPanSet(stepX, stepY);
+ 215   2                      return ret;
+ 216   2              }
+ 217   1      #ifdef PB_DZOOM_SMOOTH
+ 218   1              if (stepX && stepY)
+ 219   1      #else
+                      if (1)
+              #endif
+ 222   1              {
+ 223   2                      //can't move smoothly
+ 224   2                      ret = HAL_DispImgPanSet(stepX, stepY);
+ 225   2                      HAL_DramZUpdateWait(0x02, 10000);
+ 226   2                      HAL_DramZfUpdTrig(0x02);
+ 227   2              } else if (stepX) {
+ 228   2              
+ 229   2                      if (stepX & 0x8000) {
+ 230   3                              i = -stepX;
+ 231   3                              zoomStep = -PB_DZOOM_STEP;
+ 232   3                      } else {
+ 233   3                              i = stepX;
+ 234   3                              zoomStep = PB_DZOOM_STEP;
+ 235   3                      }
+ 236   2                      
+ 237   2                      i = i / PB_DZOOM_STEP;
+ 238   2                      HAL_DramZfUpdTrig(0x02); //Phil: Trigger the current setting for moving smoothly at the beginning
+ 239   2                      do {
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 5   
+
+ 240   3                      /*
+ 241   3                              if (osMsgSeek(SP1K_MSG_KEY_RELEASE_LEFT) || osMsgSeek(SP1K_MSG_KEY_RELEASE_RIGHT)) {
+ 242   3                                      break;
+ 243   3                              }
+ 244   3                      */
+ 245   3                              ret = HAL_DispImgPanSet(zoomStep, 0);
+ 246   3                              HAL_DramZUpdateWait(0x02, 10000);
+ 247   3                              HAL_DramZfUpdTrig(0x02);
+ 248   3                      } while(--i);
+ 249   2              } else if(stepY){
+ 250   2              
+ 251   2                      if (stepY & 0x8000) {
+ 252   3                              i = -stepY;
+ 253   3                              zoomStep = -PB_DZOOM_STEP;
+ 254   3                      } else {
+ 255   3                              i = stepY;
+ 256   3                              zoomStep = PB_DZOOM_STEP;
+ 257   3                      }
+ 258   2                      
+ 259   2                      i = i / PB_DZOOM_STEP;
+ 260   2                      HAL_DramZfUpdTrig(0x02); //Phil: Trigger the current setting for moving smoothly at the beginning
+ 261   2                      do {
+ 262   3                      /*
+ 263   3                              if (osMsgSeek(SP1K_MSG_KEY_RELEASE_UP) || osMsgSeek(SP1K_MSG_KEY_RELEASE_DOWN)) {
+ 264   3                                      break;
+ 265   3                              }
+ 266   3                      */
+ 267   3                              ret = HAL_DispImgPanSet(0, zoomStep);
+ 268   3                              HAL_DramZUpdateWait(0x02, 10000);
+ 269   3                              HAL_DramZfUpdTrig(0x02);
+ 270   3                      } while(--i);
+ 271   2              }
+ 272   1              return ret;
+ 273   1      
+ 274   1      }
+ 275          #endif
+ 276          
+ 277          void pbDispDevW_H_Get(UINT16 *width,UINT16 *height,UINT16 srcWidth,UINT16 srcHeight)
+ 278          {
+ 279   1              UINT8 id;
+ 280   1              UINT8 dev;
+ 281   1              
+ 282   1              struct pbDecSize{
+ 283   1                      UINT16 width;
+ 284   1                      UINT16 height;
+ 285   1              };
+ 286   1      
+ 287   1              struct pbDecSize *pdecSize = NULL;
+ 288   1              struct pbDecSize tv[] ={
+ 289   1                      {1280,960},
+ 290   1                      {1280,720}    /* 16 : 9 */ 
+ 291   1              };
+ 292   1      
+ 293   1              struct pbDecSize hdmi[] ={
+ 294   1                      {960,720},
+ 295   1                      {640,360}   /* 16 : 9 */
+ 296   1              };
+ 297   1      
+ 298   1              struct pbDecSize lcd[] ={
+ 299   1                      {640,480},
+ 300   1                      {640,360}   /* 16 : 9 */
+ 301   1              };
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 6   
+
+ 302   1              
+ 303   1              dev = dispDevActGet();
+ 304   1              id = ((srcWidth*3 == srcHeight*4) || (srcWidth*4 == srcHeight*3))?0:1;
+ 305   1      
+ 306   1              switch(dev){
+ 307   2                      case 1:
+ 308   2                              pdecSize = &lcd;
+ 309   2                      break;
+ 310   2                      case 2:
+ 311   2                      case 3:
+ 312   2                              pdecSize = &tv;
+ 313   2                      break;
+ 314   2                      case 4:
+ 315   2                              pdecSize = &hdmi;
+ 316   2                      break;                                  
+ 317   2              }
+ 318   1              
+ 319   1              *width = pdecSize[id].width;
+ 320   1              *height = pdecSize[id].height;
+ 321   1              
+ 322   1              if(*width > srcWidth){  // mantis bug #45543,jpg encode can't scale down
+ 323   2                      *width = *width/2;
+ 324   2                      *height = *height/2;
+ 325   2              }
+ 326   1      }
+ 327          
+ 328          
+ 329          /**
+ 330           * @fn        UINT8 pbDZoomStart(void)
+ 331           * @brief     pbDZoomStart
+ 332           * @param     NONE
+ 333           * @retval    return = SUCCESS / FAIL
+ 334           * @see       NULL
+ 335           * @author    Tq.Zhang
+ 336           * @since     2010-5-6
+ 337           * @todo      N/A
+ 338           * @bug       N/A
+ 339          */
+ 340          #if (!STILL_LIB_PB_DMY)
+ 341          UINT8 pbDZoomStart(void)
+ 342          {
+ 343   1              UINT8 sts = TRUE;
+ 344   1              UINT8 bufNE = FALSE;
+ 345   1              UINT16 fHandle = TRUE;
+ 346   1              UINT32 decSize = 0;
+ 347   1              UINT16 decWidth = PB_DZOOM_DEC_WIDTH;
+ 348   1              UINT16 decHeight = PB_DZOOM_DEC_HEIGHT;
+ 349   1              UINT32 srcAddr;
+ 350   1              UINT32 freeBuffBtm = K_SDRAM_TotalSize - 256UL;//512 Bytes reserved for DMA, 2 Bytes for odd file size
+ 351   1              UINT32 freeBuffTop = PB_DZOOM_DISP_BUFF;
+ 352   1              PBFile_t* pFile = &MediaInfo;
+ 353   1              ExifImage_t mainImage;
+ 354   1              ExifImage_t qvImage;
+ 355   1              UINT32 decBuff;
+ 356   1              UINT8 rotMode;
+ 357   1              Pb_Dec_Parameter decPara;
+ 358   1      
+ 359   1              UINT16 decWidthSv;
+ 360   1              UINT16 decHeightSv;
+ 361   1              UINT8 device;
+ 362   1              
+ 363   1              if (pbDZoomSts == TRUE) {
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 7   
+
+ 364   2                      return SUCCESS;
+ 365   2              }
+ 366   1              
+ 367   1              //4 To do a completely open process, start cluster must be 0
+ 368   1              fHandle =  vfsFileOpen(pFile->FileName, K_DOS_ReadFile, 0/*pFile->FileStartCluster*/);
+ 369   1              if (!fHandle) {
+ 370   2                      DBG_pbFuncTrack();
+ 371   2                      return FAIL;
+ 372   2              }
+ 373   1              decSize = vfsFileSizeGet(fHandle);
+ 374   1              if ((decSize >> 1) > (freeBuffBtm - freeBuffTop)) {
+ 375   2                      DBG_pbFuncTrack();
+ 376   2                      bufNE = TRUE;  //rhy++ if qv success,but decode main image buffer not enough ,decode qv again...
+ 377   2              }
+ 378   1              if(bufNE == TRUE){
+ 379   2              //decSize = 64*1024;
+ 380   2                      decWidth = PB_DECODE_WIDTH;
+ 381   2                      decHeight = PB_DECODE_HEIGHT;
+ 382   2                      pbDecodeSizeSet(decWidth, decHeight);
+ 383   2              }
+ 384   1              srcAddr = freeBuffBtm - (decSize >> 1);
+ 385   1              pbDecodeSizeGet(&decWidthSv, &decHeightSv);
+ 386   1              //pbDecodeSizeSet(decWidth, decHeight);  //cx mask
+ 387   1              sts = vfsFileRead(fHandle, K_DOS_DstDram, decSize, srcAddr, 0);
+ 388   1              
+ 389   1              if (sts != TRUE) {
+ 390   2                      vfsFileClose(fHandle, pFile->FileName, K_DOS_ReadFile, 0);
+ 391   2                      DBG_pbFuncTrack();
+ 392   2                      return FAIL;
+ 393   2              }
+ 394   1              sts = exifParserStart(exifGetMainInfo,&mainImage, srcAddr, decSize);
+ 395   1              vfsFileClose(fHandle,  pFile->FileName, K_DOS_ReadFile, 0);
+ 396   1              if (sts != TRUE) {
+ 397   2                      DBG_pbFuncTrack();
+ 398   2                      return FAIL;
+ 399   2              }
+ 400   1      
+ 401   1              pFile->MediaWidth = mainImage.width;
+ 402   1              pFile->MediaHeight = mainImage.height;
+ 403   1              pbLogPrintf("w is %u, h is %u \n", mainImage.width, mainImage.height);
+ 404   1      
+ 405   1              //xian ++ 20080623
+ 406   1              pbParamSet(PB_PARAM_EXIF_ORIENT, (UINT16)mainImage.orientation);
+ 407   1              rotMode = pbDecRotModeGet();
+ 408   1              pbLogPrintf("rotMode=%bu\n", rotMode);
+ 409   1      
+ 410   1              /*get decode size from different device */
+ 411   1              device = dispDevActGet();
+ 412   1              pbDispDevW_H_Get(&decWidth,&decHeight,mainImage.width,mainImage.height);
+ 413   1              decBuff = freeBuffTop;// + (UINT32)PB_DZOOM_DEC_WIDTH * 32UL;
+ 414   1              decPara.DecBuff = decBuff;
+ 415   1              decPara.RotMode = rotMode;
+ 416   1              decPara.DecW = decWidth;
+ 417   1              decPara.DecH = decHeight;
+ 418   1      
+ 419   1              sts = FAIL; //fix 41427
+ 420   1              if(pbCheckAbort(0,__LINE__)){
+ 421   2                      return PBABORT;
+ 422   2              }
+ 423   1              if(mainImage.width < 8191 && bufNE != TRUE) {   
+ 424   2                      decPara.ImgType = 0;
+ 425   2                      sts = pbImgDeCmpRot(&mainImage, &decPara, 0);
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 8   
+
+ 426   2      
+ 427   2                      if(sts==PBABORT){ //Not decode QV again,There maybe exits someproblem....
+ 428   3                              return sts;
+ 429   3                      }
+ 430   2              }
+ 431   1           
+ 432   1              //xian ++ 20090827
+ 433   1              if(exifAppN && sts == FAIL || bufNE == TRUE){
+ 434   2                      UINT8 xdata qTable[128];
+ 435   2                      UINT16 i;
+ 436   2                      exifParserStart(exifGetQVInfo, &qvImage, srcAddr, decSize);
+ 437   2                      qvImage.dataType = mainImage.dataType;
+ 438   2                      
+ 439   2                      SDRAM_CardSetStartAddress(exifQvYTblAddr , TRUE );
+ 440   2                      if (exifQvVlcAtOdd){
+ 441   3                              UINT8 Dummy;
+ 442   3                              M_DRAM_ReadWord(Dummy, qTable[0]);
+ 443   3                              for (i = 1; i < 127; i += 2){
+ 444   4                                      M_DRAM_ReadWord(qTable[i], qTable[i+1]);
+ 445   4                              }
+ 446   3                              M_DRAM_ReadWord(qTable[127], Dummy);
+ 447   3                      }else{
+ 448   3                              for (i = 0; i < 128; i += 2){
+ 449   4                                      M_DRAM_ReadWord(qTable[i], qTable[i+1]);        
+ 450   4                              }
+ 451   3                      }
+ 452   2                      jpegQTableSet(0, qTable, (UINT8*)(qTable+64), 1);
+ 453   2      
+ 454   2                      decPara.ImgType = 2;
+ 455   2                      decPara.DecW = 320;
+ 456   2                      decPara.DecH = 240;
+ 457   2                      sts = pbImgDeCmpRot(&qvImage, &decPara, 0);
+ 458   2                      //pbDecodeSizeSet(decPara.DecW, decPara.DecH);
+ 459   2              }
+ 460   1              else if ( sts == FAIL){
+ 461   2                      pbDecodeSizeSet(decWidthSv, decHeightSv);
+ 462   2                      pbDZoomSts = TRUE;
+ 463   2                      return SUCCESS;
+ 464   2              }
+ 465   1              //xian -- 20090827
+ 466   1              pbLogPrintf("w %u, h %u\n", decWidth, decHeight);
+ 467   1      
+ 468   1              //xian mask 20080708, fix bug 27912     PB_CHECK_ABORT();
+ 469   1              
+ 470   1              pbDecodeSizeGet(&decWidth, &decHeight);
+ 471   1              if(sts==SUCCESS){
+ 472   2                      //printf("show W=%u,H=%u\n",decWidth,decHeight);
+ 473   2                      //dramFileSave("MMMMVVVV.YUV",freeBuffTop, (UINT32)decWidth*decHeight*2);
+ 474   2                      dispShow(freeBuffTop, decWidth, decHeight, 100);
+ 475   2              }  
+ 476   1              pbDispBufModeSet(PB_DISP_BUF_MODE_ZOOM);
+ 477   1              pbDZoomSts = TRUE;
+ 478   1              return SUCCESS;
+ 479   1      }
+ 480          #endif
+ 481          //xian ++ 20080623
+ 482          /**
+ 483           * @fn        void pbDZoomPause(void)
+ 484           * @brief     pause to zoom
+ 485           * @param     NONE
+ 486           * @retval    NONE
+ 487           * @see       NULL
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 9   
+
+ 488           * @author    Tq.Zhang
+ 489           * @since     2010-5-6
+ 490           * @todo      N/A
+ 491           * @bug       N/A
+ 492          */
+ 493          #if STILL_LIB_PB_DMY
+              void pbDZoomPause(void) USING_0
+              {
+              }
+              #else
+ 498          
+ 499          #if 0
+              void pbCropDispBuffer2ABBuf()
+              {
+                      UINT32 ImgX0, ImgX1, ImgY0, ImgY1;
+                      UINT16 recWidth,recHeight;
+                      UINT16 srcWidth,srcHeight;
+                      UINT32 dispAddr;
+                      UINT32 dispAddr_tmp = pbDispBuffGet(1);
+                      
+                      HAL_DispImgXyGet(&ImgX0, &ImgY0, &ImgX1, &ImgY1);
+                      HAL_DispPbFrameBufferGet(&dispAddr,&srcWidth,&srcHeight);
+              
+                      recWidth = ((ImgX1 - ImgX0 + 1)+7)&~(0x7);
+                      recHeight = ((ImgY1 - ImgY0 + 1)+1)&~(0x1);
+              
+                      HAL_GprmCopy(
+                              dispAddr,
+                              srcWidth,srcHeight,ImgX0,ImgY0,
+                              dispAddr_tmp,
+                              recWidth,recHeight,0,0,
+                              recWidth,recHeight,
+                              0,
+                              1
+                      );
+              
+                      dispShow(pbDispBuffGet(1), recWidth, recHeight, 100);
+                      pbDispBufModeSet(PB_DISP_BUF_MODE_AB);
+                      pbDecodeSizeSet(recWidth, recHeight);   
+              }
+              #else
+ 529          void pbCropDispBuffer2ABBuf()
+ 530          {
+ 531   1              UINT32 ImgX0, ImgX1, ImgY0, ImgY1;
+ 532   1              UINT16 recWidth,recHeight,srcWidth,srcHeight;
+ 533   1              UINT32 dispAddr;
+ 534   1              UINT8 needScale = 0;
+ 535   1              UINT32 tmpAddr;
+ 536   1              UINT32 dispAddr_tmp = pbDispBuffGet(1);
+ 537   1              UINT32 abBufSize;
+ 538   1              
+ 539   1              abBufSize = (UINT32)960*720;
+ 540   1              HAL_DispImgXyGet(&ImgX0, &ImgY0, &ImgX1, &ImgY1);
+ 541   1              HAL_DispPbFrameBufferGet(&dispAddr,&srcWidth,&srcHeight);
+ 542   1      
+ 543   1              recWidth = ImgX1 - ImgX0 + 1;
+ 544   1              recHeight = ImgY1 - ImgY0 + 1;
+ 545   1              recWidth = recWidth &~(0x7);
+ 546   1              recHeight = recHeight &~(0x1);
+ 547   1      
+ 548   1              if((UINT32)srcWidth*srcHeight > abBufSize){
+ 549   2                      needScale = 1;
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 10  
+
+ 550   2                      dispAddr_tmp = dispAddr +(UINT32)srcWidth*srcHeight;
+ 551   2              }
+ 552   1              
+ 553   1              HAL_GprmCopy(
+ 554   1                      dispAddr,
+ 555   1                      srcWidth,srcHeight,ImgX0,ImgY0,
+ 556   1                      dispAddr_tmp,
+ 557   1                      recWidth,recHeight,0,0,
+ 558   1                      recWidth,recHeight,
+ 559   1                      0,
+ 560   1                      1
+ 561   1              );
+ 562   1      
+ 563   1              if(needScale){
+ 564   2                      tmpAddr = dispAddr_tmp + (UINT32)recWidth*recHeight;
+ 565   2                      if(tmpAddr > K_SDRAM_TotalSize ){
+ 566   3                              printf("buf not ...\n");
+ 567   3                      }
+ 568   2                      
+ 569   2                      HAL_GprmScale(
+ 570   2                              dispAddr_tmp,
+ 571   2                              recWidth, recHeight, 
+ 572   2                              pbDispBuffGet(1),
+ 573   2                              recWidth>>1,recHeight>>1,
+ 574   2                              tmpAddr, 
+ 575   2                              1
+ 576   2                      );
+ 577   2                      recWidth = recWidth>>1;
+ 578   2                      recHeight = recHeight>>1 ;
+ 579   2                      
+ 580   2              }
+ 581   1              
+ 582   1              dispShow(pbDispBuffGet(1), recWidth, recHeight, 100);
+ 583   1              pbDispBufModeSet(PB_DISP_BUF_MODE_AB);
+ 584   1              pbDecodeSizeSet(recWidth, recHeight);   
+ 585   1      }
+ 586          
+ 587          #endif
+ 588          void pbDZoomPause(void) USING_0
+ 589          {
+ 590   1              UINT32 addr=pbDispBuffGet(1);
+ 591   1              UINT16 w=PB_DECODE_WIDTH;
+ 592   1              UINT16 h=PB_DECODE_HEIGHT;
+ 593   1      
+ 594   1              if(pbDZoomSts != TRUE){
+ 595   2                      //facSts        = 0;
+ 596   2                      return;
+ 597   2              }
+ 598   1      
+ 599   1      /*      pbDecodeSizeGet(&w, &h);
+ 600   1              if(w==PB_DZOOM_DEC_WIDTH && h==PB_DZOOM_DEC_HEIGHT){
+ 601   1                      w = PB_DECODE_WIDTH;
+ 602   1                      h = PB_DECODE_HEIGHT;
+ 603   1              }*/
+ 604   1              //suny +
+ 605   1              #if 0
+                      if(dispDevActGet() ==4){
+                              HAL_DispPbFrameBufferGet(&addr,NULL,NULL);
+                              pbDecodeSizeGet(&w, &h);
+                      }
+                      else{//cx ++
+                              pbDispQVSizeGet(&w,&h); //xian 20110214
+C51 COMPILER V8.08   PB_DZOOM                                                              12/31/2019 16:14:35 PAGE 11  
+
+                      }
+                      #else
+ 614   1              pbDispQVSizeGet(&w,&h); //xian 20110214
+ 615   1              #endif
+ 616   1              dispShow(addr, w, h, 100);
+ 617   1              pbDispBufModeSet(PB_DISP_BUF_MODE_AB);
+ 618   1              pbDecodeSizeSet(w, h);  
+ 619   1      
+ 620   1      }
+ 621          #endif
+ 622          //xian --
+ 623          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2534    ----
+   CONSTANT SIZE    =     37    ----
+   XDATA SIZE       =      1     377
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

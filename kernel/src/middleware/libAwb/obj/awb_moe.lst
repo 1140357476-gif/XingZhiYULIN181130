@@ -1,0 +1,1853 @@
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE AWB_MOE
+OBJECT MODULE PLACED IN .\obj\awb_moe.obj
+COMPILER INVOKED BY: c:\Keil\C51\BIN\C51.EXE awb_moe.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\
+                    -inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiz
+                    -ation) DEFINE(LIB_RELEASE) PRINT(.\obj\awb_moe.lst) OBJECT(.\obj\awb_moe.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21           
+  22          /**
+  23           * @file      File name
+  24           * @brief     Brief
+  25           * @author    Author's name
+  26           * @since     2010-01-01
+  27           * @date      2010-01-01
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #include "awb_func.h"
+  34          
+  35          
+  36          #if AWB_ENABLE
+  37          /**************************************************************************
+  38           *                           C O N S T A N T S                            *
+  39           **************************************************************************/
+  40           
+  41          /**************************************************************************
+  42           *                              M A C R O S                               *
+  43           **************************************************************************/
+  44           
+  45          /**************************************************************************
+  46           *                          D A T A    T Y P E S                          *
+  47           **************************************************************************/
+  48           
+  49          /**************************************************************************
+  50           *                         G L O B A L    D A T A                         *
+  51           **************************************************************************/
+  52          
+  53          /**************************************************************************
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 2   
+
+  54           *                 E X T E R N A L    R E F E R E N C E S                 *
+  55           **************************************************************************/
+  56           
+  57          /**************************************************************************
+  58           *               F U N C T I O N    D E C L A R A T I O N S               *
+  59           **************************************************************************/
+  60          #if 0
+              void awbMoeThr(awb_moe_thr_t *pt,UINT32 out,UINT8 thr) 
+              {
+                      moe_cmd_t cmd;
+                      UINT16 cnt = AWB_SAMP_CNT;
+                      
+                      HAL_MoeDefCmd(&cmd);    
+                      cmd.equation = MOE_EQUATION_Subtract;
+                      cmd.func = 1;
+                      cmd.exchange = 1;
+                      cmd.ROIWidth = cnt*4;
+                      //cmd.min = 0;
+                      cmd.max = 1;
+                      cmd.src1 = AWB_ADDR_Tmp0;//+512*cr;
+                      cmd.cp = thr;//thr[0];
+                      cmd.dst = AWB_ADDR_Tmp6;//[6];
+                      HAL_MoeConvertToQueue(&cmd, &(pt->thr)); // thr 
+                      
+                      cmd.equation = MOE_EQUATION_Min;
+                      cmd.func = 0;
+                      cmd.exchange = 0;
+                      cmd.ROIWidth = cnt+cnt;
+                      cmd.src1 = AWB_ADDR_Tmp6;//AWB_ADDR_RGain;
+                      cmd.src2 = AWB_ADDR_Tmp8;//AWB_ADDR_RGain;
+                      cmd.dst = AWB_ADDR_Tmp6;//[0];  //tmp[0~2].r
+                      HAL_MoeConvertToQueue(&cmd, &(pt->wp_2)); 
+                      cmd.ROIWidth = cnt;
+                      cmd.src1 = AWB_ADDR_Tmp6;//AWB_ADDR_RGain;
+                      cmd.src2 = AWB_ADDR_Tmp7;//AWB_ADDR_RGain;
+                      cmd.dst = out;//[0];    //tmp[0~2].r
+                      HAL_MoeConvertToQueue(&cmd, &(pt->wp)); 
+              }
+              void awbMoeOb(awb_moe_ob_t*pt,UINT32 addrThr,UINT8 cr,UINT8 cgr,UINT8 cb,UINT8 cgb)
+              {
+                      moe_cmd_t cmd;
+                      UINT16 cnt = AWB_SAMP_CNT;      
+              
+                      HAL_MoeDefCmd(&cmd);
+                      cmd.equation = MOE_EQUATION_Summation;
+                      cmd.sum = 0;
+                      cmd.max = 0x7fffffff;
+                      cmd.src1 = addrThr;
+                      cmd.src1Shift = 4;
+                      cmd.src2 = AWB_ADDR_Tmp0+512*cr;
+                      cmd.src2Shift = 4;      
+                      cmd.dst = AWB_ADDR_MOE_offset_sum;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->sum_r));
+                      cmd.src2 = AWB_ADDR_Tmp0+512*cgr;
+                      cmd.dst = AWB_ADDR_MOE_offset_sum+4;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->sum_gr));
+                      cmd.src2 = AWB_ADDR_Tmp0+512*cb;
+                      cmd.dst = AWB_ADDR_MOE_offset_sum+8;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->sum_b));
+                      cmd.src2 = AWB_ADDR_Tmp0+512*cgb;
+                      cmd.dst = AWB_ADDR_MOE_offset_sum+12;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->sum_gb));
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 3   
+
+                      cmd.func=1;
+                      cmd.src1Shift = 0;      
+                      cmd.cp = 1;
+                      cmd.src2Shift = 0;      
+                      cmd.dst = AWB_ADDR_MOE_offset_sum+16;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->sum_wp));
+              }
+              void awbMoeRaw(awb_moe_raw_t*pt)//awb_moe_raw_t *pt, awb_addr_t *ad)//ok
+              {            
+                      moe_cmd_t cmd;
+                      UINT16 cnt = AWB_SAMP_CNT;      
+              
+                      UINT8  cr,cgr,cgb,cb;
+              
+                      UINT8 fmt = 0x03;//XBYTE[0x2110];
+                      //UINT8 fmt=0x00;
+                      //fmt &=0x11;
+                      fmt &= 0x03;
+                      /*
+                      0   BAYER_GRBG 
+                      1   BAYER_RGGB 
+                      2   BAYER_BGGR 
+                      3   BAYER_GBRG 
+                      */
+              
+                      /*
+                                      copy to:                moe to:         R Gr Gb B
+                          
+                      0:GRBG  Gr      R               R Gb Gr B       0 2  1  3
+                                      B       Gb
+                                      
+                      1:RGGB  R       Gr              Gr B R Gb       2 0  3  1
+                                      Gb      B
+                          
+                      2:BGGR  B       Gb              Gb R     B Gr   1 3  0  2
+                                      Gr      R       
+              
+                      1:GBRG  Gb      B               B Gr    Gb R    3 1  2 0
+                                      R       Gr
+                      */
+                      if(fmt== 0x00) {//GRBG
+                              //cr = 1;cgr = 0;cgb = 33;cb = 32;
+                              cr = 0;cgr = 2;cgb = 1;cb = 3;
+                              //cr = 2;cgr = 0;cgb = 3;cb = 1;
+                      }
+                      else if(fmt== 0x01) {//RGGB
+                              //cr = 0;cgr = 1;cgb = 32;cb = 33;
+                              cr = 2;cgr = 0;cgb = 3;cb = 1;
+                              //cr = 0;cgr = 2;cgb = 1;cb = 3;
+                      }
+                      else if(fmt == 0x02/*0x10*/) {//BGGR
+                              //cr = 33;cgr = 32;cgb = 1;cb = 0;
+                              cr = 1;cgr = 3;cgb = 0;cb = 2;
+                              //cr = 3;cgr = 1;cgb = 2;cb = 0;
+                      }
+                      
+                      else if(fmt == 0x03/*0x11*/) {//GBRG
+                              //cr = 32;cgr = 33;cgb = 0;cb = 1;
+                              cr = 3;cgr = 1;cgb = 2;cb = 0;
+                              //cr = 1;cgr = 3;cgb = 0;cb = 2;
+                      }
+              
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 4   
+
+                      
+                      //r gr 
+                      //gb b
+                      HAL_MoeDefCmd(&cmd);
+                      cmd.equation = MOE_EQUATION_Add;
+                      cmd.func = 1;
+                      cmd.ROIWidth = (UINT16)(AWB_SAMP_CNT + AWB_SAMP_CNT);
+                      //cmd.min = 0;
+                      //cmd.max = 1;
+                      cmd.src1Bit = 1;
+                      cmd.dstShift = 8;
+                      cmd.cp = 0;
+                      cmd.src1 = AWB_ADDR_Wnd1;//AWB_ADDR_RGain;
+                      cmd.dst = AWB_ADDR_Tmp0;//[0];  //tmp[0~2].r
+                      HAL_MoeConvertToQueue(&cmd, &(pt->low8bit)); // gb  b
+                      cmd.src1Shift = 8;
+                      cmd.dstShift = 8;
+                      cmd.dst = AWB_ADDR_Tmp2;//[2];  //tmp[0~2].r
+              //cmd.CmdQueueEnd = 1;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->high8bit)); // r  gb
+              
+                      awbMoeThr(&(pt->thrLow),AWB_ADDR_Tmp4,16);
+                      awbMoeThr(&(pt->thrHigh),AWB_ADDR_Tmp5,250);
+                      
+                      HAL_MoeDefCmd(&cmd);
+                      cmd.equation = MOE_EQUATION_Subtract;
+                      cmd.max=1;
+                      cmd.min=0;
+                      cmd.ROIWidth = cnt;
+                      cmd.src1 = AWB_ADDR_Tmp5;//high
+                      cmd.src2 = AWB_ADDR_Tmp4;//low
+                      cmd.dst = AWB_ADDR_Tmp5;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->thr)); 
+                      
+                      awbMoeOb(&(pt->ob),AWB_ADDR_Tmp4,cr,cgr,cb,cgb);
+              
+                      //r  gr
+                      //gb b
+                      HAL_MoeDefCmd(&cmd);
+                      cmd.ROIWidth = AWB_SAMP_CNT;//copy
+                      cmd.func = 1;
+                      cmd.equation = MOE_EQUATION_Add;
+              
+                      cmd.src1Bit = 0;
+                      cmd.src2Bit = 0;
+                      cmd.dstBit = 0;
+                      cmd.src1Shift = 0;
+                      cmd.src2Shift = 0;
+                      cmd.dstShift = 0;
+                      cmd.src1 = AWB_ADDR_Tmp0+512*cr;//[cr];// 2];
+                      cmd.cp = 0;
+                      cmd.dst = AWB_ADDR_R;//AWB_ADDR_Samp/*AWB_ADDR_MOE_samp*/;//tmp[4];     
+                      HAL_MoeConvertToQueue(&cmd, &(pt->r));
+                      cmd.src1 = AWB_ADDR_Tmp+512*cb;//[cb];// 1];
+                      cmd.dst = AWB_ADDR_B;//AWB_ADDR_Samp/*AWB_ADDR_MOE_samp*/+1024;//tmp[5];        
+                      HAL_MoeConvertToQueue(&cmd, &(pt->b));
+                      cmd.func = 0;
+                      cmd.src1 = AWB_ADDR_Tmp+512*cgr;//[cgr];// 0];
+                      cmd.src2 = AWB_ADDR_Tmp+512*cgb;//[cgb];// 3];
+                      cmd.dstShift = 1;
+                      cmd.dst = AWB_ADDR_G;//AWB_ADDR_Samp/*AWB_ADDR_MOE_samp*/+512;//tmp[4]; //g
+                      HAL_MoeConvertToQueue(&cmd, &(pt->g));
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 5   
+
+              /*
+                      cmd.func = 1;
+                      cmd.max = 8;
+                      cmd.min = 1;
+                      cmd.dstShift = 5;
+                      cmd.src1 = AWB_ADDR_G;//AWB_ADDR_Samp+512;//AWB_ADDR_Tmp[4];//g          
+                      cmd.cp = 0;            
+                      cmd.dst = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;        //tmp[0~2].r
+                      HAL_MoeConvertToQueue(&cmd, &(pt->wp)); // gb  b
+              */
+                      HAL_MoeDefCmd(&cmd);
+                      cmd.equation = MOE_EQUATION_Multiply;
+                      cmd.max = 8;
+                      cmd.min = 0;
+                      cmd.ROIWidth = cnt;
+                      //cmd.src1Shift = 4;
+                      cmd.src2Shift = 4;
+                      cmd.dstShift = 1;//5;
+                      cmd.src1 = AWB_ADDR_G;//G
+                      cmd.src2 = AWB_ADDR_Tmp5;//Thr
+                      cmd.dst = AWB_ADDR_Wp;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->wp)); 
+              
+                      //HAL_MoeDefCmd(&cmd);
+                      //cmd.clipSrc1En=0;
+                      //cmd.clipSrc2En=0;
+                      cmd.equation = MOE_EQUATION_Division;
+                      cmd.ROIWidth = AWB_SAMP_CNT;
+                      cmd.func = 0;
+                      cmd.max = 0x400;
+                      cmd.min = 0;
+                      cmd.src1Shift = 8;
+                      cmd.src2Shift = 6;
+                      cmd.dstShift = 0;
+                      cmd.dstBit = 1;
+                      cmd.src1 = AWB_ADDR_G;/*AWB_ADDR_MOE_samp+512*///tmp[4];//g
+                      cmd.src2 = AWB_ADDR_R;/*AWB_ADDR_MOE_samp*///tmp[cr];
+                      cmd.dst = AWB_ADDR_RGain;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->rg));
+                      cmd.src2 = AWB_ADDR_B;/*AWB_ADDR_MOE_samp+1024*///tmp[cb];
+                      cmd.dst = AWB_ADDR_BGain;
+              //cmd.CmdQueueEnd = 1;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->bg));
+              
+              }//ok
+              
+              #else
+ 287          /**
+ 288           * @fn        void awbMoeThr(awb_moe_thr_t *pt, awb_moe_buf_t *ad, awb_moe_buf_t *ad,UINT32addr)
+ 289           * @brief     create jobqueue of samples threshold
+ 290           * @param     [out] pt  :job queue pointer
+ 291           * @param     [in] ad   :buf struct pointer
+ 292           * @param     [in] addr :RGB data addr(Wold)
+ 293           * @retval    NONE
+ 294           * @see       NULL
+ 295           * @author    wangjg
+ 296           * @since     2010-5-4
+ 297           * @todo      N/A
+ 298           * @bug       N/A
+ 299          */
+ 300          #if 0
+              void awbMoeThr(awb_moe_thr_t *pt,UINT32 addr)
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 6   
+
+              {            
+                      moe_cmd_t cmd;// = new moe_cmd_t();
+              //printf("thr\n");
+                      HAL_MoeDefCmd(&cmd);
+                      cmd.equation = MOE_EQUATION_Subtract;
+                      cmd.func = 1;
+                      cmd.ROIWidth = AWB_SAMP_CNT;
+                      //cmd.min = 0;
+                      cmd.max = 1;
+                      cmd.src1 = addr;
+                      cmd.cp = 10;//thr[0];
+                      cmd.dst = AWB_ADDR_Tmp6;//[6];
+                      HAL_MoeConvertToQueue(&cmd, &(pt->low)); // left        
+                      //cmd.exchange = MOE_FUNC_Exchange;
+                      cmd.cp = 250;//thr[1];
+                      cmd.dst = AWB_ADDR_Tmp7;//[7];
+                      HAL_MoeConvertToQueue(&cmd, &(pt->high)); // right      
+                      cmd.func = 0;
+                      cmd.src1 = AWB_ADDR_Tmp6;//[6];
+                      cmd.src2 = AWB_ADDR_Tmp7;//[7];
+                      cmd.dst = AWB_ADDR_Tmp5;//[5];
+                      HAL_MoeConvertToQueue(&cmd, &(pt->thr));
+                      cmd.equation = MOE_EQUATION_Multiply;
+                      //cmd.func = 0;
+                      //cmd.exchange = 0;
+                      //cmd.CmdValid = 1;
+                      cmd.max = 8;
+                      cmd.src1Shift = 4;
+                      cmd.src2Shift = 4;
+                      cmd.src1 = AWB_ADDR_Tmp5;//[5];
+                      cmd.src2 = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;
+                      cmd.dst = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->wp));
+              } 
+              #endif
+ 337          void awbMoeThr(awb_moe_thr_t *pt,UINT32 addr)
+ 338          {            
+ 339   1              moe_cmd_t cmd;// = new moe_cmd_t();
+ 340   1      //printf("thr\n");
+ 341   1              HAL_MoeDefCmd(&cmd);
+ 342   1              cmd.equation = MOE_EQUATION_Subtract;
+ 343   1              cmd.func = 1;
+ 344   1              cmd.ROIWidth = AWB_SAMP_CNT*3;
+ 345   1              //cmd.min = 0;
+ 346   1              cmd.max = 1;
+ 347   1              cmd.src1 = addr;
+ 348   1              cmd.cp = 10;//thr[0];
+ 349   1              cmd.dst = AWB_ADDR_Tmp0;//[6];
+ 350   1              HAL_MoeConvertToQueue(&cmd, &(pt->low)); // left        
+ 351   1              //cmd.exchange = MOE_FUNC_Exchange;
+ 352   1              cmd.cp = 250;//thr[1];
+ 353   1              cmd.dst = AWB_ADDR_Tmp3;//[7];
+ 354   1              HAL_MoeConvertToQueue(&cmd, &(pt->high)); // right      
+ 355   1              cmd.func = 0;
+ 356   1              cmd.src1 = AWB_ADDR_Tmp0;//[6];
+ 357   1              cmd.src2 = AWB_ADDR_Tmp3;//[7];
+ 358   1              cmd.dst = AWB_ADDR_Tmp0;//[5];
+ 359   1              HAL_MoeConvertToQueue(&cmd, &(pt->thr3));
+ 360   1              cmd.equation = MOE_EQUATION_Min;
+ 361   1              cmd.ROIWidth = AWB_SAMP_CNT;
+ 362   1              cmd.src1 = AWB_ADDR_Tmp0;//[6];
+ 363   1              cmd.src2 = AWB_ADDR_Tmp1;//[7];
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 7   
+
+ 364   1              cmd.dst = AWB_ADDR_Tmp0;//[5];
+ 365   1              HAL_MoeConvertToQueue(&cmd, &(pt->thr2));
+ 366   1              cmd.src2 = AWB_ADDR_Tmp2;//[7];
+ 367   1              HAL_MoeConvertToQueue(&cmd, &(pt->thr));
+ 368   1              cmd.equation = MOE_EQUATION_Multiply;
+ 369   1              //cmd.func = 0;
+ 370   1              //cmd.exchange = 0;
+ 371   1              //cmd.CmdValid = 1;
+ 372   1              cmd.max = 8;
+ 373   1              cmd.src1Shift = 4;
+ 374   1              cmd.src2Shift = 4;
+ 375   1              cmd.src1 = AWB_ADDR_Tmp0;//[5];
+ 376   1              cmd.src2 = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;
+ 377   1              cmd.dst = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;
+ 378   1              HAL_MoeConvertToQueue(&cmd, &(pt->wp));
+ 379   1      }    
+ 380          void awbMoeOffset(awb_moe_offset_t*ptCmd,UINT8 cr,UINT8 cgr,UINT8 cb,UINT8 cgb)
+ 381          {
+ 382   1              moe_cmd_t cmd;
+ 383   1              awb_moe_offset_t *pt=ptCmd;//&(ptCmd->raw);
+ 384   1              //awb_moe_buf_t* ad=&moeAddr;
+ 385   1              UINT16 cnt = AWB_SAMP_CNT;      
+ 386   1      
+ 387   1              #if 0
+                      HAL_MoeDefCmd(&cmd);    
+                      cmd.equation = MOE_EQUATION_Subtract;
+                      cmd.func = 1;
+                      cmd.exchange = 1;
+                      cmd.ROIWidth = cnt;
+                      //cmd.min = 0;
+                      cmd.max = 1;
+                      cmd.src1 = AWB_ADDR_Tmp0+512*cr;
+                      cmd.cp = 10;//thr[0];
+                      cmd.dst = AWB_ADDR_Tmp6;//[6];
+                      HAL_MoeConvertToQueue(&cmd, &(pt->thr_r)); // cr        
+                      cmd.src1 = AWB_ADDR_Tmp0+512*cb;
+                      cmd.cp = 10;//thr[0];
+                      cmd.dst = AWB_ADDR_Tmp7;//[6];
+                      HAL_MoeConvertToQueue(&cmd, &(pt->thr_b)); // cb        
+                      cmd.src1 = AWB_ADDR_Tmp0+512*cgr;
+                      cmd.cp = 10;//thr[0];
+                      cmd.dst = AWB_ADDR_Tmp8;//[6];
+                      HAL_MoeConvertToQueue(&cmd, &(pt->thr_gr)); // cgr      
+                      cmd.src1 = AWB_ADDR_Tmp0+512*cgb;
+                      cmd.cp = 10;//thr[0];
+                      cmd.dst = AWB_ADDR_Tmp9;//[6];
+                      HAL_MoeConvertToQueue(&cmd, &(pt->thr_gb)); // cgb      
+                      #else
+ 412   1              HAL_MoeDefCmd(&cmd);    
+ 413   1              cmd.equation = MOE_EQUATION_Subtract;
+ 414   1              cmd.func = 1;
+ 415   1              cmd.exchange = 1;
+ 416   1              cmd.ROIWidth = cnt*4;
+ 417   1              //cmd.min = 0;
+ 418   1              cmd.max = 1;
+ 419   1              cmd.src1 = AWB_ADDR_Tmp0;//+512*cr;
+ 420   1              cmd.cp = 16;//thr[0];
+ 421   1              cmd.dst = AWB_ADDR_Tmp6;//[6];
+ 422   1              HAL_MoeConvertToQueue(&cmd, &(pt->thr)); // thr 
+ 423   1              #endif
+ 424   1              
+ 425   1              cmd.equation = MOE_EQUATION_Min;
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 8   
+
+ 426   1              cmd.func = 0;
+ 427   1              cmd.exchange = 0;
+ 428   1              cmd.ROIWidth = cnt+cnt;
+ 429   1              cmd.src1 = AWB_ADDR_Tmp6;//AWB_ADDR_RGain;
+ 430   1              cmd.src2 = AWB_ADDR_Tmp8;//AWB_ADDR_RGain;
+ 431   1              cmd.dst = AWB_ADDR_Tmp6;//[0];  //tmp[0~2].r
+ 432   1              HAL_MoeConvertToQueue(&cmd, &(pt->wp_2)); 
+ 433   1              cmd.ROIWidth = cnt;
+ 434   1              cmd.src1 = AWB_ADDR_Tmp6;//AWB_ADDR_RGain;
+ 435   1              cmd.src2 = AWB_ADDR_Tmp7;//AWB_ADDR_RGain;
+ 436   1              cmd.dst = AWB_ADDR_Tmp6;//[0];  //tmp[0~2].r
+ 437   1              HAL_MoeConvertToQueue(&cmd, &(pt->wp)); 
+ 438   1      
+ 439   1              cmd.equation = MOE_EQUATION_Summation;
+ 440   1              cmd.sum = 0;
+ 441   1              cmd.max = 0x7fffffff;
+ 442   1              cmd.src1 = AWB_ADDR_Tmp6;
+ 443   1              cmd.src1Shift = 4;
+ 444   1              cmd.src2 = AWB_ADDR_Tmp0+512*cr;
+ 445   1              cmd.src2Shift = 4;      
+ 446   1              cmd.dst = AWB_ADDR_MOE_offset_sum;
+ 447   1              HAL_MoeConvertToQueue(&cmd, &(pt->sum_r));
+ 448   1              cmd.src2 = AWB_ADDR_Tmp0+512*cgr;
+ 449   1              cmd.dst = AWB_ADDR_MOE_offset_sum+4;
+ 450   1              HAL_MoeConvertToQueue(&cmd, &(pt->sum_gr));
+ 451   1              cmd.src2 = AWB_ADDR_Tmp0+512*cb;
+ 452   1              cmd.dst = AWB_ADDR_MOE_offset_sum+8;
+ 453   1              HAL_MoeConvertToQueue(&cmd, &(pt->sum_b));
+ 454   1              cmd.src2 = AWB_ADDR_Tmp0+512*cgb;
+ 455   1              cmd.dst = AWB_ADDR_MOE_offset_sum+12;
+ 456   1              HAL_MoeConvertToQueue(&cmd, &(pt->sum_gb));
+ 457   1              cmd.func=1;
+ 458   1              cmd.src1Shift = 0;      
+ 459   1              cmd.cp = 1;
+ 460   1              cmd.src2Shift = 0;      
+ 461   1              cmd.dst = AWB_ADDR_MOE_offset_sum+16;
+ 462   1              HAL_MoeConvertToQueue(&cmd, &(pt->sum_wp));
+ 463   1      }
+ 464          /**
+ 465           * @fn        void awbMoeRaw(awb_moe_raw_t* ptCmd, awb_moe_buf_t* ad)
+ 466           * @brief     awbMoeRaw
+ 467           * @param     [in] ptCmd
+ 468           * @param     [in] ad
+ 469           * @retval    NONE
+ 470           * @author    wangjg
+ 471           * @since     2010-6-19
+ 472          */
+ 473          void awbMoeRaw(awb_moe_raw_t*ptCmd,UINT8 bayerPtn)//awb_moe_raw_t *pt, awb_addr_t *ad)//ok
+ 474          {            
+ 475   1              moe_cmd_t cmd;
+ 476   1              awb_moe_raw_t *pt=ptCmd;//&(ptCmd->raw);
+ 477   1              //awb_moe_buf_t* ad=&moeAddr;
+ 478   1              UINT16 cnt = AWB_SAMP_CNT;      
+ 479   1      
+ 480   1              UINT8  cr,cgr,cgb,cb;
+ 481   1      
+ 482   1              UINT8 fmt = bayerPtn;//XBYTE[0x2110];
+ 483   1              //UINT8 fmt=0x00;
+ 484   1              //fmt &=0x11;
+ 485   1              fmt &= 0x03;
+ 486   1              /*
+ 487   1              0   BAYER_GRBG 
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 9   
+
+ 488   1              1   BAYER_RGGB 
+ 489   1              2   BAYER_BGGR 
+ 490   1              3   BAYER_GBRG 
+ 491   1              */
+ 492   1      
+ 493   1              /*
+ 494   1                              copy to:                moe to:         R Gr Gb B
+ 495   1                  
+ 496   1              0:GRBG  Gr      R               R Gb Gr B       0 2  1  3
+ 497   1                              B       Gb
+ 498   1                              
+ 499   1              1:RGGB  R       Gr              Gr B R Gb       2 0  3  1
+ 500   1                              Gb      B
+ 501   1                  
+ 502   1              2:BGGR  B       Gb              Gb R     B Gr   1 3  0  2
+ 503   1                              Gr      R       
+ 504   1      
+ 505   1              1:GBRG  Gb      B               B Gr    Gb R    3 1  2 0
+ 506   1                              R       Gr
+ 507   1              */
+ 508   1              if(fmt== 0x00) {//GRBG
+ 509   2                      //cr = 1;cgr = 0;cgb = 33;cb = 32;
+ 510   2                      cr = 0;cgr = 2;cgb = 1;cb = 3;
+ 511   2                      //cr = 2;cgr = 0;cgb = 3;cb = 1;
+ 512   2              }
+ 513   1              else if(fmt== 0x01) {//RGGB
+ 514   2                      //cr = 0;cgr = 1;cgb = 32;cb = 33;
+ 515   2                      cr = 2;cgr = 0;cgb = 3;cb = 1;
+ 516   2                      //cr = 0;cgr = 2;cgb = 1;cb = 3;
+ 517   2              }
+ 518   1              else if(fmt == 0x02/*0x10*/) {//BGGR
+ 519   2                      //cr = 33;cgr = 32;cgb = 1;cb = 0;
+ 520   2                      cr = 1;cgr = 3;cgb = 0;cb = 2;
+ 521   2                      //cr = 3;cgr = 1;cgb = 2;cb = 0;
+ 522   2              }
+ 523   1              
+ 524   1              else if(fmt == 0x03/*0x11*/) {//GBRG
+ 525   2                      //cr = 32;cgr = 33;cgb = 0;cb = 1;
+ 526   2                      cr = 3;cgr = 1;cgb = 2;cb = 0;
+ 527   2                      //cr = 1;cgr = 3;cgb = 0;cb = 2;
+ 528   2              }
+ 529   1      
+ 530   1              
+ 531   1              //r gr 
+ 532   1              //gb b
+ 533   1              HAL_MoeDefCmd(&cmd);
+ 534   1              cmd.equation = MOE_EQUATION_Add;
+ 535   1              cmd.func = 1;
+ 536   1              cmd.ROIWidth = (UINT16)(AWB_SAMP_CNT + AWB_SAMP_CNT);
+ 537   1              //cmd.min = 0;
+ 538   1              //cmd.max = 1;
+ 539   1              cmd.max = 255;
+ 540   1              cmd.src1Bit = 1;
+ 541   1              cmd.dstShift = 8;
+ 542   1              cmd.cp = 0;
+ 543   1              cmd.src1 = AWB_ADDR_Wnd1;//AWB_ADDR_RGain;
+ 544   1              cmd.dst = AWB_ADDR_Tmp0;//[0];  //tmp[0~2].r
+ 545   1              HAL_MoeConvertToQueue(&cmd, &(pt->low8bit)); // gb  b
+ 546   1              cmd.src1Shift = 8;
+ 547   1              cmd.dstShift = 8;
+ 548   1              cmd.dst = AWB_ADDR_Tmp2;//[2];  //tmp[0~2].r
+ 549   1      //cmd.CmdQueueEnd = 1;
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 10  
+
+ 550   1              HAL_MoeConvertToQueue(&cmd, &(pt->high8bit)); // r  gb
+ 551   1      
+ 552   1              awbMoeOffset(&(pt->offset),cr,cgr,cb,cgb);
+ 553   1      
+ 554   1              //r  gr
+ 555   1              //gb b
+ 556   1              HAL_MoeDefCmd(&cmd);
+ 557   1              cmd.ROIWidth = AWB_SAMP_CNT;//copy
+ 558   1              cmd.func = 1;
+ 559   1              cmd.equation = MOE_EQUATION_Add;
+ 560   1      
+ 561   1              cmd.src1Bit = 0;
+ 562   1              cmd.src2Bit = 0;
+ 563   1              cmd.dstBit = 0;
+ 564   1              cmd.src1Shift = 0;
+ 565   1              cmd.src2Shift = 0;
+ 566   1              cmd.dstShift = 0;
+ 567   1              cmd.src1 = AWB_ADDR_Tmp0+512*cr;//[cr];// 2];
+ 568   1              cmd.cp = 0;
+ 569   1              cmd.dst = AWB_ADDR_R;//AWB_ADDR_Samp/*AWB_ADDR_MOE_samp*/;//tmp[4];     
+ 570   1              HAL_MoeConvertToQueue(&cmd, &(pt->r));
+ 571   1              cmd.src1 = AWB_ADDR_Tmp+512*cb;//[cb];// 1];
+ 572   1              cmd.dst = AWB_ADDR_B;//AWB_ADDR_Samp/*AWB_ADDR_MOE_samp*/+1024;//tmp[5];        
+ 573   1              HAL_MoeConvertToQueue(&cmd, &(pt->b));
+ 574   1              cmd.func = 0;
+ 575   1              cmd.src1 = AWB_ADDR_Tmp+512*cgr;//[cgr];// 0];
+ 576   1              cmd.src2 = AWB_ADDR_Tmp+512*cgb;//[cgb];// 3];
+ 577   1              cmd.dstShift = 1;
+ 578   1              cmd.dst = AWB_ADDR_G;//AWB_ADDR_Samp/*AWB_ADDR_MOE_samp*/+512;//tmp[4]; //g
+ 579   1              HAL_MoeConvertToQueue(&cmd, &(pt->g));
+ 580   1              //min effect before dstShift
+ 581   1              cmd.equation = MOE_EQUATION_Division;
+ 582   1              cmd.func = 1;
+ 583   1              cmd.max = 8;
+ 584   1              cmd.min = 1;
+ 585   1              cmd.src1Shift = 0;
+ 586   1              cmd.src2Shift = 6;
+ 587   1              cmd.dstShift = 0;
+ 588   1              cmd.src1 = AWB_ADDR_G;//AWB_ADDR_Samp/*AWB_ADDR_MOE_samp*/+512;//AWB_ADDR_Tmp[4];//g          
+ 589   1              cmd.cp = 32;            
+ 590   1              cmd.dst = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;        //tmp[0~2].r
+ 591   1              HAL_MoeConvertToQueue(&cmd, &(pt->wp)); // gb  b
+ 592   1              
+ 593   1              //thr
+ 594   1              awbMoeThr(&(pt->thr),  AWB_ADDR_R);//tmp[cr]);
+ 595   1              //awbMoeThr(&(pt->gthr),  AWB_ADDR_G);//tmp[4]);
+ 596   1              //awbMoeThr(&(pt->bthr),  AWB_ADDR_B);//tmp[cb]);
+ 597   1                      
+ 598   1      
+ 599   1              //HAL_MoeDefCmd(&cmd);
+ 600   1              //cmd.clipSrc1En=0;
+ 601   1              //cmd.clipSrc2En=0;
+ 602   1              cmd.equation = MOE_EQUATION_Division;
+ 603   1              cmd.ROIWidth = AWB_SAMP_CNT;
+ 604   1              cmd.func = 0;
+ 605   1              cmd.max = 0x400;
+ 606   1              cmd.min = 0;
+ 607   1              cmd.src1Shift = 8;
+ 608   1              cmd.src2Shift = 6;
+ 609   1              cmd.dstShift = 0;
+ 610   1              cmd.dstBit = 1;
+ 611   1              cmd.src1 = AWB_ADDR_G;/*AWB_ADDR_MOE_samp+512*///tmp[4];//g
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 11  
+
+ 612   1              cmd.src2 = AWB_ADDR_R;/*AWB_ADDR_MOE_samp*///tmp[cr];
+ 613   1              cmd.dst = AWB_ADDR_RGain;
+ 614   1              HAL_MoeConvertToQueue(&cmd, &(pt->rg));
+ 615   1              cmd.src2 = AWB_ADDR_B;/*AWB_ADDR_MOE_samp+1024*///tmp[cb];
+ 616   1              cmd.dst = AWB_ADDR_BGain;
+ 617   1      //cmd.CmdQueueEnd = 1;
+ 618   1              HAL_MoeConvertToQueue(&cmd, &(pt->bg));
+ 619   1      /*
+ 620   1              //sum
+ 621   1              cmd.func=MOE_FUNC_PointWithCommon;
+ 622   1              cmd.equation=MOE_EQUATION_Summation;
+ 623   1              cmd.sum=0;
+ 624   1              cmd.min=0;
+ 625   1              cmd.max=0xffffffff;
+ 626   1              cmd.exchange=0;
+ 627   1              cmd.src1Sign=0;
+ 628   1              cmd.src2Sign=0;
+ 629   1              cmd.src1Bit=1;
+ 630   1              cmd.src2Bit=0;
+ 631   1              cmd.dstBit=1;
+ 632   1              cmd.src1Shift=4;
+ 633   1              cmd.src2Shift=4;
+ 634   1              cmd.src1 = AWB_ADDR_Wp;
+ 635   1              cmd.cp = 1;             
+ 636   1              cmd.dst = AWB_ADDR_MOE_all_sum;
+ 637   1              HAL_MoeConvertToQueue(&cmd, &(pt->wpSum));
+ 638   1              cmd.func=MOE_FUNC_PointWithPoint;
+ 639   1              cmd.src2 = AWB_ADDR_RGain;
+ 640   1              cmd.dst = AWB_ADDR_MOE_all_sum+4;
+ 641   1              HAL_MoeConvertToQueue(&cmd, &(pt->rgSum));
+ 642   1              cmd.src2 = AWB_ADDR_RGain;
+ 643   1              cmd.dst = AWB_ADDR_MOE_all_sum+8;
+ 644   1              HAL_MoeConvertToQueue(&cmd, &(pt->bgSum));
+ 645   1              */
+ 646   1      }//ok
+ 647          #endif
+ 648          /**
+ 649           * @fn        void awbMoeSlop(awb_moe_slop_t* ptCmd, awb_moe_slop_t*ptCmd,awb_moe_buf_t* ad, ad,UINT8 flag
+             -)
+ 650           * @brief     create job queue of slop filter
+ 651           * @param     [out] ptCmd       :job queue pointer
+ 652           * @param     [in] ad           :buf struct pointer
+ 653           * @param     [in] flag         0: low threshold
+ 654                                                          1: high threshold
+ 655           * @retval    NONE
+ 656           * @see       NULL
+ 657           * @author    wangjg
+ 658           * @since     2010-5-4
+ 659           * @todo      N/A
+ 660           * @bug       N/A
+ 661          */
+ 662          void awbMoeSlop(awb_moe_slop_t*ptCmd,UINT8 flag)
+ 663          {
+ 664   1              moe_cmd_t cmd;
+ 665   1              awb_moe_slop_t *pt=ptCmd;//=&(ptCmd->slopL);
+ 666   1      //      awb_moe_buf_t* ad=&moeAddr;
+ 667   1              UINT16 cnt = AWB_SAMP_CNT;      
+ 668   1      
+ 669   1              //if(flag==0)
+ 670   1              //      pt=&(ptCmd->slopL);
+ 671   1              //else
+ 672   1              //      pt=&(ptCmd->slopH);
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 12  
+
+ 673   1              //gain  
+ 674   1              HAL_MoeDefCmd(&cmd);
+ 675   1              //slop_low
+ 676   1      #if 1
+ 677   1              cmd.equation = MOE_EQUATION_Absolute;
+ 678   1              cmd.func = MOE_FUNC_PointWithCommon;
+ 679   1              cmd.ROIWidth = cnt;
+ 680   1              cmd.min = 1;
+ 681   1              cmd.max = 255;
+ 682   1              cmd.src1Bit = 1;
+ 683   1              cmd.src2Bit= 1;
+ 684   1              cmd.dstBit= 1;
+ 685   1              cmd.src1Shift = 0;
+ 686   1              cmd.src2Shift = 0;
+ 687   1              cmd.src1 = AWB_ADDR_RGain;
+ 688   1      //      cmd,0);
+ 689   1              cmd.dst = AWB_ADDR_MOE_slop_dx;
+ 690   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_dx)); //slop_dx
+ 691   1              cmd.src1 = AWB_ADDR_BGain;      
+ 692   1              cmd.dst =  AWB_ADDR_MOE_slop_dy;;
+ 693   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_dy));//slop_dy
+ 694   1              
+ 695   1              
+ 696   1              cmd.equation = MOE_EQUATION_Division;
+ 697   1              cmd.func = MOE_FUNC_PointWithPoint;
+ 698   1              cmd.min=0;
+ 699   1              cmd.max=0xffff;
+ 700   1              cmd.src1Shift = 8;
+ 701   1              cmd.src2Shift = 6;
+ 702   1              cmd.dstBit = 1;
+ 703   1              cmd.src1 = AWB_ADDR_MOE_slop_dy;//dy    
+ 704   1              cmd.src2 = AWB_ADDR_MOE_slop_dx;        
+ 705   1              cmd.dst =   AWB_ADDR_MOE_slop_k;        
+ 706   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_k));//slop_k//8.8        
+ 707   1              cmd.equation = MOE_EQUATION_Subtract;//k0>kk0
+ 708   1              cmd.func = MOE_FUNC_PointWithCommon;
+ 709   1              //cmd.exchange = 1;
+ 710   1              cmd.min = 0;
+ 711   1              cmd.max = 1;
+ 712   1              cmd.src1Shift = 0;
+ 713   1              cmd.src2Shift = 0;
+ 714   1              cmd.dstBit= 0;
+ 715   1              cmd.src1 = AWB_ADDR_MOE_slop_k; 
+ 716   1      //      cmd,0); 
+ 717   1              cmd.dst = AWB_ADDR_MOE_slop_cmp_k0;     
+ 718   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_cmp_k0));//slop_cmp_k0           
+ 719   1              cmd.exchange = 1;//k0<kk1
+ 720   1      //      cmd,0);
+ 721   1              cmd.dst = AWB_ADDR_MOE_slop_cmp_k1;     
+ 722   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_cmp_k1));//slop_cmp_k1
+ 723   1              
+ 724   1              //cmd.equation = MOE_EQUATION_Absolute;
+ 725   1              //cmd.func = MOE_FUNC_PointWithCommon;
+ 726   1              cmd.exchange = 0;       //flag
+ 727   1              //cmd.equation = MOE_EQUATION_Subtract;
+ 728   1              //cmd.max=1;
+ 729   1              //cmd.dstBit= 0;
+ 730   1              cmd.src1 = AWB_ADDR_RGain;
+ 731   1      //      cmd,0);
+ 732   1              cmd.dst = AWB_ADDR_MOE_slop_dx_flag;    
+ 733   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_dx_flag));//slop_dx_flag
+ 734   1              cmd.src1 = AWB_ADDR_BGain;      
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 13  
+
+ 735   1              cmd.dst =  AWB_ADDR_MOE_slop_dy_flag;
+ 736   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_dy_flag));//slop_dy_flag
+ 737   1              
+ 738   1              cmd.exchange=0;
+ 739   1              cmd.equation = MOE_EQUATION_Max;//or
+ 740   1              cmd.func = MOE_FUNC_PointWithPoint;
+ 741   1              cmd.ROIWidth = cnt*2;
+ 742   1              cmd.src1Bit=0;
+ 743   1              cmd.src2Bit=0;
+ 744   1              cmd.src1 = AWB_ADDR_MOE_slop_cmp_k0;    
+ 745   1              cmd.src2 = AWB_ADDR_MOE_slop_dx_flag;   
+ 746   1              cmd.dst = AWB_ADDR_MOE_slop_k0dx;
+ 747   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_k0dx_k1dy));//slop_k0dx  
+ 748   1              //cmd.src1 = AWB_ADDR_MOE_slop_cmp_k1;  
+ 749   1              //cmd.src2 = AWB_ADDR_MOE_slop_dy_flag; 
+ 750   1              //cmd.dst = AWB_ADDR_MOE_slop_k1dy;
+ 751   1              //HAL_MoeConvertToQueue(&cmd, &(pt->slop_k1dy));//slop_k1dy
+ 752   1              //cmd.equation = MOE_EQUATION_Add;//or
+ 753   1              //cmd.src1Shift = 0;
+ 754   1              //cmd.src2Shift = 0;
+ 755   1              cmd.ROIWidth = cnt;
+ 756   1              cmd.src1 = AWB_ADDR_MOE_slop_dx_flag;
+ 757   1              cmd.src2 = AWB_ADDR_MOE_slop_dy_flag;
+ 758   1              cmd.dst = AWB_ADDR_MOE_slop_left_down;
+ 759   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_left_down));//slop_left_dow
+ 760   1              
+ 761   1              cmd.equation = MOE_EQUATION_Min;//and
+ 762   1              
+ 763   1              //cmd.src1Shift = 4;
+ 764   1              //cmd.src2Shift = 4;
+ 765   1              cmd.src1 = AWB_ADDR_MOE_slop_k0dx;
+ 766   1              cmd.src2 = AWB_ADDR_MOE_slop_k1dy;
+ 767   1              cmd.dst = AWB_ADDR_MOE_slop_and;
+ 768   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_and));//slop_and
+ 769   1      
+ 770   1              //cmd.equation = MOE_EQUATION_Multiply;//and
+ 771   1              //cmd.src1Shift = 4;
+ 772   1              //cmd.src2Shift = 4;
+ 773   1              cmd.src1 = AWB_ADDR_MOE_slop_and;
+ 774   1              cmd.src2 = AWB_ADDR_MOE_slop_left_down;
+ 775   1              if(flag==0)
+ 776   1                      cmd.dst = AWB_ADDR_MOE_slop_low;
+ 777   1              else
+ 778   1                      cmd.dst = AWB_ADDR_MOE_slop_high;
+ 779   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop_low));//slop_low
+ 780   1      #endif
+ 781   1      }
+ 782          /**
+ 783           * @fn        void awbMoeSpot(awb_moe_spot_t* ptCmd, awb_moe_spot_t*ptCmd,awb_moe_buf_t* ad)
+ 784           * @brief     create job queue of sopt filter
+ 785           * @param     [out] ptCmd       :job queue pointer
+ 786           * @param     [in] ad           :buf struct pointer
+ 787           * @retval    NONE
+ 788           * @see       NULL
+ 789           * @author    wangjg
+ 790           * @since     2010-5-4
+ 791           * @todo      N/A
+ 792           * @bug       N/A
+ 793          */
+ 794          void awbMoeSpot(awb_moe_spot_t*ptCmd,UINT8 mode)
+ 795          {
+ 796   1              moe_cmd_t cmd;
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 14  
+
+ 797   1              awb_moe_spot_t *pt=ptCmd;
+ 798   1              UINT16 cnt = AWB_SAMP_CNT;      
+ 799   1              
+ 800   1              HAL_MoeDefCmd(&cmd);
+ 801   1              //slop
+ 802   1              cmd.equation = MOE_EQUATION_Subtract;//and
+ 803   1              cmd.ROIWidth = cnt;
+ 804   1              cmd.max = 1;
+ 805   1              //cmd.src1Shift = 0;
+ 806   1              //cmd.src2Shift = 0;
+ 807   1              cmd.src1 = AWB_ADDR_MOE_slop_low;
+ 808   1              cmd.src2 = AWB_ADDR_MOE_slop_high;
+ 809   1              cmd.dst = AWB_ADDR_MOE_slop;
+ 810   1              HAL_MoeConvertToQueue(&cmd, &(pt->slop));//slop
+ 811   1      
+ 812   1              cmd.equation = MOE_EQUATION_Multiply;//and
+ 813   1              cmd.src1Shift = 4;
+ 814   1              cmd.src2Shift = 4;
+ 815   1              cmd.max=32;
+ 816   1              cmd.src1 = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;
+ 817   1              cmd.src2 = AWB_ADDR_MOE_slop;//AWB_ADDR_MOE_spot;
+ 818   1              cmd.dst = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;//AWB_ADDR_MOE_spot_wp;
+ 819   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot_wp));
+ 820   1      
+ 821   1              //dis
+ 822   1              /*cmd.func=MOE_FUNC_PointWithCommon;
+ 823   1              cmd.equation=MOE_EQUATION_Add;
+ 824   1              cmd.max=0x7fffffff;
+ 825   1              cmd.min=0;
+ 826   1              cmd.src1Bit = 1;
+ 827   1              cmd.src2Bit = 1;
+ 828   1              cmd.dstBit = 1;
+ 829   1              cmd.src1Shift = 0;
+ 830   1              cmd.src2Shift = 0;
+ 831   1              cmd.dstSign = 1;
+ 832   1              cmd.src1 = AWB_ADDR_RGain;
+ 833   1      //      cmd,0);
+ 834   1              cmd.dst = AWB_ADDR_MOE_dis_rgain_c0;
+ 835   1      //cmd.CmdQueueEnd=1;
+ 836   1              HAL_MoeConvertToQueue(&cmd, &(pt->dis_rgain_c0));*/
+ 837   1              
+ 838   1              cmd.func=MOE_FUNC_PointWithPoint;
+ 839   1              cmd.equation=MOE_EQUATION_Subtract;
+ 840   1              //cmd.exchange=0;
+ 841   1              cmd.min=-0x7fff;
+ 842   1              cmd.max=0x7fff;
+ 843   1              cmd.src1Bit = 1;
+ 844   1              cmd.src2Bit = 1;
+ 845   1              cmd.dstBit = 1;
+ 846   1              //cmd.src2Sign = 1;
+ 847   1              cmd.dstSign=1;
+ 848   1              cmd.src1Shift = 0;
+ 849   1              cmd.src2Shift = 0;
+ 850   1              cmd.src1 = AWB_ADDR_BGain;
+ 851   1              cmd.src2 = AWB_ADDR_RGain;//AWB_ADDR_MOE_dis_rgain_c0;
+ 852   1              cmd.dst = AWB_ADDR_MOE_dis_sign;
+ 853   1      //cmd.CmdQueueEnd=1;
+ 854   1              HAL_MoeConvertToQueue(&cmd, &(pt->dis_sign));
+ 855   1              cmd.func=MOE_FUNC_PointWithCommon;
+ 856   1              cmd.equation=MOE_EQUATION_Subtract;
+ 857   1              cmd.exchange=0;
+ 858   1              cmd.max=1;
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 15  
+
+ 859   1              cmd.min=0;
+ 860   1              cmd.src1Sign=1;
+ 861   1              cmd.src2Sign=1;
+ 862   1              cmd.dstSign=0;
+ 863   1              //cmd.src1Bit = 1;
+ 864   1              //cmd.src2Bit = 1;
+ 865   1              cmd.dstBit = 0;
+ 866   1              cmd.src1 = AWB_ADDR_MOE_dis_sign;
+ 867   1      //      cmd,0); 
+ 868   1              cmd.dst = AWB_ADDR_MOE_spot_0;  
+ 869   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot_0));
+ 870   1              cmd.dst = AWB_ADDR_MOE_spot_1;//AWB_ADDR_MOE_spot_40;   
+ 871   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot_1));
+ 872   1              cmd.dst = AWB_ADDR_MOE_spot_2;//AWB_ADDR_MOE_spot_10;   
+ 873   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot_2));
+ 874   1              if(mode)        cmd.src1 = AWB_ADDR_BGain;      
+ 875   1              cmd.dst = AWB_ADDR_MOE_spot_3;//AWB_ADDR_MOE_spot_50;   
+ 876   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot_3));
+ 877   1              cmd.dst = AWB_ADDR_MOE_spot_4;//AWB_ADDR_MOE_spot_50;   
+ 878   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot_4));
+ 879   1              
+ 880   1              cmd.exchange=1;
+ 881   1              cmd.dst = AWB_ADDR_MOE_spot_5;  
+ 882   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot_5));
+ 883   1      
+ 884   1      
+ 885   1              //sum
+ 886   1              cmd.func=MOE_FUNC_PointWithPoint;
+ 887   1              cmd.equation=MOE_EQUATION_Summation;
+ 888   1              cmd.sum=0;
+ 889   1              cmd.min=0;
+ 890   1              cmd.max=0xffffffff;
+ 891   1              cmd.exchange=0;
+ 892   1              cmd.src1Sign=0;
+ 893   1              cmd.src2Sign=0;
+ 894   1              cmd.src1Bit=0;
+ 895   1              cmd.src2Bit=0;
+ 896   1              cmd.dstBit=1;
+ 897   1              cmd.src1Shift=4;
+ 898   1              cmd.src2Shift=4;
+ 899   1              cmd.src1 = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;//AWB_ADDR_MOE_spot_wp;
+ 900   1              cmd.src2 = AWB_ADDR_MOE_spot_0;         
+ 901   1              cmd.dst = AWB_ADDR_Out;//spot0_sum_wp;
+ 902   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot0_sum_wp));
+ 903   1              cmd.src2 = AWB_ADDR_MOE_spot_1;
+ 904   1              cmd.dst = AWB_ADDR_Out+12;//spot1_sum_wp;
+ 905   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot1_sum_wp));
+ 906   1              cmd.src2 = AWB_ADDR_MOE_spot_2;
+ 907   1              cmd.dst = AWB_ADDR_Out+24;//spot2_sum_wp;
+ 908   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot2_sum_wp));
+ 909   1              cmd.src2 = AWB_ADDR_MOE_spot_3;
+ 910   1              cmd.dst = AWB_ADDR_Out+36;//spot4_sum_wp;
+ 911   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot3_sum_wp));
+ 912   1              cmd.src2 = AWB_ADDR_MOE_spot_4;
+ 913   1              cmd.dst = AWB_ADDR_Out+48;//spot5_sum_wp;
+ 914   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot4_sum_wp));
+ 915   1              cmd.src2 = AWB_ADDR_MOE_spot_5;
+ 916   1              cmd.dst = AWB_ADDR_Out+60;//spot5_sum_wp;
+ 917   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot5_sum_wp));
+ 918   1      
+ 919   1              cmd.equation = MOE_EQUATION_Multiply;//and
+ 920   1              //cmd.src1Shift = 4;
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 16  
+
+ 921   1              //cmd.src2Shift = 4;
+ 922   1              cmd.max = 10000;
+ 923   1              cmd.src1Bit = 1;
+ 924   1              cmd.src2Bit = 0;
+ 925   1              cmd.dstBit = 1;
+ 926   1              cmd.src1 = AWB_ADDR_RGain;
+ 927   1              cmd.src2 = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;//AWB_ADDR_MOE_spot_wp;
+ 928   1              cmd.dst = AWB_ADDR_MOE_spot_rgain_wp;
+ 929   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot_rgain_wp));
+ 930   1              cmd.src1 = AWB_ADDR_BGain;
+ 931   1              cmd.dst = AWB_ADDR_MOE_spot_bgain_wp;
+ 932   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot_bgain_wp));
+ 933   1      
+ 934   1              cmd.equation=MOE_EQUATION_Summation;
+ 935   1              cmd.max=0xffffffff;
+ 936   1              //cmd.src1Bit=1;
+ 937   1              //cmd.dstBit=1;
+ 938   1              cmd.src1 = AWB_ADDR_MOE_spot_rgain_wp;
+ 939   1              cmd.src2 = AWB_ADDR_MOE_spot_0;
+ 940   1              cmd.dst = AWB_ADDR_Out+4;//spot0_sum_r;
+ 941   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot0_sum_r));
+ 942   1              cmd.src2 = AWB_ADDR_MOE_spot_1;
+ 943   1              cmd.dst = AWB_ADDR_Out+16;//spot1_sum_r;
+ 944   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot1_sum_r));
+ 945   1              cmd.src2 = AWB_ADDR_MOE_spot_2;
+ 946   1              cmd.dst = AWB_ADDR_Out+28;//spot2_sum_r;
+ 947   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot2_sum_r));
+ 948   1              cmd.src2 = AWB_ADDR_MOE_spot_3;
+ 949   1              cmd.dst = AWB_ADDR_Out+40;//spot4_sum_r;
+ 950   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot3_sum_r));
+ 951   1              cmd.src2 = AWB_ADDR_MOE_spot_4;
+ 952   1              cmd.dst = AWB_ADDR_Out+52;//spot5_sum_r;
+ 953   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot4_sum_r));
+ 954   1              cmd.src2 = AWB_ADDR_MOE_spot_5;
+ 955   1              cmd.dst = AWB_ADDR_Out+64;//spot5_sum_r;
+ 956   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot5_sum_r));
+ 957   1              
+ 958   1              cmd.src1 = AWB_ADDR_MOE_spot_bgain_wp;
+ 959   1              cmd.src2 = AWB_ADDR_MOE_spot_0;
+ 960   1              cmd.dst = AWB_ADDR_Out+8;//spot0_sum_b;
+ 961   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot0_sum_b));
+ 962   1              cmd.src2 = AWB_ADDR_MOE_spot_1;
+ 963   1              cmd.dst = AWB_ADDR_Out+20;//spot1_sum_b;
+ 964   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot1_sum_b));
+ 965   1              cmd.src2 = AWB_ADDR_MOE_spot_2;
+ 966   1              cmd.dst = AWB_ADDR_Out+32;//spot2_sum_b;
+ 967   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot2_sum_b));
+ 968   1              cmd.src2 = AWB_ADDR_MOE_spot_3;
+ 969   1              cmd.dst = AWB_ADDR_Out+44;//spot4_sum_b;
+ 970   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot3_sum_b));
+ 971   1              cmd.src2 = AWB_ADDR_MOE_spot_4;
+ 972   1              cmd.dst = AWB_ADDR_Out+56;//spot5_sum_b;
+ 973   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot4_sum_b));
+ 974   1              cmd.src2 = AWB_ADDR_MOE_spot_5;
+ 975   1              cmd.dst = AWB_ADDR_Out+68;//spot5_sum_b;
+ 976   1              HAL_MoeConvertToQueue(&cmd, &(pt->spot5_sum_b));
+ 977   1      }
+ 978          
+ 979          /**
+ 980           * @fn        void awbMoeRect(awb_moe_rect_t* ptCmd, awb_moe_buf_t* ad, UINT8 idx, ,UINT8 wp)
+ 981           * @brief     awbMoeRect
+ 982           * @param     [in] ptCmd        job queue       
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 17  
+
+ 983           * @param     [in] ad           addr
+ 984           * @param     [in] idx          rect index
+ 985           * @param     [in] wp           is update to wp
+ 986           * @retval    NONE
+ 987           * @author    wangjg
+ 988           * @since     2010-6-19
+ 989          */void awbMoeRect(
+ 990                  awb_moe_rect_t*ptCmd
+ 991                  //,awb_moe_buf_t* ad
+ 992                  ,UINT8 idx
+ 993                  ,UINT8 mode // 0:wp 1:sum wp 2:sum gain 3:sum wp gain
+ 994                  )
+ 995          {
+ 996   1              moe_cmd_t cmd;
+ 997   1              awb_moe_rect_sum_t* pt=(awb_moe_rect_sum_t*)ptCmd;//&(ptCmd->rect);
+ 998   1              UINT16 cnt = AWB_SAMP_CNT;      
+ 999   1              UINT32 addr = AWB_ADDR_Out+ 12ul*(idx+6);
+1000   1              HAL_MoeDefCmd(&cmd);
+1001   1              //rect 
+1002   1      
+1003   1              cmd.equation = MOE_EQUATION_Subtract;
+1004   1              cmd.func = MOE_FUNC_PointWithCommon;
+1005   1              cmd.ROIWidth = cnt;
+1006   1              cmd.min = 0;
+1007   1              cmd.max = 1;    
+1008   1              cmd.src1Bit = 1;
+1009   1              cmd.src2Bit= 1;
+1010   1              cmd.dstBit = 0;
+1011   1              cmd.src1Shift=0;
+1012   1              cmd.src2Shift =0;
+1013   1      //      cmd,0); 
+1014   1              cmd.src1 = AWB_ADDR_RGain;
+1015   1              cmd.dst =   AWB_ADDR_Tmp0;//AWB_ADDR_MOE_rect_left;     
+1016   1              HAL_MoeConvertToQueue(&cmd, &(pt->rect_left)); // left  
+1017   1              //cmd.exchange = MOE_FUNC_Exchange;
+1018   1              cmd.dst =   AWB_ADDR_Tmp2;//AWB_ADDR_MOE_rect_right;
+1019   1              HAL_MoeConvertToQueue(&cmd, &(pt->rect_right)); // right        
+1020   1              //cmd.exchange = MOE_FUNC_NoExchange;
+1021   1              cmd.src1 = AWB_ADDR_BGain;      
+1022   1              cmd.dst =   AWB_ADDR_Tmp1;//AWB_ADDR_MOE_rect_down;
+1023   1              HAL_MoeConvertToQueue(&cmd, &(pt->rect_down)); // down  
+1024   1              //cmd.exchange = MOE_FUNC_Exchange;
+1025   1              cmd.dst =   AWB_ADDR_Tmp3;//AWB_ADDR_MOE_rect_up;
+1026   1              HAL_MoeConvertToQueue(&cmd, &(pt->rect_up)); // up      
+1027   1              cmd.func = MOE_FUNC_PointWithPoint;
+1028   1              cmd.ROIWidth = cnt*2;
+1029   1              cmd.src1Bit = 0;
+1030   1              cmd.src2Bit= 0;
+1031   1              cmd.src1 = AWB_ADDR_Tmp0;//AWB_ADDR_MOE_rect_left;
+1032   1              cmd.src2 = AWB_ADDR_Tmp2;//AWB_ADDR_MOE_rect_right;
+1033   1              cmd.dst =  AWB_ADDR_Tmp4;//AWB_ADDR_MOE_rect_r; 
+1034   1              HAL_MoeConvertToQueue(&cmd, &(pt->rect_2));     
+1035   1              cmd.equation = MOE_EQUATION_Min;
+1036   1              cmd.ROIWidth = cnt;
+1037   1              cmd.src1 = AWB_ADDR_Tmp4;//AWB_ADDR_MOE_rect_r;
+1038   1              cmd.src2 = AWB_ADDR_Tmp5;//AWB_ADDR_MOE_rect_b;
+1039   1              cmd.dst =  AWB_ADDR_Tmp0;//AWB_ADDR_MOE_rect;
+1040   1              HAL_MoeConvertToQueue(&cmd, &(pt->rect)); //rect
+1041   1              
+1042   1              cmd.equation = MOE_EQUATION_Multiply;//MOE_EQUATION_Multiply;//and
+1043   1              cmd.src1Shift=4;
+1044   1              cmd.src2Shift=4;
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 18  
+
+1045   1              cmd.max = 32;
+1046   1              cmd.src1 = AWB_ADDR_Tmp0;//AWB_ADDR_MOE_rect;
+1047   1              cmd.src2 = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;
+1048   1      
+1049   1              if(mode==0)
+1050   1              {
+1051   2                      cmd.dst = AWB_ADDR_Wp;
+1052   2                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_wp)); //rect
+1053   2              }
+1054   1              else if(mode==1)
+1055   1              {
+1056   2                      cmd.equation = MOE_EQUATION_Summation;
+1057   2                      cmd.sum = 0;
+1058   2                      cmd.max = 0x7fffffff;
+1059   2                      cmd.dst = addr;
+1060   2                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_wp)); //rect
+1061   2              }
+1062   1              else if(mode==2 || mode ==3)
+1063   1              {
+1064   2                      UINT32 wp = (mode==2)?AWB_ADDR_Tmp2:AWB_ADDR_Wp;
+1065   2                      cmd.dst = wp;
+1066   2                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_wp)); //rect
+1067   2                      cmd.equation = MOE_EQUATION_Summation;
+1068   2                      cmd.max = 0x7fffffff;
+1069   2                      cmd.dst =  addr;
+1070   2                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_sum_wp)); 
+1071   2                      cmd.src2Bit = 1;                
+1072   2                      cmd.src1 = wp;          
+1073   2                      cmd.src2 = AWB_ADDR_RGain;
+1074   2                      cmd.dst =   addr+4;
+1075   2                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_sum_r)); 
+1076   2                      cmd.src2 = AWB_ADDR_BGain;
+1077   2                      cmd.dst =   addr+8;
+1078   2                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_sum_b)); 
+1079   2              }
+1080   1              
+1081   1      }
+1082          #if 0
+              void awbMoeRect(
+                      awb_moe_rect_t*ptCmd
+                      //,awb_moe_buf_t* ad
+                      ,UINT8 idx
+                      ,UINT8 wp
+                      )
+              {
+                      moe_cmd_t cmd;
+                      awb_moe_rect_t* pt=ptCmd;//&(ptCmd->rect);
+                      awb_moe_rect_sum_t* pt0=(awb_moe_rect_sum_t*)ptCmd;//&(ptCmd->rect);
+                      //awb_moe_buf_t* ad=&moeAddr;
+                      UINT16 cnt = AWB_SAMP_CNT;      
+              
+                      HAL_MoeDefCmd(&cmd);
+                      //rect 
+              
+                      cmd.equation = MOE_EQUATION_Subtract;
+                      cmd.func = MOE_FUNC_PointWithCommon;
+                      cmd.ROIWidth = cnt;
+                      cmd.min = 0;
+                      cmd.max = 1;    
+                      cmd.src1Bit = 1;
+                      cmd.src2Bit= 1;
+                      cmd.dstBit = 0;
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 19  
+
+                      cmd.src1Shift=0;
+                      cmd.src2Shift =0;
+              //      cmd,0); 
+                      cmd.src1 = AWB_ADDR_RGain;
+                      cmd.dst =   AWB_ADDR_Tmp0;//AWB_ADDR_MOE_rect_left;     
+                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_left)); // left  
+                      cmd.exchange = MOE_FUNC_Exchange;
+                      cmd.dst =   AWB_ADDR_Tmp2;//AWB_ADDR_MOE_rect_right;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_right)); // right        
+                      cmd.exchange = MOE_FUNC_NoExchange;
+                      cmd.src1 = AWB_ADDR_BGain;      
+                      cmd.dst =   AWB_ADDR_Tmp1;//AWB_ADDR_MOE_rect_down;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_down)); // down  
+                      cmd.exchange = MOE_FUNC_Exchange;
+                      cmd.dst =   AWB_ADDR_Tmp3;//AWB_ADDR_MOE_rect_up;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_up)); // up
+                      cmd.equation = MOE_EQUATION_Multiply;//MOE_EQUATION_Multiply;//and
+                      cmd.exchange = MOE_FUNC_NoExchange;
+                      cmd.func = MOE_FUNC_PointWithPoint;
+                      cmd.min = 0;
+                      //cmd.max = 0xffffffff; 
+                      cmd.src1Bit = 0;
+                      cmd.src2Bit= 0;
+                      cmd.dstBit=0;
+                      cmd.src1Shift=4;
+                      cmd.src2Shift=4;
+                      cmd.src1 = AWB_ADDR_Tmp0;//AWB_ADDR_MOE_rect_left;
+                      cmd.src2 = AWB_ADDR_Tmp2;//AWB_ADDR_MOE_rect_right;
+                      cmd.dst =  AWB_ADDR_Tmp4;//AWB_ADDR_MOE_rect_r; 
+                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_r));     
+                      cmd.src1 = AWB_ADDR_Tmp1;//AWB_ADDR_MOE_rect_down;
+                      cmd.src2 = AWB_ADDR_Tmp3;//AWB_ADDR_MOE_rect_up;
+                      cmd.dst =  AWB_ADDR_Tmp5;//AWB_ADDR_MOE_rect_b; 
+                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_b));     
+                      cmd.src1 = AWB_ADDR_Tmp4;//AWB_ADDR_MOE_rect_r;
+                      cmd.src2 = AWB_ADDR_Tmp5;//AWB_ADDR_MOE_rect_b;
+                      cmd.dst =  AWB_ADDR_Tmp6;//AWB_ADDR_MOE_rect;
+              //cmd.CmdQueueEnd=1;
+                      HAL_MoeConvertToQueue(&cmd, &(pt->rect)); //rect
+              
+                      //cmd.src1Bit = 0;
+                      //cmd.dstBit = 0;
+                      cmd.max = 32;
+                      cmd.src1 = AWB_ADDR_Tmp6;//AWB_ADDR_MOE_rect;
+                      cmd.src2 = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;
+                      if(wp){
+                              cmd.dst = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;
+                      }else{
+                              cmd.dst = AWB_ADDR_Tmp7;//AWB_ADDR_MOE_rect_wp;
+                      }       
+                      HAL_MoeConvertToQueue(&cmd, &(pt->rect_wp)); 
+                      if(idx<AWB_RECT_NUM){
+                              UINT32 addr = AWB_ADDR_Out+ 12ul*(idx+6);
+                              
+                              cmd.equation = MOE_EQUATION_Summation;
+                              cmd.max = 0x7fffffff;
+                              cmd.sum=0;
+                              cmd.dst =  addr;//AWB_ADDR_MOE_rect_sum_wp;
+                      //cmd.CmdQueueEnd=1;
+                              HAL_MoeConvertToQueue(&cmd, &(pt0->rect_sum_wp)); 
+                              cmd.src2Bit = 1;
+                              if(wp){
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 20  
+
+                                      cmd.src1 = AWB_ADDR_Wp;//AWB_ADDR_MOE_wp;
+                              }else{
+                                      cmd.src1 = AWB_ADDR_Tmp7;//AWB_ADDR_MOE_rect_wp;
+                              }
+                              cmd.src2 = AWB_ADDR_RGain;
+                              cmd.dst =   addr+4;//AWB_ADDR_MOE_rect_sum_r;
+                              HAL_MoeConvertToQueue(&cmd, &(pt0->rect_sum_r)); 
+                              cmd.src2 = AWB_ADDR_BGain;
+                              cmd.dst =   addr+8;//AWB_ADDR_MOE_rect_sum_b;
+                      //cmd.CmdQueueEnd=1;
+                              HAL_MoeConvertToQueue(&cmd, &(pt0->rect_sum_b)); 
+                      }
+              }
+              #endif
+1183          void awbMoeRectItem(awb_moe_rect_t* ptRect,UINT8 i,UINT16 *rect,UINT8 mode)
+1184          {
+1185   1              if(!ptRect){return;}
+1186   1              //i = AWB_RECT_Sward;
+1187   1              awbMoeRect((awb_moe_rect_t*)ptRect,i,mode);
+1188   1              i<<=2;
+1189   1              moeCpWrite(ptRect->rect_left,   rect[i]);       
+1190   1              moeCpWrite(ptRect->rect_right,  rect[i+1]);
+1191   1              moeCpWrite(ptRect->rect_down,   rect[i+2]);
+1192   1              moeCpWrite(ptRect->rect_up,     rect[i+3]);
+1193   1      }
+1194          void awbConvertCT2Gain(UINT16 ct,UINT16* rg,UINT16* bg,UINT16* gain,UINT16* thr)
+1195          {
+1196   1              //2000K: thr[0],thr[8+1]
+1197   1              //2500K: gain[0],gain[4]
+1198   1              //4500K: gain[1],gain[5]
+1199   1              //6500K: gain[2],gain[6]
+1200   1              //7000K: thr[5],thr[8+4]
+1201   1              UINT16 c0 = 2000, x0 = thr[0],y0=thr[8+1];
+1202   1              UINT16 c1 = 4500, x1 = gain[1], y1=gain[1];
+1203   1              UINT16 c2 = 7000, x2 = thr[5], y2 = thr[8+4];
+1204   1      //      UINT16 rg0,rg1,bg0,bg1;
+1205   1              
+1206   1      
+1207   1              if(ct<4500){
+1208   2                      if(ct<2000){ct=2000;}
+1209   2                      *rg = x1-(UINT32)(c1-ct)*(x1-x0)/(c1-c0);
+1210   2                      *bg = y1+(UINT32)(c1-ct)*(y0-y1)/(c1-c0);       
+1211   2              }
+1212   1              else {
+1213   2                      if(ct>7000){ct=7000;}
+1214   2                      *rg = x1+(UINT32)(ct-c1)*(x2-x1)/(c2-c1);
+1215   2                      *bg = y1-(UINT32)(ct-c1)*(y1-y2)/(c2-c1);                               
+1216   2              }
+1217   1              printf("ct:%u k(%x,%x)\n",ct,*rg,*bg);
+1218   1      }
+1219          /**
+1220           * @fn        void awbMoeCmdItem(AWB_SCENE_ctt_t* ptFilter,awb_moe_raw_t* ptRaw, awb_moe_rect_t* ptRect,aw
+             -b_moe_slop_t *ptSlopL,awb_moe_slop_t *ptSlopH,awb_moe_spot_t *ptSpot,awb_moe_rect_sum_t* ptRectSward, ,awb_moe_rect_sum_
+             -t* ptRectSky,awb_moe_rect_sum_t* ptRectFlash,awb_moe_buf_t* ad,UINT8 idx)
+1221           * @brief     create all scene jobqueue and save to dram
+1222           * @param     [in] ptFilter     :awb ctt params struct
+1223           * @param     [out] ptRaw       :raw convert jobqueue pointer
+1224           * @param     [out] ptRect      :rect filter jobqueue pointer
+1225           * @param     [out] ptSlopL     :slop low filter jobqueue pointer
+1226           * @param     [out] ptSlopH     :slop high filter jobqueue pointer
+1227           * @param     [out] ptSpot      :spot filter jobqueue pointer
+1228           * @param     [out] ptRectSward :sward rect filter jobqueue pointer
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 21  
+
+1229           * @param     [out] ptRectSky   :sky rect filter jobqueue pointer
+1230           * @param     [out] ptRectFlash :flash rect filter jobqueue pointer
+1231           * @param     [in] ad           :buf struct pointer
+1232           * @param     [in] idx          :scene list index
+1233           * @retval    NONE
+1234           * @see       NULL
+1235           * @author    wangjg
+1236           * @since     2010-5-4
+1237           * @todo      N/A
+1238           * @bug       N/A
+1239          */
+1240          void awbMoeCmdItem(
+1241                  awb_ctt_t* ptCtt
+1242                  ,awb_moe_raw_t* ptRaw
+1243                  ,awb_moe_rect_t* ptRect
+1244                  ,awb_moe_slop_t *ptSlopL
+1245                  ,awb_moe_slop_t *ptSlopH
+1246                  ,awb_moe_spot_t *ptSpot
+1247                  ,awb_moe_rect_t* ptRectSward
+1248                  ,awb_moe_rect_t* ptRectSky
+1249                  ,awb_moe_rect_t* ptRectOffice
+1250                  ,awb_moe_rect_t* ptRectFlash
+1251                  ,awb_moe_rect_t* ptRectCalib
+1252                  //,awb_moe_rect_sum_t* ptRectOne
+1253                  ,UINT8 idx
+1254                  ,UINT8 bayer
+1255                  )
+1256          {
+1257   1              UINT8 i;        
+1258   1              UINT16 k0,k1;
+1259   1              UINT16 thr[4*4];
+1260   1              awb_ctt_t* ctt = (awb_ctt_t*)ptCtt;
+1261   1              UINT16 *gain = ctt->ctc;
+1262   1              UINT8 *ratio = ctt->ratio+16*idx;
+1263   1              UINT16 *rect=ctt->rect;
+1264   1              
+1265   1              //if(!ptRectOne){
+1266   1                      for(i=0;i<16;i++)       {
+1267   2                              thr[i] = (UINT32)gain[i>>1]*ratio[i]>>7;
+1268   2                              //#if AWB_Debug_Print
+1269   2                              //printf("%bx-%2bx,%4x*%bx/128=%4x\n",idx,i,gain[i>>1],ratio[i],thr[i]);
+1270   2                              //#endif
+1271   2                      }
+1272   1              //}
+1273   1              
+1274   1              if(ptRaw){
+1275   2                      awbMoeRaw(ptRaw,bayer);
+1276   2              }
+1277   1              if(ptRect){
+1278   2                      UINT16 rg0,rg1,bg0,bg1;
+1279   2                      awbConvertCT2Gain(awbctmin,&rg0,&bg1,gain,thr);
+1280   2                      awbConvertCT2Gain(awbctmax,&rg1,&bg0,gain,thr);         
+1281   2                      awbMoeRect(ptRect,0xff,0);              
+1282   2                      moeCpWrite(ptRect->rect_left,           rg0);//thr[0]); 
+1283   2                      moeCpWrite(ptRect->rect_right,  rg1);//thr[5]);
+1284   2                      moeCpWrite(ptRect->rect_down,   bg0);//thr[8+4]);
+1285   2                      moeCpWrite(ptRect->rect_up,             bg1);//thr[8+1]);
+1286   2      
+1287   2                      /*awbMoeRect(ptRect,0xff,0);
+1288   2                      moeCpWrite(ptRect->rect_left,           thr[0]);        
+1289   2                      moeCpWrite(ptRect->rect_right,  thr[5]);
+1290   2                      moeCpWrite(ptRect->rect_down,   thr[8+4]);
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 22  
+
+1291   2                      moeCpWrite(ptRect->rect_up,             thr[8+1]);*/
+1292   2              }
+1293   1              if(ptSlopL){
+1294   2                      UINT32 k;
+1295   2                      k = (UINT32)(thr[8+0]-thr[8+2])*256/(thr[2]-thr[0]);
+1296   2                      k0 = (k<0xffff)?k:0xffff;               
+1297   2                      k = (UINT32)(thr[8+2]-thr[8+4])*256/(thr[4]-thr[2]);
+1298   2                      k1 = (k<0xffff)?k:0xffff;
+1299   2                      //printf("##%x,%x\n",k0,k1);
+1300   2                      awbMoeSlop(ptSlopL,0);          
+1301   2                      moeCpWrite(ptSlopL->slop_dx,            thr[2]-1);
+1302   2                      moeCpWrite(ptSlopL->slop_dx_flag,               thr[2]-1);
+1303   2                      moeCpWrite(ptSlopL->slop_dy,                    thr[8+2]-1);
+1304   2                      moeCpWrite(ptSlopL->slop_dy_flag,               thr[8+2]-1);
+1305   2                      moeCpWrite(ptSlopL->slop_cmp_k0,k0-1);          
+1306   2                      moeCpWrite(ptSlopL->slop_cmp_k1,k1+1);
+1307   2              }
+1308   1              if(ptSlopH){
+1309   2                      UINT32 k;
+1310   2                      k = (UINT32)(thr[8+1]-thr[8+3])*256/(thr[3]-thr[1]);
+1311   2                      k0 = (k<0xffff)?k:0xffff;
+1312   2                      k = (UINT32)(thr[8+3]-thr[8+5])*256/(thr[5]-thr[3]);
+1313   2                      k1 = (k<0xffff)?k:0xffff;
+1314   2                      //printf("##%x,%x\n",k0,k1);
+1315   2                      awbMoeSlop(ptSlopH,1);          
+1316   2                      moeCpWrite(ptSlopH->slop_dx,            thr[3]-1);
+1317   2                      moeCpWrite(ptSlopH->slop_dx_flag,       thr[3]-1);
+1318   2                      moeCpWrite(ptSlopH->slop_dy,            thr[8+3]-1);
+1319   2                      moeCpWrite(ptSlopH->slop_dy_flag,       thr[8+3]-1);            
+1320   2                      moeCpWrite(ptSlopH->slop_cmp_k0,k0-1);          
+1321   2                      moeCpWrite(ptSlopH->slop_cmp_k1,k1+1);
+1322   2              }
+1323   1              if(ptSpot){
+1324   2                      // d = y - (x+c0) 
+1325   2                      // c0 = y0-x0;
+1326   2                      /*
+1327   2                      UINT16 c0,dis4,dis14,dis15,dis5;        
+1328   2                      
+1329   2                      c0= gain[4+1]-gain[1];
+1330   2                      dis4= gain[4+0] - (gain[0] + c0);
+1331   2                      dis5= gain[2]  + c0 - gain[4+2];
+1332   2                      dis14 = dis4>>2;
+1333   2                      dis15 = dis5>>2;
+1334   2                      dis4 = dis14*3;
+1335   2                      dis5 = dis15*3;
+1336   2                      
+1337   2                      awbMoeSpot(ptSpot);
+1338   2                      moeCpWrite(ptSpot->dis_rgain_c0,c0);
+1339   2                      moeCpWrite(ptSpot->spot_0,dis4);
+1340   2                      moeCpWrite(ptSpot->spot_1,dis14);
+1341   2                      moeCpWrite(ptSpot->spot_2,-dis15);
+1342   2                      moeCpWrite(ptSpot->spot_3,-dis5);               
+1343   2                      moeCpWrite(ptSpot->spot_4,-dis5+1);
+1344   2                      */
+1345   2                      /*
+1346   2                      SINT16 dis; 
+1347   2                      SINT16 dis4,dis14,dis15,dis5;   
+1348   2                      SINT16 dis0,dis1,dis2;
+1349   2                      dis0 = (SINT16)gain[4+0] - (SINT16)gain[0] ;
+1350   2                      dis1 = (SINT16)gain[4+1] - (SINT16)gain[1] ;
+1351   2                      dis2 = (SINT16)gain[4+2] - (SINT16)gain[2] ;
+1352   2      
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 23  
+
+1353   2                      dis = (dis0-dis1)/4;
+1354   2                      dis4 = dis0 - dis;
+1355   2                      dis14 = dis1+dis;
+1356   2      
+1357   2                      dis = (dis1-dis2)/4;
+1358   2                      dis15 = dis1-dis;
+1359   2                      dis5 = dis2+dis;
+1360   2      
+1361   2                      awbMoeSpot(ptSpot);
+1362   2                      //moeCpWrite(ptSpot->dis_rgain_c0,c0);
+1363   2                      moeCpWrite(ptSpot->spot_0,dis4);
+1364   2                      moeCpWrite(ptSpot->spot_1,dis14);
+1365   2                      moeCpWrite(ptSpot->spot_2,dis15);
+1366   2                      moeCpWrite(ptSpot->spot_3,dis5);                
+1367   2                      moeCpWrite(ptSpot->spot_4,dis5+1);
+1368   2                      */
+1369   2                      SINT16 dis3; 
+1370   2                      SINT16 dis4;//,dis5;    
+1371   2                      SINT16 dis0,dis1,dis2;
+1372   2                      //dis0 = (SINT16)gain[4+0] - (SINT16)gain[0] ;
+1373   2                      //dis2 = (SINT16)gain[4+1] - (SINT16)gain[1] ;
+1374   2                      //dis1 = (dis0+dis2)/2;
+1375   2                      
+1376   2                      
+1377   2                      if(idx){
+1378   3                              dis4 = (SINT16)gain[4+2];                       
+1379   3                              dis2 = (SINT16)gain[4+1];       
+1380   3                              dis0 = (SINT16)gain[4+0];
+1381   3                              dis1 = ((SINT16)gain[4+1] +gain[4+0])/2;
+1382   3                              dis3 = ((SINT16)gain[4+1] +gain[4+2])/2;
+1383   3                      }else{
+1384   3                              dis0 = (SINT16)gain[4+0] - (SINT16)gain[0] ;
+1385   3                              dis2 = (SINT16)gain[4+1] - (SINT16)gain[1] ;
+1386   3                              dis1 = (dis0+dis2)/2;
+1387   3                              dis4 = (SINT16)gain[4+2] - (SINT16)gain[2] ;
+1388   3                              dis3 = (dis2+dis4)/2;
+1389   3                      }
+1390   2                      //printf("dis:%d,%d,%d,%d,%d\n",dis0,dis1,dis2,dis3,dis4);
+1391   2                      awbMoeSpot(ptSpot,idx);
+1392   2                      //moeCpWrite(ptSpot->dis_rgain_c0,c0);
+1393   2                      moeCpWrite(ptSpot->spot_0,dis0);
+1394   2                      moeCpWrite(ptSpot->spot_1,dis1);
+1395   2                      moeCpWrite(ptSpot->spot_2,dis2);
+1396   2                      moeCpWrite(ptSpot->spot_3,dis3);                
+1397   2                      moeCpWrite(ptSpot->spot_4,dis4);
+1398   2                      moeCpWrite(ptSpot->spot_5,dis4+1);
+1399   2              }
+1400   1              awbMoeRectItem(ptRectSward,AWB_RECT_Sward,rect,1);
+1401   1              awbMoeRectItem(ptRectSky,AWB_RECT_Sky,rect,2);
+1402   1              awbMoeRectItem(ptRectOffice,AWB_RECT_Office,rect,2);
+1403   1              awbMoeRectItem(ptRectFlash,AWB_RECT_Flash,rect,2);
+1404   1              awbMoeRectItem(ptRectCalib,AWB_RECT_Calibration,rect,2);
+1405   1              #if 0
+                      if(ptRectSward){                
+                              //i = ((idx == AWB_SCENE_Normal)?AWB_RECT_Calibration:AWB_RECT_Sward);
+                              i = AWB_RECT_Sward;
+                              awbMoeRect((awb_moe_rect_t*)ptRectSward,i,1);
+                              i<<=2;
+                              moeCpWrite(ptRectSward->rect_left,      rect[i]);       
+                              moeCpWrite(ptRectSward->rect_right,     rect[i+1]);
+                              moeCpWrite(ptRectSward->rect_down,      rect[i+2]);
+                              moeCpWrite(ptRectSward->rect_up,        rect[i+3]);
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 24  
+
+                      }
+                      if(ptRectSky){
+                              //i = ((idx == AWB_SCENE_Normal)?AWB_RECT_Flash:AWB_RECT_Sky);
+                              i = AWB_RECT_Sky;
+                              awbMoeRect((awb_moe_rect_t*)ptRectSky,i,2);
+                              i<<=2;
+                              moeCpWrite(ptRectSky->rect_left,                rect[i]);       
+                              moeCpWrite(ptRectSky->rect_right,       rect[i+1]);
+                              moeCpWrite(ptRectSky->rect_down,        rect[i+2]);
+                              moeCpWrite(ptRectSky->rect_up,          rect[i+3]);
+                      }
+                      if(ptRectOffice){
+                              //i = ((idx == AWB_SCENE_Normal)?AWB_RECT_Flash:AWB_RECT_Sky);
+                              i = AWB_RECT_Office;
+                              awbMoeRect((awb_moe_rect_t*)ptRectOffice,i,2);
+                              i<<=2;
+                              moeCpWrite(ptRectOffice->rect_left,     rect[i]);       
+                              moeCpWrite(ptRectOffice->rect_right,    rect[i+1]);
+                              moeCpWrite(ptRectOffice->rect_down,     rect[i+2]);
+                              moeCpWrite(ptRectOffice->rect_up,       rect[i+3]);
+                      }
+                      if(ptRectFlash){
+                              //i = ((idx == AWB_SCENE_Normal)?AWB_RECT_Flash:AWB_RECT_Sky);
+                              i = AWB_RECT_Flash;
+                              awbMoeRect((awb_moe_rect_t*)ptRectFlash,i,2);
+                              i<<=2;
+                              moeCpWrite(ptRectFlash->rect_left,      rect[i]);       
+                              moeCpWrite(ptRectFlash->rect_right,     rect[i+1]);
+                              moeCpWrite(ptRectFlash->rect_down,      rect[i+2]);
+                              moeCpWrite(ptRectFlash->rect_up,                rect[i+3]);
+                      }
+                      if(ptRectCalib){
+                              //i = ((idx == AWB_SCENE_Normal)?AWB_RECT_Flash:AWB_RECT_Sky);
+                              i = AWB_RECT_Calibration;
+                              awbMoeRect((awb_moe_rect_t*)ptRectCalib,i,2);
+                              i<<=2;
+                              moeCpWrite(ptRectCalib->rect_left,      rect[i]);       
+                              moeCpWrite(ptRectCalib->rect_right,     rect[i+1]);
+                              moeCpWrite(ptRectCalib->rect_down,      rect[i+2]);
+                              moeCpWrite(ptRectCalib->rect_up,                rect[i+3]);
+                      }
+                      /*
+                      if(ptRectOne){
+                              i = idx<<2;             
+                              awbMoeRect((awb_moe_rect_t*)ptRectOne,AWB_RECT_One,0);
+                              moeCpWrite(ptRectOne->rect_left,        rect[i]);       
+                              moeCpWrite(ptRectOne->rect_right,       rect[i+1]);
+                              moeCpWrite(ptRectOne->rect_down,        rect[i+2]);
+                              moeCpWrite(ptRectOne->rect_up,          rect[i+3]);
+                      }
+                      */
+                      #endif
+1467   1      }
+1468          
+1469          /**
+1470           * @fn        void awbMoeCmdInit(UINT8 *ptCmd,AWB_SCENE_ctt_t* ptFilter ,awb_moe_buf_t* ad,UINT8 idx)
+1471           * @brief     create jobqueue of scene
+1472           * @param     [out] ptCmd       :job queue pointer
+1473           * @param     [in] ptFilter     :awb ctt param
+1474           * @param     [in] ad           :buf struct point
+1475           * @param     [in] idx          :scene idx
+1476           * @retval    NONE
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 25  
+
+1477           * @see       NULL
+1478           * @author    wangjg
+1479           * @since     2010-5-4
+1480           * @todo      N/A
+1481           * @bug       N/A
+1482          */
+1483          void awbMoeCmdInit(
+1484                          UINT8 *ptCmd
+1485                          ,awb_ctt_t* ptCtt
+1486                          ,UINT8 idx
+1487                          )
+1488          {
+1489   1              UINT16 size;
+1490   1              UINT16 cnt=0;
+1491   1              UINT8 bayerpv = awb.rawFmt & 0x0f;
+1492   1              UINT8 bayersn = awb.rawFmt >> 4;
+1493   1              
+1494   1              //if(idx == AWB_SCENE_Normal){
+1495   1                      awb_moe_normal_t* pt = ptCmd;           
+1496   1                      size = sizeof(awb_moe_normal_t);                
+1497   1                      awbMoeCmdItem(
+1498   1                                      ptCtt, 
+1499   1                                      &(pt->raw),
+1500   1                                      &(pt->rect), 
+1501   1                                      &(pt->slopL), 
+1502   1                                      &(pt->slopH),
+1503   1                                      &(pt->spot), 
+1504   1                                      (awb_moe_rect_t*)&(pt->rectSward), 
+1505   1                                      (awb_moe_rect_t*)&(pt->rectSky), 
+1506   1                                      (awb_moe_rect_t*)&(pt->rectOffice), 
+1507   1                                      (awb_moe_rect_t*)&(pt->rectFlash), 
+1508   1                                      (awb_moe_rect_t*)&(pt->rectCalib), 
+1509   1                                      idx,
+1510   1                                      bayerpv
+1511   1                                      );
+1512   1              /*}else if(idx == AWB_SCENE_Outdoor){
+1513   1                      awb_moe_outdoor_t*pt = ptCmd;   
+1514   1                      size = sizeof(awb_moe_outdoor_t);
+1515   1                      
+1516   1                      awbMoeCmdItem(
+1517   1                                      ptCtt, 
+1518   1                                      &(pt->raw),
+1519   1                                      &(pt->rect), 
+1520   1                                      &(pt->slopL), 
+1521   1                                      &(pt->slopH),
+1522   1                                      &(pt->spot), 
+1523   1                                      (awb_moe_rect_t*)&(pt->rectSward), 
+1524   1                                      (awb_moe_rect_t*)&(pt->rectSky), 
+1525   1                                      (awb_moe_rect_t*)&(pt->rectOffice), 
+1526   1                                      NULL,
+1527   1                                      idx,
+1528   1                                      bayerpv         
+1529   1                                      );      
+1530   1              }*/
+1531   1              //rect one
+1532   1              /*
+1533   1              else if(idx == AWB_SCENE_Flash)
+1534   1              {//flash
+1535   1                      awb_moe_rectone_t*pt = ptCmd;
+1536   1                      size = sizeof(awb_moe_rectone_t);
+1537   1                      
+1538   1                      awbMoeCmdItem(
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 26  
+
+1539   1                                      ptCtt, 
+1540   1                                      &(pt->raw),
+1541   1                                      NULL, 
+1542   1                                      NULL, 
+1543   1                                      NULL,
+1544   1                                      NULL, 
+1545   1                                      NULL, 
+1546   1                                      NULL, 
+1547   1                                      &(pt->rectsum0), 
+1548   1                                      AWB_RECT_Flash,
+1549   1                                      bayersn
+1550   1                                      );
+1551   1              }
+1552   1              else if(idx == AWB_SCENE_Calibration)
+1553   1              {//Calibration
+1554   1                      awb_moe_rectone_t*pt = ptCmd;
+1555   1                      size = sizeof(awb_moe_rectone_t);
+1556   1                      
+1557   1                      awbMoeCmdItem(
+1558   1                                      ptCtt, 
+1559   1                                      &(pt->raw),
+1560   1                                      NULL, 
+1561   1                                      NULL, 
+1562   1                                      NULL,
+1563   1                                      NULL, 
+1564   1                                      NULL, 
+1565   1                                      NULL, 
+1566   1                                      &(pt->rectsum0), 
+1567   1                                      AWB_RECT_Calibration,
+1568   1                                      bayerpv 
+1569   1                                      );
+1570   1              }
+1571   1              else
+1572   1              {
+1573   1                      return;
+1574   1              }*/
+1575   1              cnt = size/sizeof(moe_queue_t);
+1576   1              HAL_MoeSetQueueEnd((moe_queue_t*)ptCmd,cnt-1);
+1577   1              //HAL_DramWriteBytesAddr(pawbaddr->queue[idx], ptCmd, size, 0);
+1578   1      #if AWB_Debug_0 
+                      printf("--idx:%bx,size:%d,cnt:%d,addr:%lx\n",idx,size,cnt,pawbaddr->queue[idx]);
+              //#if AWB_Debug_0       
+              
+              {// save queue to sd
+                      UINT8 fn[] = "Q0000000.DAT";
+                      fn[7] = idx+'0';
+                      dramFileSave(fn, pawbaddr->queue[idx], size);
+              
+                      printf("--idx:%bx,size:%d,cnt:%d\n",idx,size,cnt);
+              }       
+              #endif
+1590   1      }
+1591          
+1592          #if 0
+              /**
+               * @fn        void awbMoeBufInit(awb_moe_buf_t *pt)
+               * @brief     initialize buf struct
+               * @param     [out] pt
+               * @retval    NONE
+               * @see       NULL
+               * @author    wangjg
+               * @since     2010-5-4
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 27  
+
+               * @todo      N/A
+               * @bug       N/A
+              */
+              void awbMoeBufInit(awb_moe_buf_t *pt)
+              {
+                      UINT16 i;
+                      
+                      pt->queue[AWB_SCENE_Normal] = AWB_ADDR_Queue_normal;
+                      pt->queue[AWB_SCENE_Outdoor] =AWB_ADDR_Queue_outdoor;
+                      pt->queue[AWB_SCENE_Flash] = AWB_ADDR_Queue_flash;
+                      pt->queue[AWB_SCENE_Calibration] = AWB_ADDR_Queue_calib;
+              
+                      pt->out = AWB_ADDR_Out;
+                      pt->wp = AWB_ADDR_Wp;
+                      
+                      pt->samp = AWB_ADDR_Samp;
+                      pt->rgain = AWB_ADDR_Gain;
+                      pt->bgain = AWB_ADDR_Gain+1024;
+                      
+                      pt->tmp[0] = AWB_ADDR_Tmp;
+                      //pt32 = pt->tmp;
+                      for(i=1;i<10;i++){
+                              pt->tmp[i] = pt->tmp[i-1] + AWB_SAMP_WCNT;
+                      }
+              
+                      pt->rect_left           = pt->tmp[0];
+                      pt->rect_right  = pt->tmp[2];
+                      pt->rect_down   = pt->tmp[1];
+                      pt->rect_up             = pt->tmp[3];
+                      pt->rect_r              = pt->tmp[4];
+                      pt->rect_b              = pt->tmp[5];
+                      pt->rect                        = pt->tmp[6];
+                      pt->rect_wp             = pt->tmp[7];   
+              
+                      //slop_low
+                      pt->slop_dx = pt->tmp[0];
+                      pt->slop_dy = pt->tmp[2];
+                      pt->slop_k = pt->tmp[4];//8.8
+                      pt->slop_cmp_k0 = pt->tmp[0];
+                      pt->slop_cmp_k1 = pt->tmp[2];
+                      pt->slop_dx_flag = pt->tmp[1];
+                      pt->slop_dy_flag = pt->tmp[3];
+                      pt->slop_k0dx = pt->tmp[4];
+                      pt->slop_k1dy = pt->tmp[5];
+                      pt->slop_left_down = pt->tmp[0];;
+                      pt->slop_and  = pt->tmp[1];
+                      
+                      pt->slop_low  = pt->tmp[6];
+              
+                      pt->slop_high  = pt->tmp[7];
+                      //slop
+                      pt->slop  = pt->tmp[0];
+                      //spot
+                      //pt->spot  = pt->tmp[1];
+                      //pt->spot_wp  = pt->tmp[2];    
+                      
+                      //dis
+                      pt->dis_rgain_c0 = pt->tmp[0];
+                      pt->dis_sign = pt->tmp[6];
+                      //spot  
+                      //pt->spot_40 = pt->tmp[4];
+                      //pt->spot_10 = pt->tmp[1];
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 28  
+
+                      //pt->spot_50 = pt->tmp[5];
+                      //pt->spot_20 = pt->tmp[2];
+                      
+                      pt->spot_0 = pt->tmp[0];
+                      pt->spot_1 = pt->tmp[1];
+                      pt->spot_2 = pt->tmp[2];
+                      pt->spot_3 = pt->tmp[3];        
+                      pt->spot_4 = pt->tmp[4];
+              
+                      //spot sum
+                      pt->spot_rgain_wp = pt->rgain;
+                      pt->spot_bgain_wp = pt->bgain;
+                      pt->spotSum = pt->out;
+              
+                      //halDramFill(pt->tmp[0], 1024*10, 0);
+                      //halDramFill(ptAddr->addrQueue, 1024*16, 0);
+              
+                      
+                      //printf("normal:%lx,outdoor:%lx,flash:%lx,%lx,tmp:%lx\n",ptAddr->addrQueue[AWB_SCENE_Normal],ptAddr->add
+             -rQueue[AWB_SCENE_Outdoor],ptAddr->addrQueue[AWB_SCENE_Flash],(UINT32)sizeof(awb_moe_normal_t),ptAddr->addrTmp);
+              {
+                      printf("out:%lx,samp:%lx,tmp:%lx,gain:%lx,wp:%lx\n"
+                              ,pt->out
+                              ,pt->samp
+                              ,pt->tmp[0]
+                              ,pt->rgain
+                              ,pt->wp
+                      );
+                      printf("queue(%lx,%lx,%lx),size(%lx,%lx,%lx),cnt(%lx,%lx,%lx)\n"
+                              ,pt->queue[AWB_SCENE_Normal],pt->queue[AWB_SCENE_Outdoor],pt->queue[AWB_SCENE_Flash]
+                              ,(UINT32)sizeof(awb_moe_normal_t),(UINT32)sizeof(awb_moe_outdoor_t),(UINT32)sizeof(awb_moe_rectone_t)
+                              ,(UINT32)sizeof(awb_moe_normal_t)/sizeof(moe_queue_t)
+                              ,(UINT32)sizeof(awb_moe_outdoor_t)/sizeof(moe_queue_t)
+                              ,(UINT32)sizeof(awb_moe_rectone_t)/sizeof(moe_queue_t)
+                              );
+              }
+              }
+              #endif
+1700          /**
+1701           * @fn        void awbMoeQueueCreate(awb_addr_t *ptAddr, AWB_SCENE_ctt_t *ptFilter)
+1702           * @brief     initialize awb moe
+1703           * @param     [in] ptAddr       :awb dram addr struct
+1704           * @param     [in] ptFilter     :awb ctt param struct
+1705           * @retval    NONE
+1706           * @see       NULL
+1707           * @author    wangjg
+1708           * @since     2010-5-4
+1709           * @todo      N/A
+1710           * @bug       N/A
+1711          */
+1712          void awbMoeQueueCreate(awb_ctt_t* ptCtt)
+1713          {
+1714   1              UINT8 sts;
+1715   1              awb_moe_queue_t xdata* ptQueue;
+1716   1              UINT32 que = pawbaddr->que;
+1717   1              
+1718   1              ENTER_CRITICAL(sts);
+1719   1              HAL_CpuRamMapSet(que, 16UL*1024UL, (void xdata* xdata*)&ptQueue);
+1720   1              
+1721   1              awbMoeCmdInit((UINT8*)&(ptQueue->normal),ptCtt,AWB_SCENE_Normal);
+1722   1              
+1723   1              awbMoeCmdInit((UINT8*)&(ptQueue->outdoor),ptCtt,AWB_SCENE_Outdoor);
+C51 COMPILER V8.08   AWB_MOE                                                               07/16/2022 19:06:32 PAGE 29  
+
+1724   1      
+1725   1              //awbMoeCmdInit((UINT8*)&(ptQueue->flash),ptCtt,AWB_SCENE_Flash);
+1726   1      
+1727   1              //awbMoeCmdInit((UINT8*)&(ptQueue->calibration),ptCtt,AWB_SCENE_Calibration,pvBayer);   
+1728   1              
+1729   1              HAL_CpuRamMapRcv();
+1730   1              EXIT_CRITICAL(sts);     
+1731   1              //HAL_GprmDramDmaAdv(que<<1, pawbaddr->queue[0]<<1, 1024*7, 0);
+1732   1      }
+1733          
+1734          void awbMoeModifyYThr(UINT8 ymin,UINT8 ymax,UINT8 wpmax)
+1735          {
+1736   1              UINT32 addr = pawbaddr->queue[0];
+1737   1              awb_moe_raw_t* raw = 0;
+1738   1              UINT32 offset = (UINT32)&(raw->wp.max0);
+1739   1              UINT8 t0=0,t1=0;
+1740   1              XBYTE[REG_Dram_AddressErr] &= ~0x01;
+1741   1              //HAL_DramSetAddr(addr+offset/2, 1);
+1742   1              //HAL_DramWordDataRead(&t0, &t1);
+1743   1              //printf("wp%lx,%bu,%bu,%bu\n",offset,t0,t1,wpmax);
+1744   1              HAL_DramSetAddr(addr+offset/2, 0);
+1745   1              HAL_DramWordDataWrite(wpmax, t1);
+1746   1              
+1747   1      
+1748   1              offset = (UINT32)&(raw->thr.low.src20);
+1749   1              //HAL_DramSetAddr(addr+offset/2, 1);
+1750   1              //HAL_DramWordDataRead(&t0, &t1);
+1751   1              //printf("y%lx,%bu,%bu,%bu\n",offset,t0,t1,ymin);
+1752   1              HAL_DramSetAddr(addr+offset/2, 0);
+1753   1              HAL_DramWordDataWrite(ymin, t1);
+1754   1              
+1755   1      
+1756   1              offset = (UINT32)&(raw->thr.high.src20);
+1757   1              //HAL_DramSetAddr(addr+offset/2, 1);
+1758   1              //HAL_DramWordDataRead(&t0, &t1);
+1759   1              //printf("y%lx,%bu,%bu,%bu\n",offset,t0,t1,ymax);
+1760   1              HAL_DramSetAddr(addr+offset/2, 0);
+1761   1              HAL_DramWordDataWrite(ymax, t1);
+1762   1              XBYTE[REG_Dram_AddressErr] |= 0x01;
+1763   1      }
+1764          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   7517    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----     479
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

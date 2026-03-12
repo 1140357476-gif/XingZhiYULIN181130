@@ -1,0 +1,1 @@
+"awb_api.c" LARGE OMF2 OPTIMIZE (9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customization) DEFINE (LIB_RELEASE) PRINT(.\obj\awb_api.lst) OBJECT(.\obj\awb_api.obj)

@@ -1,0 +1,29 @@
+Build target 'display'
+compiling disp_win.c...
+compiling disp_enable.c...
+compiling disp_lcm.c...
+compiling disp_logi.c...
+compiling disp_misc.c...
+compiling disp_para.c...
+compiling disp_wait.c...
+compiling disp_ver.c...
+creating library .\obj\libDisp.LIB...
+TRANSFER
+".\obj\disp_win.obj",
+".\obj\disp_enable.obj",
+".\obj\disp_lcm.obj",
+".\obj\disp_logi.obj",
+".\obj\disp_misc.obj",
+".\obj\disp_para.obj",
+".\obj\disp_wait.obj",
+".\obj\disp_ver.obj" 
+TO ".\obj\libDisp.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libDisp>copy .\obj\libDisp.LIB ..\..\..\lib\libDisp.LIB 
+已复制         1 个文件。
+".\obj\libDisp.LIB" - 0 Error(s), 0 Warning(s).

@@ -1,0 +1,7 @@
+TRANSFER
+".\obj\dram_core.obj",
+".\obj\cardui.obj",
+".\obj\disk.obj",
+".\obj\disk_rw.obj",
+".\obj\disk_ver.obj" 
+TO ".\obj\libStorage_com.LIB"

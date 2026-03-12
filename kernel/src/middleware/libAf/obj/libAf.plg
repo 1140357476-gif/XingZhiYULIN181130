@@ -1,0 +1,16 @@
+Build target 'libAf'
+compiling Af_ver.c...
+compiling af_api.c...
+compiling af_flow.c...
+creating library .\obj\libAf.LIB...
+TRANSFER
+".\obj\Af_ver.obj",
+".\obj\af_api.obj",
+".\obj\af_flow.obj" 
+TO ".\obj\libAf.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+E:\WORK\SuoDa\220624 新板 按键 屏显 偏红\CDAF\kernel\src\middleware\libAf>copy obj\libAf.LIB ..\..\..\lib\libAf.LIB 
+已复制         1 个文件。
+".\obj\libAf.LIB" - 0 Error(s), 0 Warning(s).

@@ -1,0 +1,28 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+F:\Work\code\SuoDa\DC403\220712 新板 按键 屏显 偏红 L\CDAF\kernel\src\middleware\libAwb\libAwb.uv2
+Project File Date:  07/03/2022
+
+<h2>Output:</h2>
+Build target 'libAwb'
+compiling awb_api.c...
+creating library .\obj\libAwb.LIB...
+TRANSFER
+".\obj\awb_moe.obj",
+".\obj\awb_api.obj",
+".\obj\awb_decider.obj",
+".\obj\awb_filter.obj",
+".\obj\Awb_ver.obj",
+".\obj\awb_dbg.obj",
+".\obj\awb_tbl.obj",
+".\obj\awb_init.obj" 
+TO ".\obj\libAwb.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Work\code\SuoDa\DC403\220712 新板 按键 屏显 偏红 L\CDAF\kernel\src\middleware\libAwb>copy obj\libAwb.LIB ..\..\..\lib\libAwb.LIB 
+已复制         1 个文件。
+".\obj\libAwb.LIB" - 0 Error(s), 0 Warning(s).

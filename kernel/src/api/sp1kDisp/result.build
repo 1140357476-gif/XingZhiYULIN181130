@@ -1,0 +1,17 @@
+Build target 'libApiDisp'
+compiling sp1k_disp_api.c...
+compiling api_disp_ver.c...
+creating library .\obj\libApiDisp.LIB...
+TRANSFER
+".\obj\sp1k_disp_api.obj",
+".\obj\api_disp_ver.obj" 
+TO ".\obj\libApiDisp.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\api\sp1kDisp>copy obj\libApiDisp.LIB ..\..\..\lib\libApiDisp.LIB 
+已复制         1 个文件。
+".\obj\libApiDisp.LIB" - 0 Error(s), 0 Warning(s).

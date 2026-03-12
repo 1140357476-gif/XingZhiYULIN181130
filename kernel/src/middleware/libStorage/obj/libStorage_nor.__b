@@ -1,0 +1,6 @@
+TRANSFER
+".\obj\at49lv040.obj",
+".\obj\nor.obj",
+".\obj\sst39vf020.obj",
+".\obj\nor_ver.obj" 
+TO ".\obj\libStorage_nor.LIB"

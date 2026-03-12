@@ -1,0 +1,17 @@
+Build target 'DOS_D'
+compiling dos_usr.c...
+compiling FileIndex.c...
+compiling dosD_ver.c...
+creating library .\obj\libDos32_D.LIB...
+TRANSFER
+".\obj\dos_usr.obj",
+".\obj\FileIndex.obj",
+".\obj\dosD_ver.obj" 
+TO ".\obj\libDos32_D.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat D
+已复制         1 个文件。
+".\obj\libDos32_D.LIB" - 0 Error(s), 0 Warning(s).

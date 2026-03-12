@@ -1,0 +1,1 @@
+"cmd_main.c" LARGE OMF2 OPTIMIZE (9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customization;..\..\..\..\fpga\inc) DEFINE (LIB_RELEASE) NOPRINT OBJECT(.\obj\cmd_main.obj)

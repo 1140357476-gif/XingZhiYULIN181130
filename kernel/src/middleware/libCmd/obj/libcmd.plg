@@ -1,0 +1,32 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+E:\WORK\SuoDa\220520 新板 按键 屏显\CDAF\kernel\src\middleware\libCmd\libcmd.uv2
+Project File Date:  06/18/2014
+
+<h2>Output:</h2>
+Build target 'libcmd'
+compiling cmd_misc.c...
+compiling cmd_main.c...
+CMD_MAIN.C(297): error C202: 'HAL_GPIO_BYTE_GEN0': undefined identifier
+CMD_MAIN.C(298): error C202: 'HAL_GPIO_BYTE_GEN0': undefined identifier
+compiling cmd_def.c...
+compiling libcmd_ver.c...
+Target not created
+Build target 'libcmd'
+compiling cmd_main.c...
+creating library .\obj\libcmd.LIB...
+TRANSFER
+".\obj\cmd_misc.obj",
+".\obj\cmd_main.obj",
+".\obj\cmd_def.obj",
+".\obj\libcmd_ver.obj" 
+TO ".\obj\libcmd.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\libcmd_post.bat
+E:\WORK\SuoDa\220520 新板 按键 屏显\CDAF\kernel\src\middleware\libCmd>copy obj\libcmd.LIB ..\..\..\lib\libCmd.LIB 
+已复制         1 个文件。
+".\obj\libcmd.LIB" - 0 Error(s), 0 Warning(s).

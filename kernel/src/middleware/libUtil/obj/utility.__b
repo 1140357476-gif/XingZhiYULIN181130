@@ -1,0 +1,8 @@
+TRANSFER
+".\obj\utility.obj",
+".\obj\sdramhw.obj",
+".\obj\util_code_sentry.obj",
+".\obj\util_fs.obj",
+".\obj\util_fw_update.obj",
+".\obj\util_ver.obj" 
+TO ".\obj\utility.LIB"

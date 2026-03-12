@@ -1,0 +1,2024 @@
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE HAL_GPIO
+OBJECT MODULE PLACED IN .\obj\hal_gpio.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE hal_gpio.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..
+                    -\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customi
+                    -zation) DEFINE(LIB_RELEASE) PRINT(.\obj\hal_gpio.lst) OBJECT(.\obj\hal_gpio.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21          
+  22          /**
+  23           * @file                hal_gpio.c
+  24           * @brief               Hal API for GPIO module
+  25           * @author              kai.wang
+  26           * @since               2010-01-01
+  27           * @date                2010-01-01
+  28           */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #include "general.h"
+  34          #include "hal_gpio.h" 
+  35          #include "hal_global.h"
+  36          #include "reg_def.h"
+  37          
+  38          /**************************************************************************
+  39           *                           C O N S T A N T S                            *
+  40           **************************************************************************/
+  41          #define HAL_GPIO_BYTE_FUNC_SET_DBG     0
+  42          #define HAL_GPIO_BYTE_FUNC_GET_DBG     0
+  43          #define HAL_GPIO_BYTE_DIR_SET_DBG      0
+  44          #define HAL_GPIO_BYTE_DIR_GET_DBG      0
+  45          #define HAL_GPIO_BYTE_OUT_SET_DBG      0
+  46          #define HAL_GPIO_BYTE_OUT_GET_DBG      0
+  47          #define HAL_GPIO_BYTE_IN_GATE_SET_DBG  0
+  48          #define HAL_GPIO_BYTE_IN_GET_DBG       0
+  49          #define HAL_PULL_EN_SET_DBG            0
+  50          #define HAL_PULL_EN_GET_DBG            0 
+  51          /**************************************************************************
+  52           *                              M A C R O S                               *
+  53           **************************************************************************/
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 2   
+
+  54           
+  55          /**************************************************************************
+  56           *                          D A T A    T Y P E S                          *
+  57           **************************************************************************/
+  58           
+  59          /**************************************************************************
+  60           *                         G L O B A L    D A T A                         *
+  61           **************************************************************************/
+  62          /*Mux pin function selection*/
+  63          static code UINT16 HAL_GpioSelRegTbl[] = { 
+  64                  NULL,    /* HAL_GPIO_BYTE_NULL  */
+  65                  NULL,    /* HAL_GPIO_BYTE_GEN0  */
+  66                  NULL,    /* HAL_GPIO_BYTE_GEN1  */
+  67                  NULL,    /* HAL_GPIO_BYTE_GEN2  */
+  68                  NULL,    /* HAL_GPIO_BYTE_GEN3  */
+  69                  NULL,    /* HAL_GPIO_BYTE_FM0   */
+  70                  NULL,    /* HAL_GPIO_BYTE_FM1   */
+  71                  NULL,    /* HAL_GPIO_BYTE_FM2   */
+  72                  /*NULL,   HAL_GPIO_BYTE_FM3   */
+  73                  0x2A60,  /* HAL_GPIO_BYTE_TG0   */
+  74                  0x2D80,  /* HAL_GPIO_BYTE_DISP0 */
+  75                  0x2D81,  /* HAL_GPIO_BYTE_DISP1 */
+  76                  0x2D82,  /* HAL_GPIO_BYTE_DISP2 */
+  77                  0x2D83,  /* HAL_GPIO_BYTE_DISP3 */
+  78                  NULL,    /* HAL_GPIO_BYTE_MA1   */
+  79                  NULL,    /* HAL_GPIO_BYTE_RGB0  */
+  80                  NULL,    /* HAL_GPIO_BYTE_RGB1  */
+  81          };
+  82          
+  83          /* output enable. */
+  84          static code UINT16 HAL_GpioOenRegTbl[] = {
+  85                  NULL,    /* HAL_GPIO_BYTE_NULL  */
+  86                  0x2034,  /* HAL_GPIO_BYTE_GEN0  */
+  87                  0x2035,  /* HAL_GPIO_BYTE_GEN1  */
+  88                  0x2036,  /* HAL_GPIO_BYTE_GEN2  */
+  89                  0x2037,  /* HAL_GPIO_BYTE_GEN3  */
+  90                  NULL,//0x2413,  /* HAL_GPIO_BYTE_FM0   */
+  91                  NULL,//0x2414,  /* HAL_GPIO_BYTE_FM1   */
+  92                  NULL,//0x2415,  /* HAL_GPIO_BYTE_FM2   */
+  93                  /*NULL,     HAL_GPIO_BYTE_FM3   */
+  94                  0x2A62,  /* HAL_GPIO_BYTE_TG0   */
+  95                  0x2D88,  /* HAL_GPIO_BYTE_DISP0 */
+  96                  0x2D89,  /* HAL_GPIO_BYTE_DISP1 */
+  97                  0x2D8A,  /* HAL_GPIO_BYTE_DISP2 */
+  98                  0x2D8B,  /* HAL_GPIO_BYTE_DISP3 */
+  99                  NULL,    /* HAL_GPIO_BYTE_MA1   */
+ 100                  NULL,    /* HAL_GPIO_BYTE_RGB0  */
+ 101                  NULL,    /* HAL_GPIO_BYTE_RGB1  */
+ 102          };
+ 103          
+ 104          /* output. */
+ 105          static code UINT16 HAL_GpioORegTbl[] = {
+ 106                  NULL,    /* HAL_GPIO_BYTE_NULL  */
+ 107                  0x2030,  /* HAL_GPIO_BYTE_GEN0  */
+ 108                  0x2031,  /* HAL_GPIO_BYTE_GEN1  */
+ 109                  0x2032,  /* HAL_GPIO_BYTE_GEN2  */
+ 110                  0x2033,  /* HAL_GPIO_BYTE_GEN3  */
+ 111                  NULL,//0x2416,  /* HAL_GPIO_BYTE_FM0   */
+ 112                  NULL,//0x2417,  /* HAL_GPIO_BYTE_FM1   */
+ 113                  NULL,//0x2418,  /* HAL_GPIO_BYTE_FM2   */
+ 114                  /* NULL,        HAL_GPIO_BYTE_FM3   */
+ 115                  0x2A64,  /* HAL_GPIO_BYTE_TG0   */
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 3   
+
+ 116                  0x2D84,  /* HAL_GPIO_BYTE_DISP0 */
+ 117                  0x2D85,  /* HAL_GPIO_BYTE_DISP1 */
+ 118                  0x2D86,  /* HAL_GPIO_BYTE_DISP2 */
+ 119                  0x2D87,  /* HAL_GPIO_BYTE_DISP3 */
+ 120                  NULL,    /* HAL_GPIO_BYTE_MA1   */
+ 121                  NULL,    /* HAL_GPIO_BYTE_RGB0  */
+ 122                  NULL,    /* HAL_GPIO_BYTE_RGB1  */
+ 123          };
+ 124          
+ 125          /* input gate. */
+ 126          static code UINT16 HAL_GpioIgRegTbl[] = {
+ 127                  NULL,    /* HAL_GPIO_BYTE_NULL  */
+ 128                  NULL,    /* HAL_GPIO_BYTE_GEN0  */
+ 129                  NULL,    /* HAL_GPIO_BYTE_GEN1  */
+ 130                  NULL,    /* HAL_GPIO_BYTE_GEN2  */
+ 131                  NULL,    /* HAL_GPIO_BYTE_GEN3  */
+ 132                  NULL,    /* HAL_GPIO_BYTE_FM0   */
+ 133                  NULL,    /* HAL_GPIO_BYTE_FM1   */
+ 134                  NULL,    /* HAL_GPIO_BYTE_FM2   */
+ 135                  /*NULL,    HAL_GPIO_BYTE_FM3   */
+ 136                  0x2A5C,  /* HAL_GPIO_BYTE_TG0   */
+ 137                  NULL,    /* HAL_GPIO_BYTE_DISP0 */
+ 138                  NULL,    /* HAL_GPIO_BYTE_DISP1 */
+ 139                  NULL,    /* HAL_GPIO_BYTE_DISP2 */
+ 140                  NULL,    /* HAL_GPIO_BYTE_DISP3 */
+ 141                  NULL,    /* HAL_GPIO_BYTE_MA1   */
+ 142                  NULL,    /* HAL_GPIO_BYTE_RGB0  */
+ 143                  NULL,    /* HAL_GPIO_BYTE_RGB1  */
+ 144          };
+ 145          
+ 146          /* input. */
+ 147          static code UINT16 HAL_GpioIRegTbl[] = {
+ 148                  NULL,    /* HAL_GPIO_BYTE_NULL  */
+ 149                  0x2038,  /* HAL_GPIO_BYTE_GEN0  */
+ 150                  0x2039,  /* HAL_GPIO_BYTE_GEN1  */
+ 151                  0x203a,  /* HAL_GPIO_BYTE_GEN2  */
+ 152                  0x203b,  /* HAL_GPIO_BYTE_GEN3  */
+ 153                  NULL,//0x2410,  /* HAL_GPIO_BYTE_FM0   */
+ 154                  NULL,//0x2411,  /* HAL_GPIO_BYTE_FM1   */
+ 155                  NULL,//0x2412,  /* HAL_GPIO_BYTE_FM2   */
+ 156                  /*NULL,   HAL_GPIO_BYTE_FM3   */
+ 157                  0x2A66,  /* HAL_GPIO_BYTE_TG0   */
+ 158                  0x2D8C,  /* HAL_GPIO_BYTE_DISP0 */
+ 159                  0x2D8D,  /* HAL_GPIO_BYTE_DISP1 */
+ 160                  0x2D8E,  /* HAL_GPIO_BYTE_DISP2 */
+ 161                  0x2D8F,  /* HAL_GPIO_BYTE_DISP3 */
+ 162                  NULL,    /* HAL_GPIO_BYTE_MA1   */
+ 163                  0x2A6C,  /* HAL_GPIO_BYTE_RGB0  */
+ 164                  0x2A6D,  /* HAL_GPIO_BYTE_RGB1  */
+ 165          };
+ 166          
+ 167          static UINT8 HAL_GpioGen0FuncBuf = 0xE0;
+ 168          static UINT8 HAL_GpioGen1FuncBuf = 0x01;
+ 169          
+ 170          static UINT8 HAL_GpioMa1FuncBuf = 0x00;
+ 171          
+ 172          static UINT8 HAL_GpioMa1DirBuf = 0x00;
+ 173          static UINT8 HAL_GpioMa1OutBuf = 0x00; 
+ 174          
+ 175          static UINT8 HAL_GpioFm0DirBuf = 0x00;
+ 176          static UINT8 HAL_GpioFm1DirBuf = 0x00;
+ 177          static UINT8 HAL_GpioFm2DirBuf = 0x00;
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 4   
+
+ 178          
+ 179          static UINT8 HAL_GpioFm0OutBuf = 0x00;
+ 180          static UINT8 HAL_GpioFm1OutBuf = 0x00;
+ 181          static UINT8 HAL_GpioFm2OutBuf = 0x00;
+ 182          
+ 183          //static UINT8 HAL_GpioFm3DirBuf = 0x00;
+ 184          //static UINT8 HAL_GpioFm3OutBuf = 0x00;
+ 185          /**************************************************************************
+ 186           *                 E X T E R N A L    R E F E R E N C E S                 *
+ 187           **************************************************************************/
+ 188           
+ 189          /**************************************************************************
+ 190           *               F U N C T I O N    D E C L A R A T I O N S               *
+ 191           **************************************************************************/
+ 192          
+ 193          /**
+ 194           * @fn        void HAL_GpioByteFuncSet(UINT8 byteId, UINT8 msk, UINT8 func)
+ 195           * @brief     set gpio function in byte.
+ 196           * @param     [in] byteId: byte id, one of HAL_GpioByte_e.
+ 197           * @param     [in] msk: bitmap mask.
+ 198           * @param     [in] func: bitmap function, 0: function, 1: gpio.
+ 199           * @              Please Note that the FMGPIO can only set to gpio not function! 
+ 200           * @retval    NONE
+ 201           * @see       NULL
+ 202           * @author    kai.wang
+ 203           * @since     2010-4-27
+ 204           * @todo      N/A
+ 205           * @bug       N/A
+ 206          */
+ 207          #pragma disable //disable interrupt
+ 208          void
+ 209          HAL_GpioByteFuncSet(
+ 210                  UINT8 byteId,
+ 211                  UINT8 msk,
+ 212                  UINT8 func
+ 213          )
+ 214          {
+ 215   1              UINT16 reg;
+ 216   1      
+ 217   1      
+ 218   1              #if HAL_GPIO_BYTE_FUNC_SET_DBG
+                      printf("HAL_GpioByteFuncSet() %bu 0x%02bX 0x%02bX\n", byteId, msk, func);
+                      #endif
+ 221   1      
+ 222   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+ 223   2                      return;
+ 224   2              }
+ 225   1      
+ 226   1              switch ( byteId ) {
+ 227   2              case HAL_GPIO_BYTE_GEN0:
+ 228   2                      if (( msk & 0x18 )&&((XBYTE[0x20f8] & 0x08) != 0x08 )) {  /* gpio[4:3] */
+ 229   3                              /* set rxnselect & txnselect. */
+ 230   3                              XBYTE[0x201A] = (XBYTE[0x201A] & ~((msk & 0x18) << 2)) | (((~func) & msk & 0x18) << 2);
+ 231   3                      }
+ 232   2                      else if ( msk & 0x10 ) {  /*gpio[4]*/
+ 233   3                              /* set pwm0select */
+ 234   3                              if (func & msk & 0x10) {
+ 235   4                                      XBYTE[0x201B] &= ~0x01; /* set to gpio */ 
+ 236   4                              }
+ 237   3                              else {
+ 238   4                                      XBYTE[0x201B] |= 0x01; /* set to function */ 
+ 239   4                              }
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 5   
+
+ 240   3                      }
+ 241   2                      if ( msk & 0x20 ) {  /* gpio[5] */
+ 242   3                              /* set pwm1select */
+ 243   3                              if ( func & msk & 0x20 ) {
+ 244   4                                      XBYTE[0x201B] &= ~0x02;  /* set to gpio. */
+ 245   4                              }
+ 246   3                              else {
+ 247   4                                      XBYTE[0x201B] |= 0x02;  /* set to function. */
+ 248   4                              }
+ 249   3                      }
+ 250   2      
+ 251   2                      if ( msk & 0x40 ) {  /* gpio[6] */
+ 252   3                              /* set pwm2select. */
+ 253   3                              if ( func & msk & 0x40 ) {
+ 254   4                                      XBYTE[0x201B] &= ~0x04;  /* set to gpio. */
+ 255   4                              }
+ 256   3                              else {
+ 257   4                                      XBYTE[0x201B] |= 0x04;  /* set to function. */
+ 258   4                              }
+ 259   3                      }
+ 260   2      
+ 261   2                      if ( msk & 0x80) {  /* gpio[7] */
+ 262   3                              /* set pwm0select. */
+ 263   3                              if ( func & msk & 0x80 ) {
+ 264   4                                      XBYTE[0x201B] &= ~0x01;  /* set to gpio. */
+ 265   4                              }
+ 266   3                              else {
+ 267   4                                      XBYTE[0x201B] |= 0x01;  /* set to function. */
+ 268   4                              }
+ 269   3                      }
+ 270   2      
+ 271   2                      HAL_GpioGen0FuncBuf = (HAL_GpioGen0FuncBuf & ~msk) | (func & msk);
+ 272   2      
+ 273   2                      break;
+ 274   2      
+ 275   2              case HAL_GPIO_BYTE_GEN1:
+ 276   2                      
+ 277   2                      if ( msk & 0x40 ) {  /* gpio[14] */
+ 278   3                              /* set PWM3select. */
+ 279   3                              if ( func & msk & 0x40 ) {
+ 280   4                                      XBYTE[0x201B] &= ~0x08;  /* set to gpio. */
+ 281   4                              }
+ 282   3                              else {
+ 283   4                                      XBYTE[0x201B] |= 0x08;  /* set to function. */
+ 284   4                              }
+ 285   3                              //XBYTE[0x201A] = (XBYTE[0x201A] & ~((msk & 0xC0) >> 6)) | ((~func & msk & 0xC0) >> 6);
+ 286   3                      }
+ 287   2      
+ 288   2                      HAL_GpioGen1FuncBuf = (HAL_GpioGen1FuncBuf & ~msk) | (func & msk);
+ 289   2      
+ 290   2                      break;
+ 291   2                      
+ 292   2              case HAL_GPIO_BYTE_MA1:
+ 293   2                      if ( msk & 0x40 ) {  /* ma[14] */
+ 294   3                              /* set Ma14value_en. */
+ 295   3                              if ( func & msk & 0x40 ) {
+ 296   4                                      XBYTE[REG_Dram_Dummy0] |= 0x02; /* set to gpio. */
+ 297   4                              }
+ 298   3                              else {
+ 299   4                                      XBYTE[REG_Dram_Dummy0] &= ~0x02;  /* set to function. */
+ 300   4                              }
+ 301   3                      }
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 6   
+
+ 302   2      
+ 303   2                      HAL_GpioMa1FuncBuf = (HAL_GpioMa1FuncBuf & ~msk) | (func & msk);
+ 304   2      
+ 305   2                      break;
+ 306   2              case HAL_GPIO_BYTE_FM0:
+ 307   2              case HAL_GPIO_BYTE_FM1:
+ 308   2              case HAL_GPIO_BYTE_FM2:
+ 309   2              //case HAL_GPIO_BYTE_FM3:
+ 310   2                      if(func & msk) {
+ 311   3                              XBYTE[REG_Fm_Mediatype_rst] = 0x00; //all the flash memory control pin are uses as GPIOS
+ 312   3                      }
+ 313   2                      break;  
+ 314   2              default:
+ 315   2                      reg = HAL_GpioSelRegTbl[byteId];
+ 316   2                      if ( reg != NULL ) {
+ 317   3                              XBYTE[reg] = (XBYTE[reg] & ~msk) | (func & msk);
+ 318   3                      }
+ 319   2              }
+ 320   1      }
+ 321          
+ 322          
+ 323          /**
+ 324           * @fn        UINT8 HAL_GpioByteFuncGet(UINT8 byteId, UINT8 msk)
+ 325           * @brief     get gpio function in byte.
+ 326           * @param     [in] byteId: byte id, one of HAL_GpioByte_e.
+ 327           * @param     [in] msk: bitmap mask.
+ 328           * @retval    bitmap function value, 0: function, 1: gpio.
+ 329           * @see       NULL
+ 330           * @author    Matt Wang
+ 331           * @since     2010-4-27
+ 332           * @todo      N/A
+ 333           * @bug       N/A
+ 334          */
+ 335          #pragma disable //disable interrupt
+ 336          UINT8
+ 337          HAL_GpioByteFuncGet(
+ 338                  UINT8 byteId,
+ 339                  UINT8 msk
+ 340          )
+ 341          {
+ 342   1              UINT8 ret;
+ 343   1              UINT16 reg;
+ 344   1      
+ 345   1      
+ 346   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+ 347   2                      ret = 0;
+ 348   2              }
+ 349   1              else {
+ 350   2                      switch ( byteId ) {
+ 351   3                      case HAL_GPIO_BYTE_GEN0:
+ 352   3                              ret = HAL_GpioGen0FuncBuf;
+ 353   3      
+ 354   3                              break;
+ 355   3      
+ 356   3                      case HAL_GPIO_BYTE_GEN1:
+ 357   3                              ret = HAL_GpioGen1FuncBuf;
+ 358   3      
+ 359   3                              break;
+ 360   3      
+ 361   3                      case HAL_GPIO_BYTE_MA1:
+ 362   3                              ret = HAL_GpioMa1FuncBuf;
+ 363   3      
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 7   
+
+ 364   3                              break;
+ 365   3                      case HAL_GPIO_BYTE_FM0:
+ 366   3                      case HAL_GPIO_BYTE_FM1:
+ 367   3                      case HAL_GPIO_BYTE_FM2:
+ 368   3                      //case HAL_GPIO_BYTE_FM3:
+ 369   3                              if (XBYTE[REG_Fm_Mediatype_rst] !=0x00) {  //as function
+ 370   4                                      ret = 0x00;
+ 371   4                              }
+ 372   3                              else {                                  //as gpio       
+ 373   4                                      ret = 0xff;
+ 374   4                              }
+ 375   3                              break;
+ 376   3                      default:
+ 377   3                              reg = HAL_GpioSelRegTbl[byteId];
+ 378   3                              if ( reg == NULL ) {
+ 379   4                                      ret = 0;
+ 380   4                              }
+ 381   3                              else {
+ 382   4                                      ret = XBYTE[reg];
+ 383   4                              }
+ 384   3                      }
+ 385   2      
+ 386   2                      ret &= msk;
+ 387   2              }
+ 388   1      
+ 389   1              #if HAL_GPIO_BYTE_FUNC_GET_DBG
+                      printf("HAL_GpioByteFuncGet %bu 0x%02bX 0x%02bX\n", byteId, msk, ret);
+                      #endif
+ 392   1      
+ 393   1              return ret;
+ 394   1      }
+ 395          
+ 396          
+ 397          /**
+ 398           * @fn        void HAL_GpioByteDirSet(UINT8 byteId, UINT8 msk, UINT8 dir)
+ 399           * @brief     set gpio direction in byte.
+ 400           * @param     [in] byteId: byte id, one of HAL_GpioByte_e.
+ 401           * @param     [in] msk: bitmap mask.
+ 402           * @param     [in] dir: bitmap direction, 0: input, 1: output.
+ 403           * @retval    NONE
+ 404           * @see       NULL
+ 405           * @author    kai.Wang
+ 406           * @since     2010-4-27
+ 407           * @todo      N/A
+ 408           * @bug       N/A
+ 409          */
+ 410          #pragma disable //disable interrupt
+ 411          void
+ 412          HAL_GpioByteDirSet(
+ 413                  UINT8 byteId,
+ 414                  UINT8 msk,
+ 415                  UINT8 dir
+ 416          )
+ 417          {
+ 418   1              UINT16 reg;
+ 419   1              UINT8 tmpmsk;
+ 420   1      
+ 421   1              #if HAL_GPIO_BYTE_DIR_SET_DBG
+                      printf("HAL_GpioByteDirSet() %bu 0x%02bX 0x%02bX\n", byteId, msk, dir);
+                      #endif
+ 424   1      
+ 425   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 8   
+
+ 426   2                      return;
+ 427   2              }
+ 428   1      
+ 429   1              switch ( byteId ) {
+ 430   2              case HAL_GPIO_BYTE_MA1:
+ 431   2                      if ( msk & 0x40 ) {  /* ma[14] */
+ 432   3                              /* set ma14oe_n. */
+ 433   3                              if ( dir & msk & 0x40 ) {
+ 434   4                                      XBYTE[REG_Dram_SdckMode] &= ~0x40;  /* set to output. */
+ 435   4                              }
+ 436   3                              else {
+ 437   4                                      XBYTE[REG_Dram_SdckMode] |= 0x40;  /* set to input. */
+ 438   4                              }
+ 439   3                      }
+ 440   2      
+ 441   2                      HAL_GpioMa1DirBuf = (HAL_GpioMa1DirBuf & ~msk) | (dir & msk);
+ 442   2      
+ 443   2                      break;
+ 444   2              case HAL_GPIO_BYTE_FM0:
+ 445   2                      if (msk & 0x0F) {  /*fmgpio[3:0]*/
+ 446   3                              tmpmsk = (dir & msk & 0x0F);
+ 447   3                      
+ 448   3                              XBYTE[REG_Fm_ctrloe_1] = (XBYTE[REG_Fm_ctrloe_1]& ~(msk & 0x0F)) | (tmpmsk);
+ 449   3                      }
+ 450   2                      if (msk & 0xF0) {  /*fmgpio[7:4]*/
+ 451   3                              tmpmsk = (dir & msk & 0xF0);
+ 452   3                      
+ 453   3                              XBYTE[REG_Fm_ctrloe_2] = (XBYTE[REG_Fm_ctrloe_2] & ~((msk&0xF0)>>4)) | (tmpmsk>>4);
+ 454   3                      }
+ 455   2                      
+ 456   2                      HAL_GpioFm0DirBuf = (HAL_GpioFm0DirBuf & ~msk) | (dir & msk);
+ 457   2                      break;
+ 458   2              case HAL_GPIO_BYTE_FM1: 
+ 459   2                      if (msk & 0x03) {  /*fmgpio[9:8]*/
+ 460   3                              tmpmsk = (dir & msk & 0x03);
+ 461   3                              
+ 462   3                              XBYTE[REG_Fm_ctrloe_2] = (XBYTE[REG_Fm_ctrloe_2] & ~((msk&0x03)<<4)) | (tmpmsk<<4);
+ 463   3                      }
+ 464   2                      if (msk & 0xFC ) {  /*fmgpio[15:10]*/
+ 465   3                              tmpmsk = (dir & msk & 0xFC);
+ 466   3                              
+ 467   3                      XBYTE[REG_Fm_ctrloe_3] = (XBYTE[REG_Fm_ctrloe_3] & ~((msk&0xFC)>>2)) | (tmpmsk>>2);     
+ 468   3                      }
+ 469   2                      HAL_GpioFm1DirBuf = (HAL_GpioFm1DirBuf & ~msk) | (dir & msk);
+ 470   2                      break;
+ 471   2              case HAL_GPIO_BYTE_FM2:
+ 472   2                      if (msk & 0x03) {  /*fmgpio[17:16]*/
+ 473   3                              tmpmsk = (dir & msk & 0x03);
+ 474   3                              
+ 475   3                              XBYTE[REG_Fm_ctrloe_3] = (XBYTE[REG_Fm_ctrloe_3] & ~((msk&0x03)<<6)) | (tmpmsk<<6);
+ 476   3                      }
+ 477   2                      if (msk & 0x0C ) {  /*fmgpio[19:18]*/
+ 478   3                              tmpmsk = (dir & msk & 0x0C);
+ 479   3                              
+ 480   3                              XBYTE[REG_Fm_ctrloe_1] = (XBYTE[REG_Fm_ctrloe_1] & ~((msk&0x0C)<<2)) | (tmpmsk<<2);
+ 481   3                      }
+ 482   2                      HAL_GpioFm2DirBuf = (HAL_GpioFm2DirBuf & ~msk) | (dir & msk);
+ 483   2                      break;
+ 484   2      #if 0
+                      case HAL_GPIO_BYTE_FM3:
+                              if ( msk & 0x01 ) {  /*fmgpio[18]*/
+                                      /* set fmgpio[18]oe_n. */
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 9   
+
+                                      if ( dir & msk & 0x01 ) {  
+                                              XBYTE[REG_Fm_ctrloe_1] |= 0x10;
+                                      }
+                                      else {
+                                              XBYTE[REG_Fm_ctrloe_1] &= ~0x10;
+                                      }
+                              }
+                              if ( msk & 0x02 ) {  /*fmgpio[19]*/
+                                      /* set fmgpio[19]oe_n. */
+                                      if ( dir & msk & 0x02 ) {  
+                                              XBYTE[REG_Fm_ctrloe_1] |= 0x20;
+                                      }
+                                      else {
+                                              XBYTE[REG_Fm_ctrloe_1] &= ~0x20;
+                                      }
+                              }
+                              HAL_GpioFm3DirBuf = (HAL_GpioFm3DirBuf & ~msk) | (dir & msk);
+                              
+                              break;
+              #endif          
+ 508   2              default:
+ 509   2                      reg = HAL_GpioOenRegTbl[byteId];
+ 510   2                      if ( reg != NULL ) {
+ 511   3                              XBYTE[reg] = (XBYTE[reg] & ~msk) | (dir & msk);
+ 512   3                      }
+ 513   2              }
+ 514   1      }
+ 515          
+ 516          /**
+ 517           * @fn        void HAL_GpioByteDirSet(UINT8 byteId, UINT8 msk, UINT8 dir)
+ 518           * @brief     set gpio direction in byte used in interrupter server.
+ 519           * @param     [in] byteId: byte id, one of HAL_GpioByte_e.
+ 520           * @param     [in] msk: bitmap mask.
+ 521           * @param     [in] dir: bitmap direction, 0: input, 1: output.
+ 522           * @retval    NONE
+ 523           * @see       NULL
+ 524           * @author    kai.Wang
+ 525           * @since     2010-4-27
+ 526           * @todo      N/A
+ 527           * @bug       N/A
+ 528          */
+ 529          void
+ 530          HAL_GpioByteDirSet_Intr(
+ 531                  UINT8 byteId,
+ 532                  UINT8 msk,
+ 533                  UINT8 dir
+ 534          )
+ 535          {
+ 536   1              UINT16 reg;
+ 537   1              UINT8 tmpmsk;
+ 538   1      
+ 539   1              #if HAL_GPIO_BYTE_DIR_SET_DBG
+                      printf("HAL_GpioByteDirSet() %bu 0x%02bX 0x%02bX\n", byteId, msk, dir);
+                      #endif
+ 542   1      
+ 543   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+ 544   2                      return;
+ 545   2              }
+ 546   1      
+ 547   1              switch ( byteId ) {
+ 548   2              case HAL_GPIO_BYTE_MA1:
+ 549   2                      if ( msk & 0x40 ) {  /* ma[14] */
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 10  
+
+ 550   3                              /* set ma14oe_n. */
+ 551   3                              if ( dir & msk & 0x40 ) {
+ 552   4                                      XBYTE[REG_Dram_SdckMode] &= ~0x40;  /* set to output. */
+ 553   4                              }
+ 554   3                              else {
+ 555   4                                      XBYTE[REG_Dram_SdckMode] |= 0x40;  /* set to input. */
+ 556   4                              }
+ 557   3                      }
+ 558   2      
+ 559   2                      HAL_GpioMa1DirBuf = (HAL_GpioMa1DirBuf & ~msk) | (dir & msk);
+ 560   2      
+ 561   2                      break;
+ 562   2              case HAL_GPIO_BYTE_FM0:
+ 563   2                      if (msk & 0x0F) {  /*fmgpio[3:0]*/
+ 564   3                              tmpmsk = (dir & msk & 0x0F);
+ 565   3                      
+ 566   3                              XBYTE[REG_Fm_ctrloe_1] = (XBYTE[REG_Fm_ctrloe_1]& ~(msk & 0x0F)) | (tmpmsk);
+ 567   3                      }
+ 568   2                      if (msk & 0xF0) {  /*fmgpio[7:4]*/
+ 569   3                              tmpmsk = (dir & msk & 0xF0);
+ 570   3                      
+ 571   3                              XBYTE[REG_Fm_ctrloe_2] = (XBYTE[REG_Fm_ctrloe_2] & ~((msk&0xF0)>>4)) | (tmpmsk>>4);
+ 572   3                      }
+ 573   2                      
+ 574   2                      HAL_GpioFm0DirBuf = (HAL_GpioFm0DirBuf & ~msk) | (dir & msk);
+ 575   2                      break;
+ 576   2              case HAL_GPIO_BYTE_FM1: 
+ 577   2                      if (msk & 0x03) {  /*fmgpio[9:8]*/
+ 578   3                              tmpmsk = (dir & msk & 0x03);
+ 579   3                              
+ 580   3                              XBYTE[REG_Fm_ctrloe_2] = (XBYTE[REG_Fm_ctrloe_2] & ~((msk&0x03)<<4)) | (tmpmsk<<4);
+ 581   3                      }
+ 582   2                      if (msk & 0xFC ) {  /*fmgpio[15:10]*/
+ 583   3                              tmpmsk = (dir & msk & 0xFC);
+ 584   3                              
+ 585   3                      XBYTE[REG_Fm_ctrloe_3] = (XBYTE[REG_Fm_ctrloe_3] & ~((msk&0xFC)>>2)) | (tmpmsk>>2);     
+ 586   3                      }
+ 587   2                      HAL_GpioFm1DirBuf = (HAL_GpioFm1DirBuf & ~msk) | (dir & msk);
+ 588   2                      break;
+ 589   2              case HAL_GPIO_BYTE_FM2:
+ 590   2                      if (msk & 0x03) {  /*fmgpio[17:16]*/
+ 591   3                              tmpmsk = (dir & msk & 0x03);
+ 592   3                              
+ 593   3                              XBYTE[REG_Fm_ctrloe_3] = (XBYTE[REG_Fm_ctrloe_3] & ~((msk&0x03)<<6)) | (tmpmsk<<6);
+ 594   3                      }
+ 595   2                      if (msk & 0x0C ) {  /*fmgpio[19:18]*/
+ 596   3                              tmpmsk = (dir & msk & 0x0C);
+ 597   3                              
+ 598   3                              XBYTE[REG_Fm_ctrloe_1] = (XBYTE[REG_Fm_ctrloe_1] & ~((msk&0x0C)<<2)) | (tmpmsk<<2);
+ 599   3                      }
+ 600   2                      HAL_GpioFm2DirBuf = (HAL_GpioFm2DirBuf & ~msk) | (dir & msk);
+ 601   2                      break;
+ 602   2      #if 0           
+                      case HAL_GPIO_BYTE_FM3:
+                              if ( msk & 0x01 ) {  /*fmgpio[18]*/
+                                      /* set fmgpio[18]oe_n. */
+                                      if ( dir & msk & 0x01 ) {  
+                                              XBYTE[REG_Fm_ctrloe_1] |= 0x10;
+                                      }
+                                      else {
+                                              XBYTE[REG_Fm_ctrloe_1] &= ~0x10;
+                                      }
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 11  
+
+                              }
+                              if ( msk & 0x02 ) {  /*fmgpio[19]*/
+                                      /* set fmgpio[19]oe_n. */
+                                      if ( dir & msk & 0x02 ) {  
+                                              XBYTE[REG_Fm_ctrloe_1] |= 0x20;
+                                      }
+                                      else {
+                                              XBYTE[REG_Fm_ctrloe_1] &= ~0x20;
+                                      }
+                              }
+                              HAL_GpioFm3DirBuf = (HAL_GpioFm3DirBuf & ~msk) | (dir & msk);
+                              
+                              break;
+              #endif          
+ 626   2              default:
+ 627   2                      reg = HAL_GpioOenRegTbl[byteId];
+ 628   2                      if ( reg != NULL ) {
+ 629   3                              XBYTE[reg] = (XBYTE[reg] & ~msk) | (dir & msk);
+ 630   3                      }
+ 631   2              }
+ 632   1      }
+ 633          
+ 634          /**
+ 635           * @fn        UINT8 HAL_GpioByteDirGet(UINT8 byteId, UINT8 msk)
+ 636           * @brief     get gpio direction in byte.
+ 637           * @param     [in] byteId: byte id, one of HAL_GpioByte_e.
+ 638           * @param     [in] msk: bitmap mask.
+ 639           * @retval    bitmap direction value.
+ 640           * @see       NULL
+ 641           * @author    kai.Wang
+ 642           * @since     2010-4-27
+ 643           * @todo      N/A
+ 644           * @bug       N/A
+ 645          */
+ 646          #pragma disable //disable interrupt
+ 647          UINT8
+ 648          HAL_GpioByteDirGet(
+ 649                  UINT8 byteId,
+ 650                  UINT8 msk
+ 651          )
+ 652          {
+ 653   1              UINT8 ret;
+ 654   1              UINT16 reg;
+ 655   1      
+ 656   1      
+ 657   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+ 658   2                      ret = 0;
+ 659   2              }
+ 660   1              else {
+ 661   2                      switch ( byteId ) {
+ 662   3                      case HAL_GPIO_BYTE_MA1:
+ 663   3                              ret = HAL_GpioMa1DirBuf;
+ 664   3      
+ 665   3                              break;
+ 666   3                      case HAL_GPIO_BYTE_FM0:
+ 667   3                              ret = HAL_GpioFm0DirBuf;
+ 668   3                              break;
+ 669   3                              
+ 670   3                      case HAL_GPIO_BYTE_FM1:
+ 671   3                              ret = HAL_GpioFm1DirBuf;
+ 672   3                              break;
+ 673   3                              
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 12  
+
+ 674   3                      case HAL_GPIO_BYTE_FM2:
+ 675   3                              ret = HAL_GpioFm2DirBuf;
+ 676   3                              break;  
+ 677   3                      //case HAL_GPIO_BYTE_FM3:
+ 678   3                      //      ret = HAL_GpioFm3DirBuf;
+ 679   3                      //      break;
+ 680   3                      default:
+ 681   3                              reg = HAL_GpioOenRegTbl[byteId];
+ 682   3                              if ( reg == NULL ) {
+ 683   4                                      ret = 0;
+ 684   4                              }
+ 685   3                              else {
+ 686   4                                      ret = XBYTE[reg];
+ 687   4                              }
+ 688   3                      }
+ 689   2      
+ 690   2                      ret &= msk;
+ 691   2              }
+ 692   1      
+ 693   1              #if HAL_GPIO_BYTE_DIR_GET_DBG
+                      printf("HAL_GpioByteDirGet %bu 0x%02bX 0x%02bX\n", byteId, msk, ret);
+                      #endif
+ 696   1      
+ 697   1              return ret;
+ 698   1      }
+ 699          
+ 700          /**
+ 701           * @fn        void HAL_GpioByteOutSet(UINT8 byteId, UINT8 msk, UINT8 val)
+ 702           * @brief     set gpio output in byte.
+ 703           * @param     [in] byteId: byte id, one of HAL_GpioByte_e.
+ 704           * @param     [in] msk: bitmap mask.
+ 705           * @param     [in] val: bitmap output value.
+ 706           * @retval    NONE
+ 707           * @see       NULL
+ 708           * @author    kai.Wang
+ 709           * @since     2010-4-27
+ 710           * @todo      N/A
+ 711           * @bug       N/A
+ 712          */
+ 713          #pragma disable //disable interrupt
+ 714          void
+ 715          HAL_GpioByteOutSet(
+ 716                  UINT8 byteId,
+ 717                  UINT8 msk,
+ 718                  UINT8 val
+ 719          )
+ 720          {
+ 721   1              UINT16 reg;
+ 722   1              UINT8 tmpmsk;
+ 723   1      
+ 724   1              #if HAL_GPIO_BYTE_OUT_SET_DBG
+                      printf("HAL_GpioByteOutSet() %bu 0x%02bX 0x%02bX\n", byteId, msk, val);
+                      #endif
+ 727   1      
+ 728   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+ 729   2                      return;
+ 730   2              }
+ 731   1      
+ 732   1              switch ( byteId ) {
+ 733   2      
+ 734   2              case HAL_GPIO_BYTE_MA1:
+ 735   2                      if ( msk & 0x40 ) {  /* ma[14] */
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 13  
+
+ 736   3                              /* set Ma14value. */
+ 737   3                              if ( val & msk & 0x40 ) {
+ 738   4                                      XBYTE[REG_Dram_Dummy0] |= 0x01;  /* set to high. */
+ 739   4                              }
+ 740   3                              else {
+ 741   4                                      XBYTE[REG_Dram_Dummy0] &= ~0x01;  /* set to low. */
+ 742   4                              }
+ 743   3                      }
+ 744   2      
+ 745   2                      HAL_GpioMa1OutBuf = (HAL_GpioMa1OutBuf & ~msk) | (val & msk);
+ 746   2      
+ 747   2                      break;
+ 748   2              case HAL_GPIO_BYTE_FM0:
+ 749   2                      if (msk & 0x0F) {  /*fmgpio[3:0]*/
+ 750   3                              tmpmsk = (val & msk & 0x0F);
+ 751   3                              
+ 752   3                              XBYTE[REG_Fm_ctrlo_1] = (XBYTE[REG_Fm_ctrlo_1]& ~(msk & 0x0F)) | (tmpmsk);
+ 753   3      
+ 754   3                      }
+ 755   2                      if (msk & 0xF0) {  /*fmgpio[7:4]*/
+ 756   3                              tmpmsk = (val & msk & 0xF0);
+ 757   3                              
+ 758   3                              XBYTE[REG_Fm_ctrlo_2] = (XBYTE[REG_Fm_ctrlo_2] & ~((msk&0xF0)>>4)) | (tmpmsk>>4);
+ 759   3                      }
+ 760   2                      
+ 761   2                      HAL_GpioFm0OutBuf = (HAL_GpioFm0OutBuf & ~msk) | (val & msk);
+ 762   2                      break;  
+ 763   2              case HAL_GPIO_BYTE_FM1: 
+ 764   2                      if (msk & 0x03) {  /*fmgpio[9:8]*/
+ 765   3                              tmpmsk = (val & msk & 0x03);
+ 766   3                              
+ 767   3                              XBYTE[REG_Fm_ctrlo_2] = (XBYTE[REG_Fm_ctrlo_2] & ~((msk&0x03)<<4)) | (tmpmsk<<4);
+ 768   3                      }
+ 769   2                      if (msk & 0xFC ) {  /*fmgpio[15:10]*/
+ 770   3                              tmpmsk = (val & msk & 0xFC);
+ 771   3                              
+ 772   3                              XBYTE[REG_Fm_ctrlo_3] = (XBYTE[REG_Fm_ctrlo_3] & ~((msk&0xFC)>>2)) | (tmpmsk>>2);
+ 773   3                      }
+ 774   2                      HAL_GpioFm1OutBuf = (HAL_GpioFm1OutBuf & ~msk) | (val & msk);
+ 775   2                      break;
+ 776   2              case HAL_GPIO_BYTE_FM2:
+ 777   2                      if (msk & 0x03) {  /*fmgpio[17:16]*/
+ 778   3                              tmpmsk = (val & msk & 0x03);
+ 779   3                              
+ 780   3                              XBYTE[REG_Fm_ctrlo_3] = (XBYTE[REG_Fm_ctrlo_3] & ~((msk&0x03)<<6)) | (tmpmsk<<6);
+ 781   3                      }
+ 782   2                      if (msk & 0x0C ) {  /*fmgpio[19:18]*/
+ 783   3                              tmpmsk = (val & msk & 0x0C);
+ 784   3                              
+ 785   3                              XBYTE[REG_Fm_ctrlo_1] = (XBYTE[REG_Fm_ctrlo_1] & ~((msk&0x0C)<<2)) | (tmpmsk<<2);
+ 786   3                      }
+ 787   2                      HAL_GpioFm2OutBuf = (HAL_GpioFm2OutBuf & ~msk) | (val & msk);
+ 788   2                      break;  
+ 789   2      #if 0           
+                      case HAL_GPIO_BYTE_FM3:
+                              if ( msk & 0x01 ) {  /* fmgpio[18] */
+                                      /* set fmgpio[18] value. */
+                                      if ( val & msk & 0x01 ) {
+                                              XBYTE[REG_Fm_ctrlo_1] |= 0x10;  /* set to high. */
+                                      }
+                                      else {
+                                              XBYTE[REG_Fm_ctrlo_1] &= ~0x10;  /* set to low. */
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 14  
+
+                                      }
+                              }
+                              if ( msk & 0x02 ) {  /* fmgpio[19] */
+                                      /* set fmgpio[19] value. */
+                                      if ( val & msk & 0x01 ) {
+                                              XBYTE[REG_Fm_ctrlo_1] |= 0x20;  /* set to high. */
+                                      }
+                                      else {
+                                              XBYTE[REG_Fm_ctrlo_1] &= ~0x20;  /* set to low. */
+                                      }
+                              }
+                              HAL_GpioFm3OutBuf = (HAL_GpioFm3OutBuf & ~msk) | (val & msk);
+                              break;
+              #endif          
+ 812   2              default:
+ 813   2                      reg = HAL_GpioORegTbl[byteId];
+ 814   2                      if ( reg != NULL ) {
+ 815   3                              XBYTE[reg] = (XBYTE[reg] & ~msk) | (val & msk);
+ 816   3                      }
+ 817   2              }
+ 818   1      }
+ 819          
+ 820          
+ 821          /**
+ 822           * @fn        void HAL_GpioByteOutSet_Intr(UINT8 byteId, UINT8 msk, UINT8 val)
+ 823           * @brief     set gpio output in byte used in interrupter server
+ 824           * @param     [in] byteId: byte id, one of HAL_GpioByte_e.
+ 825           * @param     [in] msk: bitmap mask.
+ 826           * @param     [in] val: bitmap output value.
+ 827           * @retval    NONE
+ 828           * @see       NULL
+ 829           * @author    kai.Wang
+ 830           * @since     2010-4-27
+ 831           * @todo      N/A
+ 832           * @bug       N/A
+ 833          */
+ 834          #pragma disable //disable interrupt
+ 835          void
+ 836          HAL_GpioByteOutSet_Intr(
+ 837                  UINT8 byteId,
+ 838                  UINT8 msk,
+ 839                  UINT8 val
+ 840          )
+ 841          {
+ 842   1              UINT16 reg;
+ 843   1              UINT8 tmpmsk;
+ 844   1      
+ 845   1              #if HAL_GPIO_BYTE_OUT_SET_DBG
+                      printf("HAL_GpioByteOutSet() %bu 0x%02bX 0x%02bX\n", byteId, msk, val);
+                      #endif
+ 848   1      
+ 849   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+ 850   2                      return;
+ 851   2              }
+ 852   1      
+ 853   1              switch ( byteId ) {
+ 854   2              case HAL_GPIO_BYTE_MA1:
+ 855   2                      if ( msk & 0x40 ) {  /* ma[14] */
+ 856   3                              /* set Ma14value. */
+ 857   3                              if ( val & msk & 0x40 ) {
+ 858   4                                      XBYTE[REG_Dram_Dummy0] |= 0x01;  /* set to high. */
+ 859   4                              }
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 15  
+
+ 860   3                              else {
+ 861   4                                      XBYTE[REG_Dram_Dummy0] &= ~0x01;  /* set to low. */
+ 862   4                              }
+ 863   3                      }
+ 864   2      
+ 865   2                      HAL_GpioMa1OutBuf = (HAL_GpioMa1OutBuf & ~msk) | (val & msk);
+ 866   2      
+ 867   2                      break;
+ 868   2                      case HAL_GPIO_BYTE_FM0:
+ 869   2                              if (msk & 0x0F) {  /*fmgpio[3:0]*/
+ 870   3                                      tmpmsk = (val & msk & 0x0F);
+ 871   3                                      
+ 872   3                                      XBYTE[REG_Fm_ctrlo_1] = (XBYTE[REG_Fm_ctrlo_1]& ~(msk & 0x0F)) | (tmpmsk);
+ 873   3              
+ 874   3                              }
+ 875   2                              if (msk & 0xF0) {  /*fmgpio[7:4]*/
+ 876   3                                      tmpmsk = (val & msk & 0xF0);
+ 877   3                                      
+ 878   3                                      XBYTE[REG_Fm_ctrlo_2] = (XBYTE[REG_Fm_ctrlo_2] & ~((msk&0xF0)>>4)) | (tmpmsk>>4);
+ 879   3                              }
+ 880   2                              
+ 881   2                              HAL_GpioFm0OutBuf = (HAL_GpioFm0OutBuf & ~msk) | (val & msk);
+ 882   2                              break;  
+ 883   2                      case HAL_GPIO_BYTE_FM1: 
+ 884   2                              if (msk & 0x03) {  /*fmgpio[9:8]*/
+ 885   3                                      tmpmsk = (val & msk & 0x03);
+ 886   3                                      
+ 887   3                                      XBYTE[REG_Fm_ctrlo_2] = (XBYTE[REG_Fm_ctrlo_2] & ~((msk&0x03)<<4)) | (tmpmsk<<4);
+ 888   3                              }
+ 889   2                              if (msk & 0xFC ) {  /*fmgpio[15:10]*/
+ 890   3                                      tmpmsk = (val & msk & 0xFC);
+ 891   3                                      
+ 892   3                                      XBYTE[REG_Fm_ctrlo_3] = (XBYTE[REG_Fm_ctrlo_3] & ~((msk&0xFC)>>2)) | (tmpmsk>>2);
+ 893   3                              }
+ 894   2                              HAL_GpioFm1OutBuf = (HAL_GpioFm1OutBuf & ~msk) | (val & msk);
+ 895   2                              break;
+ 896   2                      case HAL_GPIO_BYTE_FM2:
+ 897   2                              if (msk & 0x03) {  /*fmgpio[17:16]*/
+ 898   3                                      tmpmsk = (val & msk & 0x03);
+ 899   3                                      
+ 900   3                                      XBYTE[REG_Fm_ctrlo_3] = (XBYTE[REG_Fm_ctrlo_3] & ~((msk&0x03)<<6)) | (tmpmsk<<6);
+ 901   3                              }
+ 902   2                              if (msk & 0x0C ) {  /*fmgpio[19:18]*/
+ 903   3                                      tmpmsk = (val & msk & 0x0C);
+ 904   3      
+ 905   3                                      XBYTE[REG_Fm_ctrlo_1] = (XBYTE[REG_Fm_ctrlo_1] & ~((msk&0x0C)<<2)) | (tmpmsk<<2);
+ 906   3                              }
+ 907   2                              HAL_GpioFm2OutBuf = (HAL_GpioFm2OutBuf & ~msk) | (val & msk);
+ 908   2                              break;  
+ 909   2      
+ 910   2      #if 0           
+                      case HAL_GPIO_BYTE_FM3:
+                              if ( msk & 0x01 ) {  /* fmgpio[18] */
+                                      /* set fmgpio[18] value. */
+                                      if ( val & msk & 0x01 ) {
+                                              XBYTE[REG_Fm_ctrlo_1] |= 0x10;  /* set to high. */
+                                      }
+                                      else {
+                                              XBYTE[REG_Fm_ctrlo_1] &= ~0x10;  /* set to low. */
+                                      }
+                              }
+                              if ( msk & 0x02 ) {  /* fmgpio[19] */
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 16  
+
+                                      /* set fmgpio[19] value. */
+                                      if ( val & msk & 0x01 ) {
+                                              XBYTE[REG_Fm_ctrlo_1] |= 0x20;  /* set to high. */
+                                      }
+                                      else {
+                                              XBYTE[REG_Fm_ctrlo_1] &= ~0x20;  /* set to low. */
+                                      }
+                              }
+                              HAL_GpioFm3OutBuf = (HAL_GpioFm3OutBuf & ~msk) | (val & msk);
+                              break;
+              #endif          
+ 933   2              default:
+ 934   2                      reg = HAL_GpioORegTbl[byteId];
+ 935   2                      if ( reg != NULL ) {
+ 936   3                              XBYTE[reg] = (XBYTE[reg] & ~msk) | (val & msk);
+ 937   3                      }
+ 938   2              }
+ 939   1      }
+ 940          
+ 941          
+ 942          /**
+ 943           * @fn        UINT8 HAL_GpioByteOutGet(UINT8 byteId, UINT8 msk)
+ 944           * @brief     get gpio output in byte.
+ 945           * @param     [in] byteId: yte id, one of HAL_GpioByte_e.
+ 946           * @param     [in] msk: bitmap mask.
+ 947           * @retval    bitmap output value.
+ 948           * @see       NULL
+ 949           * @author    kai.Wang
+ 950           * @since     2010-4-27
+ 951           * @todo      N/A
+ 952           * @bug       N/A
+ 953          */
+ 954          #pragma disable //disable interrupt
+ 955          UINT8
+ 956          HAL_GpioByteOutGet(
+ 957                  UINT8 byteId,
+ 958                  UINT8 msk
+ 959          )
+ 960          {
+ 961   1              UINT8 ret;
+ 962   1              UINT16 reg;
+ 963   1      
+ 964   1      
+ 965   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+ 966   2                      ret = 0;
+ 967   2              }
+ 968   1              else {
+ 969   2                      switch ( byteId ) {
+ 970   3                      
+ 971   3                      case HAL_GPIO_BYTE_MA1:
+ 972   3                              ret = HAL_GpioMa1OutBuf;
+ 973   3      
+ 974   3                              break;
+ 975   3                      case HAL_GPIO_BYTE_FM0:
+ 976   3                              ret = HAL_GpioFm0OutBuf;
+ 977   3                              break;
+ 978   3                      case HAL_GPIO_BYTE_FM1:
+ 979   3                              ret = HAL_GpioFm1OutBuf;
+ 980   3                              break;
+ 981   3                      case HAL_GPIO_BYTE_FM2:
+ 982   3                              ret = HAL_GpioFm2OutBuf;
+ 983   3                              break;  
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 17  
+
+ 984   3                      //case HAL_GPIO_BYTE_FM3:
+ 985   3                      //      ret = HAL_GpioFm3OutBuf;
+ 986   3                      //      break;
+ 987   3                      default:
+ 988   3                              reg = HAL_GpioORegTbl[byteId];
+ 989   3                              if ( reg == NULL ) {
+ 990   4                                      ret = 0;
+ 991   4                              }
+ 992   3                              else {
+ 993   4                                      ret = XBYTE[reg];
+ 994   4                              }
+ 995   3                      }
+ 996   2      
+ 997   2                      ret &= msk;
+ 998   2              }
+ 999   1      
+1000   1              #if HAL_GPIO_BYTE_OUT_GET_DBG
+                      printf("HAL_GpioByteOutGet %bu 0x%02bX 0x%02bX\n", byteId, msk, ret);
+                      #endif
+1003   1      
+1004   1              return ret;
+1005   1      }
+1006          
+1007          /**
+1008           * @fn        void HAL_GpioByteInGateSet(UINT8 byteId, UINT8 msk, UINT8 gate)
+1009           * @brief     set gpio input gating in byte.
+1010           * @param     [in] byteId: byte id, one of HAL_GpioByte_e.
+1011           * @param     [in] msk: bitmap mask.
+1012           * @param     [in] gate: bitmap gating, 0: disable, 1: enable.
+1013           * @retval    NONE
+1014           * @see       NULL
+1015           * @author    kai.Wang
+1016           * @since     2010-4-27
+1017           * @todo      N/A
+1018           * @bug       N/A
+1019          */
+1020          #pragma disable //disable interrupt
+1021          void
+1022          HAL_GpioByteInGateSet(
+1023                  UINT8 byteId,
+1024                  UINT8 msk,
+1025                  UINT8 gate
+1026          )
+1027          {
+1028   1              UINT16 reg;
+1029   1      
+1030   1      
+1031   1              #if HAL_GPIO_BYTE_IN_GATE_SET_DBG
+                      printf("HAL_GpioByteInGateSet() %bu 0x%02bX 0x%02bX\n", byteId, msk, gate);
+                      #endif
+1034   1      
+1035   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+1036   2                      return;
+1037   2              }
+1038   1      
+1039   1              reg = HAL_GpioIgRegTbl[byteId];
+1040   1              if ( reg != NULL ) {
+1041   2                      XBYTE[reg] = (XBYTE[reg] & ~msk) | (gate & msk);
+1042   2              }
+1043   1      }
+1044          
+1045          
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 18  
+
+1046          /**
+1047           * @fn        UINT8 HAL_GpioByteInGet(UINT8 byteId, UINT8 msk, UINT8 polarity)
+1048           * @brief     get gpio input in byte.
+1049           * @param     [in] byteId: byte id, one of HAL_GpioByte_e.
+1050           * @param     [in] msk: bitmap mask.
+1051           * @param     [in] polarity: hardware input 0: low active  1: high active
+1052           * @retval    bitmap output value. 
+1053           * @see       NULL
+1054           * @author    kai.wang
+1055           * @since     2010-5-6
+1056           * @todo      N/A
+1057           * @bug       N/A
+1058          */
+1059          #pragma disable //disable interrupt
+1060          UINT8
+1061          HAL_GpioByteInGet(
+1062                  UINT8 byteId,
+1063                  UINT8 msk,
+1064                  UINT8 polarity 
+1065          )
+1066          {
+1067   1              UINT8 ret;
+1068   1              UINT16 reg;
+1069   1      
+1070   1      
+1071   1              if ( byteId >= HAL_GPIO_BYTE_MAX ) {
+1072   2                      ret = 0;
+1073   2              }
+1074   1              else {
+1075   2                      switch ( byteId ) {
+1076   3      
+1077   3                      case HAL_GPIO_BYTE_MA1:
+1078   3                              if ( msk & 0x40 ) {  /* ma[14] */
+1079   4                                      /* get Ma14value. */
+1080   4                                      ret = (XBYTE[REG_Dram_Dummy0] & 0x01) << 6;
+1081   4                              }
+1082   3      
+1083   3                              break;
+1084   3                      case HAL_GPIO_BYTE_FM0:
+1085   3                              ret = (XBYTE[REG_Fm_ctrli_1] & 0x0F) | ((XBYTE[REG_Fm_ctrli_2]&0x0F)<<4);       
+1086   3                              break;
+1087   3      
+1088   3                      case HAL_GPIO_BYTE_FM1:
+1089   3                              ret = (XBYTE[REG_Fm_ctrli_2] & 0x03) | ((XBYTE[REG_Fm_ctrli_3]&0x3F)<<2);
+1090   3                              break;
+1091   3      
+1092   3                      case HAL_GPIO_BYTE_FM2:
+1093   3                              ret = ((XBYTE[REG_Fm_ctrli_3] & 0xC0)>>6) | ((XBYTE[REG_Fm_ctrli_1]&0x30)>>2);
+1094   3                              break;
+1095   3                              
+1096   3                      //case HAL_GPIO_BYTE_FM3:
+1097   3                      //      if ( msk & 0x03 ) {
+1098   3                      //              /* get fmgpio[18][19] */
+1099   3                      //              ret = (XBYTE[REG_Fm_ctrli_1] & 0x30) >> 4;
+1100   3                      //      }
+1101   3                      //      break;
+1102   3                      default:
+1103   3                              reg = HAL_GpioIRegTbl[byteId];
+1104   3                              if ( reg == NULL ) {
+1105   4                                      ret = 0;
+1106   4                              }
+1107   3                              else {
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 19  
+
+1108   4                                      ret = XBYTE[reg];
+1109   4                              }
+1110   3                      }
+1111   2                      
+1112   2                      if ( polarity == 0 ) {
+1113   3                              ret = ~ret; 
+1114   3                      }
+1115   2                      ret &= msk;
+1116   2                      
+1117   2              }
+1118   1      
+1119   1              #if HAL_GPIO_BYTE_IN_GET_DBG
+                      printf("HAL_GpioByteInGet %bu 0x%02bX 0x%02bX\n", byteId, msk, ret);
+                      #endif
+1122   1      
+1123   1              return ret;
+1124   1      }
+1125          
+1126          /**
+1127           * @fn        void HAL_GpioPullEnSet(UINT8 byteId, UINT8 msk, UINT8 en)
+1128           * @brief     set pull high/low enable in byte.
+1129           * @param     [in] byteId: byte id, 0~12.
+1130           * @param     [in] msk: bitmap mask.
+1131           * @param     [in] en: bitmap pull high/low, 0: disable, 1: enable.
+1132           *                                        if byteId = 0, bit [0] = fmgpio[0],
+1133           *                                   bit [1] = fmgpio[1],
+1134           *                                   bit [2] = fmgpio[2],
+1135           *                                   bit [3] = fmgpio[3],
+1136           *                                   bit [4] = fmgpio[4],
+1137           *                                   bit [5] = fmgpio[5],
+1138           *                                   bit [6] = fmgpio[6],
+1139           *                                   bit [7] = fmgpio[7].
+1140           *                                        if byteId = 1, bit [0] = fmgpio[8],
+1141           *                                   bit [1] = fmgpio[9],
+1142           *                                   bit [2] = fmgpio[10],
+1143           *                                   bit [3] = fmgpio[11],
+1144           *                                   bit [4] = fmgpio[12],
+1145           *                                   bit [5] = fmgpio[13],
+1146           *                                   bit [6] = fmgpio[14],
+1147           *                                   bit [7] = fmgpio[15].
+1148           *                                        if byteId = 2, bit [0] = fmgpio[16],                   
+1149           *                                   bit [1] = fmgpio[17],
+1150           *                                   bit [2] = fmgpio[18],
+1151           *                                   bit [3] = fmgpio[19],
+1152           *                                   bit [4] = ma[0],
+1153           *                                   bit [5] = ma[1],
+1154           *                                   bit [6] = ma[2],
+1155           *                                   bit [7] = ma[3].
+1156           *                                        if byteId = 3, bit [0] = ma[4],
+1157           *                                   bit [1] = ma[5],
+1158           *                                   bit [2] = ma[6],
+1159           *                                   bit [3] = ma[7],
+1160           *                                   bit [4] = ma[8],
+1161           *                                   bit [5] = ma[9],
+1162           *                                   bit [6] = ma[10],
+1163           *                                   bit [7] = ma[11].
+1164           *                                        if byteId = 4, bit [0] = ma[14],
+1165           *                                   bit [1] = gpio[0],
+1166           *                                   bit [2] = gpio[1],
+1167           *                                   bit [3] = gpio[2],
+1168           *                                   bit [4] = gpio[3],
+1169           *                                   bit [5] = gpio[4],
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 20  
+
+1170           *                                   bit [6] = gpio[5],
+1171           *                                   bit [7] = gpio[6].
+1172           *                                        if byteId = 5, bit [0] = gpio[7],
+1173           *                                   bit [1] = gpio[8],
+1174           *                                   bit [2] = gpio[9],
+1175           *                                   bit [3] = gpio[10],
+1176           *                                   bit [4] = gpio[11],
+1177           *                                   bit [5] = gpio[12],
+1178           *                                   bit [6] = gpio[13],
+1179           *                                   bit [7] = gpio[14].
+1180           *                                        if byteId = 6, bit [0] = gpio[15],
+1181           *                                   bit [1] = gpio[16],
+1182           *                                   bit [2] = gpio[17],
+1183           *                                   bit [3] = gpio[18],
+1184           *                                   bit [4] = gpio[19],
+1185           *                                   bit [5] = gpio[20],
+1186           *                                   bit [6] = gpio[21],
+1187           *                                   bit [7] = gpio[22].
+1188           *                                        if byteId = 7, bit [0] = gpio[23],
+1189           *                                   bit [1] = gpio[24],
+1190           *                                   bit [2] = sar3,
+1191           *                                   bit [3] = sar4,
+1192           *                                   bit [4] = digtv[0],
+1193           *                                   bit [5] = digtv[1],
+1194           *                                   bit [6] = digtv[2],
+1195           *                                   bit [7] = digtv[3].
+1196           *                                        if byteId = 8, bit [0] = digtv[4],
+1197           *                                   bit [1] = digtv[5],
+1198           *                                   bit [2] = digtv[6],
+1199           *                                   bit [3] = digtv[7],
+1200           *                                   bit [4] = digtv[8],
+1201           *                                   bit [5] = digtv[9],
+1202           *                                   bit [6] = digtv[10],
+1203           *                                   bit [7] = digtv[11],
+1204           *                                        if byteId = 9, bit [0] = digtv[12],
+1205           *                                   bit [1] = digtv[13],
+1206           *                                   bit [2] = digtv[14],
+1207           *                                   bit [3] = digtv[15],
+1208           *                                   bit [4] = digtv[16],
+1209           *                                   bit [5] = digtv[17],
+1210           *                                   bit [6] = digtv[10],
+1211           *                                   bit [7] = digtv[19],
+1212           *                                        if byteId = 10, bit [0] = digtv[20],
+1213           *                                   bit [1] = digtv[21],
+1214           *                                   bit [2] = digtv[22],
+1215           *                                   bit [3] = digtv[23],
+1216           *                                   bit [4] = digtv[24],
+1217           *                                   bit [5] = digtv[25],
+1218           *                                   bit [6] = digtv[26],
+1219           *                                   bit [7] = digtv[27].
+1220           *                                        if byteId = 11, bit [0] = rgb[0],
+1221           *                                   bit [1] = rgb[1],
+1222           *                                   bit [2] = rgb[2],
+1223           *                                   bit [3] = rgb[3],
+1224           *                                   bit [4] = rgb[4],
+1225           *                                   bit [5] = rgb[5],
+1226           *                                   bit [6] = rgb[6],
+1227           *                                   bit [7] = rgb[7].
+1228           *                                        if byteId = 12, bit [0] = rgb[8],
+1229           *                                   bit [1] = rgb[9],
+1230           *                                   bit [2] = tggpio[0],
+1231           *                                   bit [3] = tggpio[1],
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 21  
+
+1232           *                                   bit [4] = tggpio[2],
+1233           *                                   bit [5] = tggpio[3],
+1234           *                                   bit [6] = tggpio[4],
+1235           *                                   bit [7] = tggpio[5].
+1236           *                                        Others: Not allowed.
+1237           
+1238           * @retval    NONE
+1239           * @see       HAL_PullEnSet
+1240           * @author    kai.Wang
+1241           * @since     2010-4-27
+1242           * @todo      N/A
+1243           * @bug       N/A
+1244          */
+1245          #pragma disable //disable interrupt
+1246          void
+1247          HAL_GpioPullEnSet(
+1248                  UINT8 byteId,
+1249                  UINT8 msk,
+1250                  UINT8 en
+1251          )
+1252          {
+1253   1              UINT16 reg;
+1254   1      
+1255   1      
+1256   1              #if HAL_PULL_EN_SET_DBG
+                      printf("HAL_GpioPullEnSet() %bu 0x%02bX 0x%02bX\n", byteId, msk, en);
+                      #endif
+1259   1      
+1260   1              if ( byteId > 12 ) {
+1261   2                      return;
+1262   2              }
+1263   1              
+1264   1              reg = 0x20A0 + byteId;
+1265   1      
+1266   1              XBYTE[reg] = (XBYTE[reg] & ~msk) | (en & msk);
+1267   1      }
+1268          
+1269          /**
+1270           * @fn        UINT8 HAL_GpioPullEnGet(UINT8 byteId, UINT8 msk)
+1271           * @brief     get pull high/low enable in byte.
+1272           * @param     [in] byteId: byte id, 0~12.
+1273           * @param     [in] msk: bitmap mask.
+1274           * @retval    bitmap pull high/low, 0: disable, 1: enable.
+1275           *                                        if byteId = 0, bit [0] = fmgpio[0],
+1276           *                                   bit [1] = fmgpio[1],
+1277           *                                   bit [2] = fmgpio[2],
+1278           *                                   bit [3] = fmgpio[3],
+1279           *                                   bit [4] = fmgpio[4],
+1280           *                                   bit [5] = fmgpio[5],
+1281           *                                   bit [6] = fmgpio[6],
+1282           *                                   bit [7] = fmgpio[7].
+1283           *                                        if byteId = 1, bit [0] = fmgpio[8],
+1284           *                                   bit [1] = fmgpio[9],
+1285           *                                   bit [2] = fmgpio[10],
+1286           *                                   bit [3] = fmgpio[11],
+1287           *                                   bit [4] = fmgpio[12],
+1288           *                                   bit [5] = fmgpio[13],
+1289           *                                   bit [6] = fmgpio[14],
+1290           *                                   bit [7] = fmgpio[15].
+1291           *                                        if byteId = 2, bit [0] = fmgpio[16],                   
+1292           *                                   bit [1] = fmgpio[17],
+1293           *                                   bit [2] = fmgpio[18],
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 22  
+
+1294           *                                   bit [3] = fmgpio[19],
+1295           *                                   bit [4] = ma[0],
+1296           *                                   bit [5] = ma[1],
+1297           *                                   bit [6] = ma[2],
+1298           *                                 bit [7] = ma[3].
+1299           *                                        if byteId = 3, bit [0] = ma[4],
+1300           *                                   bit [1] = ma[5],
+1301           *                                   bit [2] = ma[6],
+1302           *                                   bit [3] = ma[7],
+1303           *                                   bit [4] = ma[8],
+1304           *                                   bit [5] = ma[9],
+1305           *                                   bit [6] = ma[10],
+1306           *                                   bit [7] = ma[11].
+1307           *                                        if byteId = 4, bit [0] = ma[14],
+1308           *                                   bit [1] = gpio[0],
+1309           *                                   bit [2] = gpio[1],
+1310           *                                   bit [3] = gpio[2],
+1311           *                                   bit [4] = gpio[3],
+1312           *                                   bit [5] = gpio[4],
+1313           *                                   bit [6] = gpio[5],
+1314           *                                   bit [7] = gpio[6].
+1315           *                                        if byteId = 5, bit [0] = gpio[7],
+1316           *                                   bit [1] = gpio[8],
+1317           *                                   bit [2] = gpio[9],
+1318           *                                   bit [3] = gpio[10],
+1319           *                                   bit [4] = gpio[11],
+1320           *                                   bit [5] = gpio[12],
+1321           *                                   bit [6] = gpio[13],
+1322           *                                   bit [7] = gpio[14].
+1323           *                                        if byteId = 6, bit [0] = gpio[15],
+1324           *                                   bit [1] = gpio[16],
+1325           *                                   bit [2] = gpio[17],
+1326           *                                   bit [3] = gpio[18],
+1327           *                                   bit [4] = gpio[19],
+1328           *                                   bit [5] = gpio[20],
+1329           *                                   bit [6] = gpio[21],
+1330           *                                   bit [7] = gpio[22].
+1331           *                                        if byteId = 7, bit [0] = gpio[23],
+1332           *                                   bit [1] = gpio[24],
+1333           *                                   bit [2] = sar3,
+1334           *                                   bit [3] = sar4,
+1335           *                                   bit [4] = digtv[0],
+1336           *                                   bit [5] = digtv[1],
+1337           *                                   bit [6] = digtv[2],
+1338           *                                   bit [7] = digtv[3].
+1339           *                                        if byteId = 8, bit [0] = digtv[4],
+1340           *                                   bit [1] = digtv[5],
+1341           *                                   bit [2] = digtv[6],
+1342           *                                   bit [3] = digtv[7],
+1343           *                                   bit [4] = digtv[8],
+1344           *                                   bit [5] = digtv[9],
+1345           *                                   bit [6] = digtv[10],
+1346           *                                   bit [7] = digtv[11],
+1347           *                                        if byteId = 9, bit [0] = digtv[12],
+1348           *                                   bit [1] = digtv[13],
+1349           *                                   bit [2] = digtv[14],
+1350           *                                   bit [3] = digtv[15],
+1351           *                                   bit [4] = digtv[16],
+1352           *                                   bit [5] = digtv[17],
+1353           *                                   bit [6] = digtv[10],
+1354           *                                   bit [7] = digtv[19],
+1355           *                                        if byteId = 10, bit [0] = digtv[20],
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 23  
+
+1356           *                                   bit [1] = digtv[21],
+1357           *                                   bit [2] = digtv[22],
+1358           *                                   bit [3] = digtv[23],
+1359           *                                   bit [4] = digtv[24],
+1360           *                                   bit [5] = digtv[25],
+1361           *                                   bit [6] = digtv[26],
+1362           *                                   bit [7] = digtv[27].
+1363           *                                        if byteId = 11, bit [0] = rgb[0],
+1364           *                                   bit [1] = rgb[1],
+1365           *                                   bit [2] = rgb[2],
+1366           *                                   bit [3] = rgb[3],
+1367           *                                   bit [4] = rgb[4],
+1368           *                                   bit [5] = rgb[5],
+1369           *                                   bit [6] = rgb[6],
+1370           *                                   bit [7] = rgb[7].
+1371           *                                        if byteId = 12, bit [0] = rgb[8],
+1372           *                                   bit [1] = rgb[9],
+1373           *                                   bit [2] = tggpio[0],
+1374           *                                   bit [3] = tggpio[1],
+1375           *                                   bit [4] = tggpio[2],
+1376           *                                   bit [5] = tggpio[3],
+1377           *                                   bit [6] = tggpio[4],
+1378           *                                   bit [7] = tggpio[5].
+1379           *                                        Others: Not allowed.
+1380           * @see       HAL_PullEnGet
+1381           * @author    kai.Wang
+1382           * @since     2010-4-27
+1383           * @todo      N/A
+1384           * @bug       N/A
+1385          */
+1386          #pragma disable //disable interrupt
+1387          UINT8
+1388          HAL_GpioPullEnGet(
+1389                  UINT8 byteId,
+1390                  UINT8 msk
+1391          )
+1392          {
+1393   1              UINT8 ret;
+1394   1              UINT16 reg;
+1395   1      
+1396   1      
+1397   1              if ( byteId > 12 ) {
+1398   2                      ret = 0;
+1399   2              }
+1400   1              else {
+1401   2                      reg = 0x20A0 + byteId;
+1402   2      
+1403   2                      ret = XBYTE[reg] & msk;
+1404   2              }
+1405   1      
+1406   1              #if HAL_PULL_EN_GET_DBG
+                      printf("HAL_GpioPullEnGet %bu 0x%02bX 0x%02bX\n", byteId, msk, ret);
+                      #endif
+1409   1      
+1410   1              return ret;
+1411   1      }
+1412          
+1413          /**
+1414           * @fn        void HAL_GpioPullSelSet(UINT8 byteId, UINT8 msk, UINT8 sel)
+1415           * @brief     HAL_GpioPullSelSet
+1416           * @param     [in] byteId 0~9
+1417           * @param     [in] msk
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 24  
+
+1418           * @param     [in] sel :0 pull down; 1:pull up
+1419           *                                        if byteId = 0, bit [0] = fmgpio[0],
+1420           *                                   bit [1] = fmgpio[1],
+1421           *                                   bit [2] = fmgpio[2],
+1422           *                                   bit [3] = fmgpio[3],
+1423           *                                   bit [4] = fmgpio[4],
+1424           *                                   bit [5] = fmgpio[5],
+1425           *                                   bit [6] = fmgpio[6],
+1426           *                                   bit [7] = fmgpio[7].
+1427           *                                        if byteId = 1, bit [0] = fmgpio[8],
+1428           *                                   bit [1] = fmgpio[9],
+1429           *                                   bit [2] = fmgpio[10],
+1430           *                                   bit [3] = fmgpio[11],
+1431           *                                   bit [4] = fmgpio[12],
+1432           *                                   bit [5] = fmgpio[13],
+1433           *                                   bit [6] = fmgpio[14],
+1434           *                                   bit [7] = fmgpio[15].
+1435           *                                        if byteId = 2, bit [0] = fmgpio[16],                   
+1436           *                                   bit [1] = fmgpio[17],
+1437           *                                   bit [2] = fmgpio[18],
+1438           *                                   bit [3] = fmgpio[19],
+1439           *                                   bit [4] = ma[14],
+1440           *                                   bit [5] = gpio[0],
+1441           *                                   bit [6] = gpio[1],
+1442           *                                               bit [7] = gpio[2],
+1443           *                                        if byteId = 3, bit [0] = gpio[3],
+1444           *                                   bit [1] = gpio[4],
+1445           *                                   bit [2] = gpio[5],
+1446           *                                   bit [3] = gpio[6].
+1447           *                                   bit [4] = gpio[7],
+1448           *                                   bit [5] = gpio[8],
+1449           *                                   bit [6] = gpio[9],
+1450           *                                   bit [7] = gpio[10],
+1451           *                                        if byteId = 4, bit [0] = gpio[11],
+1452           *                                   bit [1] = gpio[12],
+1453           *                                   bit [2] = gpio[13],
+1454           *                                   bit [3] = gpio[14],
+1455           *                                   bit [4] = gpio[15],
+1456           *                                   bit [5] = gpio[16],
+1457           *                                   bit [6] = gpio[17],
+1458           *                                   bit [7] = gpio[18],
+1459           *                                        if byteId = 5, bit [0] = gpio[19],
+1460           *                                   bit [1] = gpio[20],
+1461           *                                   bit [2] = gpio[21],
+1462           *                                   bit [3] = gpio[22].
+1463           *                                   bit [4] = gpio[23],
+1464           *                                   bit [5] = gpio[24],
+1465           *                                   bit [6] = sar3,
+1466           *                                   bit [7] = sar4,
+1467           *                                        if byteId = 6, bit [0] = digtv[0],
+1468           *                                   bit [1] = digtv[1],
+1469           *                                   bit [2] = digtv[2],
+1470           *                                   bit [3] = digtv[3].
+1471           *                                   bit [4] = digtv[4],
+1472           *                                   bit [5] = digtv[5],
+1473           *                                   bit [6] = digtv[6],
+1474           *                                   bit [7] = digtv[7],
+1475           *                                        if byteId = 7, bit [0] = digtv[8],
+1476           *                                   bit [1] = digtv[9],
+1477           *                                   bit [2] = digtv[10],
+1478           *                                   bit [3] = digtv[11],
+1479           *                                   bit [4] = digtv[12],
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 25  
+
+1480           *                                   bit [5] = digtv[13],
+1481           *                                   bit [6] = digtv[14],
+1482           *                                   bit [7] = digtv[15],
+1483           *                                        if byteId = 8, bit [0] = digtv[16],
+1484           *                                   bit [1] = digtv[17],
+1485           *                                   bit [2] = digtv[10],
+1486           *                                   bit [3] = digtv[19],
+1487           *                                   bit [4] = digtv[20],
+1488           *                                   bit [5] = digtv[21],
+1489           *                                   bit [6] = digtv[22],
+1490           *                                   bit [7] = digtv[23],
+1491           *                                        if byteId = 9, bit [0] = digtv[24],
+1492           *                                   bit [1] = digtv[25],
+1493           *                                   bit [2] = digtv[26],
+1494           *                                   bit [3] = digtv[27].
+1495           *                                   bit [4] = tggpio[0],
+1496           *                                   bit [5] = tggpio[1],
+1497           *                                   bit [6] = tggpio[2],
+1498           *                                   bit [7] = tggpio[3].
+1499           *                                        Others: Not allowed.
+1500           * @retval    NONE
+1501           * @see       NULL
+1502           * @author    kai.wang
+1503           * @since     2010-5-6
+1504           * @todo      N/A
+1505           * @bug       N/A
+1506          */
+1507          #pragma disable //disable interrupt
+1508          void 
+1509          HAL_GpioPullSelSet(
+1510                  UINT8 byteId,
+1511                  UINT8 msk,
+1512                  UINT8 sel
+1513          )
+1514          {
+1515   1              UINT16 reg;
+1516   1              if ( byteId > 9 ) {
+1517   2                      return;
+1518   2              }
+1519   1              
+1520   1              reg = 0x20D1 + byteId;
+1521   1      
+1522   1              XBYTE[reg] = (XBYTE[reg] & ~msk) | (sel & msk);
+1523   1      }
+1524          
+1525          /**
+1526           * @fn        UINT8 HAL_GpioPullSelGet(UINT8 byteId, UINT8 msk)
+1527           * @brief     HAL_GpioPullSelGet
+1528           * @param     [in] byteId 0~9
+1529           * @param     [in] msk
+1530           * @retval    
+1531           *                                        if byteId = 0, bit [0] = fmgpio[0],
+1532           *                                   bit [1] = fmgpio[1],
+1533           *                                   bit [2] = fmgpio[2],
+1534           *                                   bit [3] = fmgpio[3],
+1535           *                                   bit [4] = fmgpio[4],
+1536           *                                   bit [5] = fmgpio[5],
+1537           *                                   bit [6] = fmgpio[6],
+1538           *                                   bit [7] = fmgpio[7].
+1539           *                                        if byteId = 1, bit [0] = fmgpio[8],
+1540           *                                   bit [1] = fmgpio[9],
+1541           *                                   bit [2] = fmgpio[10],
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 26  
+
+1542           *                                   bit [3] = fmgpio[11],
+1543           *                                   bit [4] = fmgpio[12],
+1544           *                                   bit [5] = fmgpio[13],
+1545           *                                   bit [6] = fmgpio[14],
+1546           *                                   bit [7] = fmgpio[15].
+1547           *                                        if byteId = 2, bit [0] = fmgpio[16],                   
+1548           *                                   bit [1] = fmgpio[17],
+1549           *                                   bit [2] = fmgpio[18],
+1550           *                                   bit [3] = fmgpio[19],
+1551           *                                   bit [4] = ma[14],
+1552           *                                   bit [5] = gpio[0],
+1553           *                                   bit [6] = gpio[1],
+1554           *                                   bit [7] = gpio[2],
+1555           *                                        if byteId = 3, bit [0] = gpio[3],
+1556           *                                   bit [1] = gpio[4],
+1557           *                                   bit [2] = gpio[5],
+1558           *                                   bit [3] = gpio[6].
+1559           *                                   bit [4] = gpio[7],
+1560           *                                   bit [5] = gpio[8],
+1561           *                                   bit [6] = gpio[9],
+1562           *                                   bit [7] = gpio[10],
+1563           *                                        if byteId = 4, bit [0] = gpio[11],
+1564           *                                   bit [1] = gpio[12],
+1565           *                                   bit [2] = gpio[13],
+1566           *                                   bit [3] = gpio[14],
+1567           *                                   bit [4] = gpio[15],
+1568           *                                   bit [5] = gpio[16],
+1569           *                                   bit [6] = gpio[17],
+1570           *                                   bit [7] = gpio[18],
+1571           *                                        if byteId = 5, bit [0] = gpio[19],
+1572           *                                   bit [1] = gpio[20],
+1573           *                                   bit [2] = gpio[21],
+1574           *                                   bit [3] = gpio[22].
+1575           *                                   bit [4] = gpio[23],
+1576           *                                   bit [5] = gpio[24],
+1577           *                                   bit [6] = sar3,
+1578           *                                   bit [7] = sar4,
+1579           *                                        if byteId = 6, bit [0] = digtv[0],
+1580           *                                   bit [1] = digtv[1],
+1581           *                                   bit [2] = digtv[2],
+1582           *                                   bit [3] = digtv[3].
+1583           *                                   bit [4] = digtv[4],
+1584           *                                   bit [5] = digtv[5],
+1585           *                                   bit [6] = digtv[6],
+1586           *                                   bit [7] = digtv[7],
+1587           *                                        if byteId = 7, bit [0] = digtv[8],
+1588           *                                   bit [1] = digtv[9],
+1589           *                                   bit [2] = digtv[10],
+1590           *                                   bit [3] = digtv[11],
+1591           *                                   bit [4] = digtv[12],
+1592           *                                   bit [5] = digtv[13],
+1593           *                                   bit [6] = digtv[14],
+1594           *                                   bit [7] = digtv[15],
+1595           *                                        if byteId = 8, bit [0] = digtv[16],
+1596           *                                   bit [1] = digtv[17],
+1597           *                                   bit [2] = digtv[10],
+1598           *                                   bit [3] = digtv[19],
+1599           *                                   bit [4] = digtv[20],
+1600           *                                   bit [5] = digtv[21],
+1601           *                                   bit [6] = digtv[22],
+1602           *                                   bit [7] = digtv[23],
+1603           *                                        if byteId = 9, bit [0] = digtv[24],
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 27  
+
+1604           *                                   bit [1] = digtv[25],
+1605           *                                   bit [2] = digtv[26],
+1606           *                                   bit [3] = digtv[27].
+1607           *                                   bit [4] = tggpio[0],
+1608           *                                   bit [5] = tggpio[1],
+1609           *                                   bit [6] = tggpio[2],
+1610           *                                   bit [7] = tggpio[3].
+1611           *                                        Others: Not allowed.
+1612           * @retval
+1613           * @see       NULL
+1614           * @author    kai.wang
+1615           * @since     2010-5-6
+1616           * @todo      N/A
+1617           * @bug       N/A
+1618          */
+1619          #pragma disable //disable interrupt
+1620          UINT8
+1621          HAL_GpioPullSelGet(
+1622                  UINT8 byteId,
+1623                  UINT8 msk
+1624          )
+1625          {
+1626   1              UINT8 ret;
+1627   1              UINT16 reg;
+1628   1      
+1629   1      
+1630   1              if ( byteId > 9 ) {
+1631   2                      ret = 0;
+1632   2              }
+1633   1              else {
+1634   2                      reg = 0x20D1+ byteId;
+1635   2      
+1636   2                      ret = XBYTE[reg] & msk;
+1637   2              }
+1638   1      
+1639   1              return ret;
+1640   1      }
+1641          
+1642          /**
+1643           * @fn        UINT8 HAL_GpioDrivingSet(UINT8 byteId, UINT8 msk, UINT8 sel)
+1644           * @brief     HAL_GpioDrivingSet
+1645           * @param     [in] byteId
+1646           * @param     [in] msk
+1647           * @param     [in] sel:
+1648           *                              0:2mA
+1649           *                              1:4mA
+1650           *                              2:6mA
+1651           *                              3:8mA
+1652           *                              
+1653           *                        if byteId = 0, FMGPIO[3:0]
+1654           *                        if byteId = 1, FMGPIO[7:4]
+1655           *                        if byteId = 2, FMGPIO[11:8]
+1656           *                        if byteId = 3, FMGPIO[15:12]
+1657           *                        if byteId = 4, FMGPIO[19:16]
+1658           *                        if byteId = 5, bit[0]:sdramclk
+1659           *                                                       bit[1]:ras_n
+1660           *                                                       bit[2]:cas_n
+1661           *                                                       bit[3]:mwe_n,
+1662           *                        if byteId = 6, bit[0]:udqm
+1663           *                                                       bit[1]:ldqm
+1664           *                                                       bit[2]:cke
+1665           *                                                       bit[3]:md[0],
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 28  
+
+1666           *                        if byteId = 7, md[4:1]
+1667           *                        if byteId = 8, md[8:5]
+1668           *                        if byteId = 9, md[12:9]
+1669           *                        if byteId = 10, md[15:13]
+1670           *                                                        ma[0],
+1671           *                        if byteId = 11, ma[4:1]
+1672           *                        if byteId = 12, ma[12:9]
+1673           *                        if byteId = 13, ma[14:13]
+1674           *                                                        gpio[1:0],
+1675           *                        if byteId = 14, gpio[5:2]
+1676           *                        if byteId = 15, gpio[9:6]
+1677           *                        if byteId = 16, gpio[13:10]
+1678           *                        if byteId = 17, gpio[17:14]
+1679           *                        if byteId = 18, gpio[21:18]
+1680           *                        if byteId = 19, gpio[24:22]
+1681           *                                                        sar3,
+1682           *                        if byteId = 20, sar4
+1683           *                                                        digtv[2:0],
+1684           *                        if byteId = 21, digtv[6:3]
+1685           *                        if byteId = 22, digtv[10:7]
+1686           *                        if byteId = 23, digtv[14:11]
+1687           *                        if byteId = 24, digtv[18:15]
+1688           *                        if byteId = 25, digtv[22:19]
+1689           *                        if byteId = 26, digtv[26:23]
+1690           *                        if byteId = 27, digtv[27]
+1691           *                                                        tggpio[2:0],
+1692           *                        if byteId = 28, tggpio[5:3]
+1693           * @retval    return = SUCCESS / FAIL
+1694           * @see       NULL
+1695           * @author    kai.wang
+1696           * @since     2010-5-5
+1697           * @todo      N/A
+1698           * @bug       N/A
+1699          */
+1700          #pragma disable //disable interrupt
+1701          void 
+1702          HAL_GpioDrivingSet(
+1703                  UINT8 byteId,
+1704                  UINT8 msk,
+1705                  UINT8 sel
+1706          )
+1707          {
+1708   1              UINT8 tempmsk = 0;
+1709   1              UINT16 reg;
+1710   1              if ( byteId >= 29 ) {
+1711   2                      return;
+1712   2              }
+1713   1              else { 
+1714   2              
+1715   2                      if ( msk & 0x08 ) {
+1716   3                              tempmsk |= 0xc0;
+1717   3                      }       
+1718   2                      if ( msk & 0x04 ) {     
+1719   3                              tempmsk |= 0x30;
+1720   3                      }
+1721   2                      if ( msk & 0x02 ) {     
+1722   3                              tempmsk |= 0x0c;
+1723   3                      }       
+1724   2                      if ( msk & 0x01 ) {
+1725   3                              tempmsk |= 0x03;
+1726   3                      }       
+1727   2                      reg = 0x2048 + byteId;
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 29  
+
+1728   2                      XBYTE[reg] = ((sel<<6) & (tempmsk & 0xc0)) | ((sel<<4) & (tempmsk & 0x30)) \
+1729   2                                      | ((sel<<2) & (tempmsk & 0x0c)) | (sel & (tempmsk & 0x03));
+1730   2              }
+1731   1      }
+1732          
+1733          /**
+1734           * @fn        UINT8 HAL_GpioDriingGet(UINT8 byteId, UINT8 msk)
+1735           * @brief     HAL_GpioDriingGet
+1736           * @param     [in] byteId
+1737           * @param     [in] msk
+1738           * @retval    2/4/6/8mA
+1739           *                              
+1740           *                        if byteId = 0, FMGPIO[3:0]
+1741           *                        if byteId = 1, FMGPIO[7:4]
+1742           *                        if byteId = 2, FMGPIO[11:8]
+1743           *                        if byteId = 3, FMGPIO[15:12]
+1744           *                        if byteId = 4, FMGPIO[19:16]
+1745           *                        if byteId = 5, bit[0]:sdramclk
+1746           *                                                       bit[1]:ras_n
+1747           *                                                       bit[2]:cas_n
+1748           *                                                       bit[3]:mwe_n,
+1749           *                        if byteId = 6, bit[0]:udqm
+1750           *                                                       bit[1]:ldqm
+1751           *                                                       bit[2]:cke
+1752           *                                                       bit[3]:md[0],
+1753           *                        if byteId = 7, md[4:1]
+1754           *                        if byteId = 8, md[8:5]
+1755           *                        if byteId = 9, md[12:9]
+1756           *                        if byteId = 10, md[15:13]
+1757           *                                                        ma[0],
+1758           *                        if byteId = 11, ma[4:1]
+1759           *                        if byteId = 12, ma[12:9]
+1760           *                        if byteId = 13, ma[14:13]
+1761           *                                                        gpio[1:0],
+1762           *                        if byteId = 14, gpio[5:2]
+1763           *                        if byteId = 15, gpio[9:6]
+1764           *                        if byteId = 16, gpio[13:10]
+1765           *                        if byteId = 17, gpio[17:14]
+1766           *                        if byteId = 18, gpio[21:18]
+1767           *                        if byteId = 19, gpio[24:22]
+1768           *                                                        sar3,
+1769           *                        if byteId = 20, sar4
+1770           *                                                        digtv[2:0],
+1771           *                        if byteId = 21, digtv[6:3]
+1772           *                        if byteId = 22, digtv[10:7]
+1773           *                        if byteId = 23, digtv[14:11]
+1774           *                        if byteId = 24, digtv[18:15]
+1775           *                        if byteId = 25, digtv[22:19]
+1776           *                        if byteId = 26, digtv[26:23]
+1777           *                        if byteId = 27, digtv[27]
+1778           *                                                        tggpio[2:0],
+1779           *                        if byteId = 28, tggpio[5:3]
+1780           * @see       NULL
+1781           * @author    kai.wang
+1782           * @since     2010-5-5
+1783           * @todo      N/A
+1784           * @bug       N/A
+1785          */
+1786          #pragma disable //disable interrupt
+1787          UINT8
+1788          HAL_GpioDrivingGet(
+1789                  UINT8 byteId,
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 30  
+
+1790                  UINT8 msk
+1791          )
+1792          {       UINT8 ret;
+1793   1              UINT16 reg;
+1794   1              if ( byteId >= 29 ) {
+1795   2                      return 0xFF;
+1796   2              }
+1797   1              else {
+1798   2                      reg = 0x2048 + byteId;
+1799   2                      ret = XBYTE[reg];
+1800   2                      if ( msk & 0x08 ) {
+1801   3                              ret &= 0xc0;
+1802   3                              ret >>= 6;
+1803   3                      }       
+1804   2                      else if ( msk & 0x04 ) {        
+1805   3                              ret &= 0x30;
+1806   3                              ret >>= 4;
+1807   3                      }
+1808   2                      else if ( msk & 0x02 ) {        
+1809   3                              ret &= 0x0c;
+1810   3                              ret >>= 2;
+1811   3                      }       
+1812   2                      else if ( msk & 0x01 ) {
+1813   3                              ret &= 0x03;
+1814   3                      }       
+1815   2      
+1816   2                      return ret;
+1817   2              }
+1818   1      }
+1819          
+1820          /**
+1821           * @fn        UINT8 HAL_GpioSarAdcConfig(UINT8 pwrctl, UINT8 channel, UINT8 sarclk)
+1822           * @brief     config adc group
+1823           * @param     [in] tp_en:
+1824           *                                      0: Disable. SARIN3 is used as the same way as SAR0, SAR1 and SAR2.
+1825           *                                      1: Enable. SRARIN3 can be used as an touch panel input, in which tp_intnint_evt interrupt is availa
+             -ble.
+1826           * @param     [in] sarclk:
+1827           *                                      0: ADC CLK=250KHz,  maximum sample frequency=15.625KHz
+1828           *                                      1: ADC CLK=500KHz,  maximum sample frequency=31.25KHz
+1829           *                                      2: ADC CLK=1MHz,  maximum sample frequency=62.5KHz 
+1830           *                                      3: ADC CLK=2MHz, maximum sample frequency=125KHz
+1831           * @param     [in] pwrctl:
+1832           *                                      0: power down
+1833           *                                      1: normal operation
+1834           * @retval    return = SUCCESS / FAIL
+1835           * @see       NULL
+1836           * @author    kai.wang
+1837           * @since     2010-5-9
+1838           * @todo      N/A
+1839           * @bug       N/A
+1840          */
+1841          #pragma disable //disable interrupt
+1842          UINT8 HAL_GpioSarAdcConfig(
+1843                  UINT8 tp_en,
+1844                  UINT8 sarclk,
+1845                  UINT8 pwrctl
+1846          )
+1847          {
+1848   1              XBYTE[0x2014] = 0xFF;
+1849   1              XBYTE[0x2015] |= 0x01;
+1850   1              XBYTE[0x2016] |= 0x02;
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 31  
+
+1851   1              /* Enable vref */
+1852   1              XBYTE[REG_Audio_VrefPwrEn] =0x05;
+1853   1              /*Enable SRARIN3 be used as an touch panel input*/
+1854   1              if ( tp_en ) {
+1855   2                      XBYTE[REG_Audio_SarAdcPwrEn] = 0x02;
+1856   2              }
+1857   1      
+1858   1              /*SAR ADC clock frequency selection*/
+1859   1              if ( sarclk == 0x00 ) { /*ADC CLK=250KHz,*/
+1860   2                      XBYTE[REG_Audio_SarClkSel] = 0x00;
+1861   2              }
+1862   1              else if ( sarclk == 0x01 ) { /*ADC CLK=500KHz,*/
+1863   2                      XBYTE[REG_Audio_SarClkSel] = 0x01;      
+1864   2              }
+1865   1              else if ( sarclk == 0x02 ) { /*ADC CLK=1MHz,*/
+1866   2                      XBYTE[REG_Audio_SarClkSel] = 0x02;
+1867   2              }
+1868   1              else if ( sarclk == 0x03 ) { /*ADC CLK=2MHz,*/
+1869   2                      XBYTE[REG_Audio_SarClkSel] = 0x03;
+1870   2              }
+1871   1              else {
+1872   2                      return FAIL;
+1873   2              }
+1874   1              /*SAR ADC enable*/
+1875   1              if ( pwrctl == 1 ) { /*normal operation*/
+1876   2                      XBYTE[REG_Audio_SarAdcPwrEn] |= 0x01;
+1877   2              }
+1878   1              else {
+1879   2                      XBYTE[REG_Audio_SarAdcPwrEn] &= 0xFE; /*power down*/
+1880   2              }
+1881   1              return SUCCESS;
+1882   1      }
+1883          
+1884          /**
+1885           * @fn        void HAL_GpioSarAdcValGet(UINT16 *adcval)
+1886           * @brief     get sar adc value
+1887           * @param     [in] channel:
+1888           *                                      0: SAR0
+1889           *                                      1: SAR1
+1890           *                                      2: SAR2
+1891           *                                      3: SAR3
+1892           *                                      4: SAR4
+1893           * @param     [in] *adcval: ADC value
+1894           * @retval    NONE
+1895           * @see       NULL
+1896           * @author    kai.wang
+1897           * @since     2010-5-9
+1898           * @todo      N/A
+1899           * @bug       N/A
+1900          */
+1901          #pragma disable //disable interrupt
+1902          UINT8 HAL_GpioSarAdcValGet(
+1903                  UINT8 channel,
+1904                  UINT16 * adcval
+1905          )
+1906          {
+1907   1              /* SAR ADC input selection */
+1908   1              if ( channel == 0x00 ) { /*SAR 0*/
+1909   2                      XBYTE[REG_Audio_SarChnlSel] = 0x00;
+1910   2              }
+1911   1              else if ( channel == 0x01 ) { /*SAR 1*/
+1912   2                      XBYTE[REG_Audio_SarChnlSel] = 0x01;
+C51 COMPILER V8.08   HAL_GPIO                                                              02/18/2022 10:00:52 PAGE 32  
+
+1913   2              }
+1914   1              else if ( channel == 0x02 ) { /*SAR 2*/
+1915   2                      XBYTE[REG_Audio_SarChnlSel] = 0x02;
+1916   2              }
+1917   1              else if ( channel == 0x03 ) { /*SAR 3*/
+1918   2                      XBYTE[REG_Audio_SarChnlSel] = 0x03;
+1919   2              }
+1920   1              else if ( channel == 0x04 ) { /*SAR 4*/
+1921   2                      XBYTE[REG_Audio_SarChnlSel] = 0x04;
+1922   2              }
+1923   1              else {
+1924   2                      return FAIL;
+1925   2              }
+1926   1              HAL_GlobalTimerWait(5);
+1927   1              
+1928   1              XBYTE[REG_Audio_SnapSarAdcVal0] = 0x01; /* snap adc data */
+1929   1              *adcval = ( (XBYTE[REG_Audio_SnapSarAdcVal1]^0x02) <<8) | (XBYTE[REG_Audio_SnapSarAdcVal0]);
+1930   1      
+1931   1              return SUCCESS;
+1932   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2466    ----
+   CONSTANT SIZE    =    160    ----
+   XDATA SIZE       =     11      13
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

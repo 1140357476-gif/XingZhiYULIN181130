@@ -1,0 +1,26 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libStorage\libStorage.uv2
+Project File Date:  06/18/2014
+
+<h2>Output:</h2>
+Build target 'libStorage_nor'
+compiling at49lv040.c...
+compiling nor.c...
+compiling sst39vf020.c...
+compiling nor_ver.c...
+creating library .\obj\libStorage_nor.LIB...
+TRANSFER
+".\obj\at49lv040.obj",
+".\obj\nor.obj",
+".\obj\sst39vf020.obj",
+".\obj\nor_ver.obj" 
+TO ".\obj\libStorage_nor.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat nor
+已复制         1 个文件。
+".\obj\libStorage_nor.LIB" - 0 Error(s), 0 Warning(s).

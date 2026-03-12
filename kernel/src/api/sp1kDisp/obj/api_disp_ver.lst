@@ -1,0 +1,92 @@
+C51 COMPILER V8.08   API_DISP_VER                                                          12/30/2019 20:10:37 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE API_DISP_VER
+OBJECT MODULE PLACED IN .\obj\api_disp_ver.obj
+COMPILER INVOKED BY: e:\Keil\C51\BIN\C51.EXE api_disp_ver.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\.
+                    -.\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\cus
+                    -tomization) DEFINE(LIB_RELEASE) PRINT(.\obj\api_disp_ver.lst) OBJECT(.\obj\api_disp_ver.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2002-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           *      1000, 20101015 dongdong.wang
+  22           *              a. modify number of version
+  23           *      hg02, 20111215 kai.wang
+  24           *              a, fix black line on PAL TV
+  25           *      hg03, 20120105 xu.gao
+  26           *              a, fix 16:9 playback problem
+  27           **************************************************************************/
+  28          
+  29          /**************************************************************************
+  30           *                            H E A D E R   F I L E S
+  31           **************************************************************************/
+  32          #include "general.h"
+  33          
+  34          /**************************************************************************
+  35           *                            G L O B A L   D A T A
+  36           **************************************************************************/
+  37          static UINT8 code verStr[] = "$hg03";
+  38          
+  39          /**************************************************************************
+  40           *
+  41           *  Function Name: audLibVerGet
+  42           *
+  43           *  Purposes: Get current libaray's version.
+  44           *
+  45           *  Descriptions:
+  46           *
+  47           *  Arguments:
+  48           *
+  49           *  Returns:
+  50           *
+  51           *  See also:
+  52           *
+  53           **************************************************************************/
+C51 COMPILER V8.08   API_DISP_VER                                                          12/30/2019 20:10:37 PAGE 2   
+
+  54          UINT8 *
+  55          libApiDispVerGet(
+  56                  void
+  57          )
+  58          {
+  59   1              return (verStr + 3);
+  60   1      }
+  61          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

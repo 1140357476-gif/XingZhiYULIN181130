@@ -1,0 +1,4 @@
+TRANSFER
+".\obj\sp1k_audio_api.obj",
+".\obj\api_aud_ver.obj" 
+TO ".\obj\libApiAud.LIB"

@@ -1,0 +1,11 @@
+TRANSFER
+".\obj\nand_autoflow.obj",
+".\obj\nand_core.obj",
+".\obj\nand_fw_program.obj",
+".\obj\nand_isp.obj",
+".\obj\smc_core.obj",
+".\obj\smc_hw.obj",
+".\obj\smc_rw2.obj",
+".\obj\smc_rw.obj",
+".\obj\nand_ver.obj" 
+TO ".\obj\libStorage_nand.LIB"

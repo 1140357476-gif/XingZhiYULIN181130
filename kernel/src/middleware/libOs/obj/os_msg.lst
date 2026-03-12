@@ -1,0 +1,496 @@
+C51 COMPILER V8.12   OS_MSG                                                                12/29/2014 15:17:56 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE OS_MSG
+OBJECT MODULE PLACED IN .\obj\os_msg.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE os_msg.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\i
+                    -nc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiza
+                    -tion) DEFINE(LIB_RELEASE) PRINT(.\obj\os_msg.lst) OBJECT(.\obj\os_msg.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2007 by Sunplus mMedia  Technology Co., Ltd.       *
+   3           *                                                                         *
+   4           *  This software is copyrighted by and is the property of Sunplus mMedia  *
+   5           *  Technology Co., Ltd. All rights are reserved by Sunplus mMedia Techno- *
+   6           *  logy Co., Ltd. This software may only be used in accordance with the   *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,    *
+   8           *  distribution, or disclosure of this software is expressly forbidden.   *
+   9           *                                                                         *
+  10           *  This Copyright notice "M U S T" not be removed or modified without     *
+  11           *  prior written consent of Sunplus mMedia Technology  Co., Ltd.          *
+  12           *                                                                         *
+  13           *  Sunplus mMedia Technology Co., Ltd. reserves the right to modify this  *
+  14           *  software without notice.                                               *
+  15           *                                                                         *
+  16           *  Sunplus mMedia Technology Co., Ltd.                                    *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,            *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                               *
+  19           *                                                                         *
+  20           **************************************************************************/
+  21          #include "general.h"
+  22          #include "os_msg.h"
+  23          #include "string.h"
+  24          #define SYS_MSG_INTERNAL // for libSys internal use
+  25          #include "func_msg_def.h"
+  26          
+  27          /**************************************************************************
+  28           *                           C O N S T A N T S                            *
+  29           **************************************************************************/
+  30          #define MSG_BUF_MAX  10
+  31          /**************************************************************************
+  32           *                              M A C R O S                               *
+  33           **************************************************************************/
+  34          
+  35          /**************************************************************************
+  36           *                          D A T A    T Y P E S                          *
+  37           **************************************************************************/
+  38          
+  39          /**************************************************************************
+  40           *                         G L O B A L    D A T A                         *
+  41          **************************************************************************/
+  42          static msg_t xdata msgBuf[MSG_CTRL_TYPE_MAX][MSG_BUF_MAX];
+  43          
+  44          static MainMsgQue_t xdata msgQueCtrl[MSG_CTRL_TYPE_MAX];
+  45          //static BIT data isMsgNull[MSG_CTRL_TYPE_MAX];
+  46          
+  47          
+  48          /**************************************************************************
+  49           *                                 E X T E R N A L        R E F E R E N C E S                             *
+  50           **************************************************************************/
+  51          extern SYS_MSG_DCL pFuncMsg code funcMsgRcvArray[];
+  52          
+  53          /**
+C51 COMPILER V8.12   OS_MSG                                                                12/29/2014 15:17:56 PAGE 2   
+
+  54           * @fn        void osMsgInit(void)
+  55           * @brief     osMsgInit
+  56           * @param     NONE
+  57           * @retval    NONE
+  58           * @see       NULL
+  59           * @author    Phil Lin
+  60           * @since     2010-5-4
+  61           * @todo      N/A
+  62           * @bug       N/A
+  63          */
+  64          void osMsgInit (void)
+  65          {
+  66   1              UINT8 i;
+  67   1              MainMsgQue_t* pMsg;
+  68   1      
+  69   1              for (i = 0; i < MSG_CTRL_TYPE_MAX; i++) {
+  70   2                      pMsg = &msgQueCtrl[i];
+  71   2                      
+  72   2                      pMsg->QueStart = &msgBuf[i][0];
+  73   2                      pMsg->QueEnd = &msgBuf[i][MSG_BUF_MAX];
+  74   2                      pMsg->QueIn = &msgBuf[i][0];
+  75   2                      pMsg->QueOut = &msgBuf[i][0];
+  76   2                      pMsg->QueEntries = 0;
+  77   2                      pMsg->QueSize = MSG_BUF_MAX;
+  78   2                      pMsg->MsgBuf = &msgBuf[i][0];
+  79   2                      pMsg->bLock = 0;
+  80   2                      
+  81   2                      memset(pMsg->MsgBuf, 0, sizeof(msg_t) * (UINT32)MSG_BUF_MAX);
+  82   2                      //isMsgNull[i] = TRUE;
+  83   2              }
+  84   1      }
+  85          
+  86          /**
+  87           * @fn        UINT8 osMsgQuery(void)
+  88           * @brief     osMsgQuery
+  89           * @param     NONE
+  90           * @retval    return = TRUE / FALSE
+  91           * @see       NULL
+  92           * @author    Phil Lin
+  93           * @since     2010-5-4
+  94           * @todo      N/A
+  95           * @bug       N/A
+  96          */
+  97          UINT8 osMsgQuery (void)
+  98          {
+  99   1              UINT8 i;
+ 100   1              MainMsgQue_t* pMsg;
+ 101   1              UINT8 ret;
+ 102   1      
+ 103   1              ret = FALSE;
+ 104   1              for (i = 0; i < MSG_CTRL_TYPE_MAX; i++) {
+ 105   2                      pMsg = &msgQueCtrl[i];
+ 106   2                      if (pMsg->QueEntries != 0) {
+ 107   3                              //printf("type:%bu, msg cnt:%u\n", i, pMsg->QueEntries);
+ 108   3                              ret = TRUE;
+ 109   3                              break;
+ 110   3                      }
+ 111   2              }
+ 112   1              
+ 113   1              return ret;
+ 114   1      }
+ 115          
+C51 COMPILER V8.12   OS_MSG                                                                12/29/2014 15:17:56 PAGE 3   
+
+ 116          /**
+ 117           * @fn        UINT8 osMsgPost(UINT16 msg)
+ 118           * @brief     osMsgPost
+ 119           * @param     [in] msg
+ 120           * @retval    return = SUCCESS / FAIL
+ 121           * @see       NULL
+ 122           * @author    Phil Lin
+ 123           * @since     2010-5-4
+ 124           * @todo      N/A
+ 125           * @bug       N/A
+ 126          */
+ 127          #pragma disable //disable interrupt
+ 128          UINT8 osMsgPost (UINT16 msg)
+ 129          {
+ 130   1              UINT8 status;
+ 131   1              UINT16 msgGrp;
+ 132   1              MainMsgQue_t* pMsg;
+ 133   1      
+ 134   1              msgGrp = (msg & MSG_CTRL_IDX_GROUP_MASK) >> MSG_CTRL_IDX_GROUP_SHIFT;
+ 135   1              if (msgGrp >= MSG_CTRL_TYPE_MAX) {
+ 136   2                      return FAIL;
+ 137   2              }
+ 138   1              
+ 139   1              ENTER_CRITICAL(status);
+ 140   1              
+ 141   1              pMsg = &msgQueCtrl[msgGrp];     
+ 142   1              if (pMsg->QueEntries >= pMsg->QueSize) {
+ 143   2                      //printf( "MsgQue over flow!\n" );
+ 144   2                      EXIT_CRITICAL(status);
+ 145   2                      return FAIL;
+ 146   2              }
+ 147   1              
+ 148   1              //isMsgNull[msgGrp] = FALSE;
+ 149   1              *pMsg->QueIn++ = msg;
+ 150   1              pMsg->QueEntries++;
+ 151   1              if (pMsg->QueIn == pMsg->QueEnd) {
+ 152   2                      pMsg->QueIn = pMsg->QueStart;
+ 153   2              }
+ 154   1              
+ 155   1              EXIT_CRITICAL(status);
+ 156   1              return SUCCESS;
+ 157   1      }
+ 158          
+ 159          /**
+ 160           * @fn        UINT8 osMsgPostForce(UINT16 msg)
+ 161           * @brief     osMsgPostForce
+ 162           * @param     [in] msg
+ 163           * @retval    return = SUCCESS / FAIL
+ 164           * @see       NULL
+ 165           * @author    Phil Lin
+ 166           * @since     2010-5-4
+ 167           * @todo      N/A
+ 168           * @bug       N/A
+ 169          */
+ 170          #pragma disable //disable interrupt
+ 171          UINT8 osMsgPostForce (UINT16 msg)
+ 172          {
+ 173   1              UINT8 status;
+ 174   1              UINT16 msgGrp;
+ 175   1              MainMsgQue_t* pMsg;
+ 176   1      
+ 177   1              msgGrp = (msg & MSG_CTRL_IDX_GROUP_MASK) >> MSG_CTRL_IDX_GROUP_SHIFT;
+C51 COMPILER V8.12   OS_MSG                                                                12/29/2014 15:17:56 PAGE 4   
+
+ 178   1              if (msgGrp >= MSG_CTRL_TYPE_MAX) {
+ 179   2                      return FAIL;
+ 180   2              }
+ 181   1                      
+ 182   1              ENTER_CRITICAL(status);
+ 183   1              
+ 184   1              pMsg = &msgQueCtrl[msgGrp];
+ 185   1              if (pMsg->QueEntries >= pMsg->QueSize) {
+ 186   2                      //isMsgNull[msgGrp] = FALSE;
+ 187   2                      *pMsg->QueIn = msg;
+ 188   2                      //printf( "MsgQue over flow!\n" );
+ 189   2                      EXIT_CRITICAL(status);
+ 190   2                      return FAIL;
+ 191   2              }
+ 192   1              
+ 193   1              //isMsgNull[msgGrp] = FALSE;
+ 194   1              *pMsg->QueIn++ = msg;
+ 195   1              pMsg->QueEntries++;
+ 196   1              if (pMsg->QueIn == pMsg->QueEnd) {
+ 197   2                      pMsg->QueIn = pMsg->QueStart;
+ 198   2              }
+ 199   1              
+ 200   1              EXIT_CRITICAL(status);
+ 201   1              return SUCCESS;
+ 202   1      }
+ 203          
+ 204          
+ 205          //-----------------------------------------------------------------------------
+ 206          //osMsgPostFront
+ 207          //-----------------------------------------------------------------------------
+ 208          
+ 209          /**
+ 210           * @fn        UINT8 osMsgPostFront(UINT16 msg)
+ 211           * @brief     osMsgPostFront
+ 212           * @param     [in] msg
+ 213           * @retval    return = SUCCESS / FAIL
+ 214           * @see       NULL
+ 215           * @author    Phil Lin
+ 216           * @since     2010-5-4
+ 217           * @todo      N/A
+ 218           * @bug       N/A
+ 219          */
+ 220          #pragma disable //disable interrupt
+ 221          UINT8 osMsgPostFront (UINT16 msg)
+ 222          {
+ 223   1              UINT8 status;
+ 224   1              UINT16 msgGrp;
+ 225   1              MainMsgQue_t* pMsg;
+ 226   1      
+ 227   1              msgGrp = (msg & MSG_CTRL_IDX_GROUP_MASK) >> MSG_CTRL_IDX_GROUP_SHIFT;
+ 228   1              if (msgGrp >= MSG_CTRL_TYPE_MAX) {
+ 229   2                      return FAIL;
+ 230   2              }
+ 231   1              
+ 232   1              ENTER_CRITICAL(status);
+ 233   1      
+ 234   1              pMsg = &msgQueCtrl[msgGrp];
+ 235   1              if (pMsg->QueEntries >= pMsg->QueSize) {
+ 236   2                      //printf( "MsgQue over flow!\n" );
+ 237   2                      EXIT_CRITICAL(status);
+ 238   2                      return FAIL;
+ 239   2              }
+C51 COMPILER V8.12   OS_MSG                                                                12/29/2014 15:17:56 PAGE 5   
+
+ 240   1              //isMsgNull[msgGrp] = FALSE;
+ 241   1              if (pMsg->QueOut == pMsg->QueStart) {
+ 242   2                      pMsg->QueOut = pMsg->QueEnd;
+ 243   2                      *pMsg->QueOut = msg;
+ 244   2              } else {
+ 245   2                      *(--pMsg->QueOut) = msg;
+ 246   2              }
+ 247   1              pMsg->QueEntries++;
+ 248   1              
+ 249   1              EXIT_CRITICAL(status);
+ 250   1              return SUCCESS;
+ 251   1      }
+ 252          
+ 253          /**
+ 254           * @fn        UINT8 osMsgWait(UINT16 msg)
+ 255           * @brief     osMsgWait
+ 256           * @param     [in] msg
+ 257           * @retval    return = SUCCESS / FAIL
+ 258           * @see       NULL
+ 259           * @author    Phil Lin
+ 260           * @since     2010-5-4
+ 261           * @todo      N/A
+ 262           * @bug       N/A
+ 263          */
+ 264          UINT8 osMsgWait(UINT16 msg)
+ 265          {
+ 266   1              while(osMsgSeek(msg) == FALSE);
+ 267   1              return SUCCESS;
+ 268   1      }
+ 269          
+ 270          /**
+ 271           * @fn        UINT8 osMsgAccept(UINT16* msg)
+ 272           * @brief     osMsgAccept
+ 273           * @param     [in] msg
+ 274           * @retval    return = SUCCESS / FAIL
+ 275           * @see       NULL
+ 276           * @author    Phil Lin
+ 277           * @since     2010-5-4
+ 278           * @todo      N/A
+ 279           * @bug       N/A
+ 280          */
+ 281          UINT8 osMsgAccept (UINT16* msg)
+ 282          {
+ 283   1              UINT8 i, ret;
+ 284   1              MainMsgQue_t* pMsg;
+ 285   1              
+ 286   1              //printf( "\n>>>>>>>>>osMsgAccept<<<<<<<<<<\n\n" );
+ 287   1              ret = FAIL;
+ 288   1      
+ 289   1              /* msg accept poroity "System" >> "Button" >> "Host" */
+ 290   1              for (i = MSG_CTRL_TYPE_HOST; i < MSG_CTRL_TYPE_MAX; i++) {
+ 291   2                      pMsg = &msgQueCtrl[i];
+ 292   2                      if (pMsg->QueEntries != 0) {
+ 293   3                              if (msg) {
+ 294   4                                      *msg = *pMsg->QueOut;
+ 295   4                              }
+ 296   3                              *pMsg->QueOut++ = SP1K_MSG_NULL;
+ 297   3                              pMsg->QueEntries--;
+ 298   3                              if (!pMsg->QueEntries) {
+ 299   4                                      //isMsgNull[msgGrp] = TRUE;
+ 300   4                              }
+ 301   3                              if (pMsg->QueOut == pMsg->QueEnd) {
+C51 COMPILER V8.12   OS_MSG                                                                12/29/2014 15:17:56 PAGE 6   
+
+ 302   4                                      pMsg->QueOut = pMsg->QueStart;
+ 303   4                              }
+ 304   3                              ret = SUCCESS;
+ 305   3                              break;
+ 306   3                      }
+ 307   2              }
+ 308   1              
+ 309   1              if (ret != SUCCESS) {
+ 310   2                      if (msg) {
+ 311   3                              *msg = SP1K_MSG_NULL;
+ 312   3                      }
+ 313   2              }
+ 314   1              
+ 315   1              return ret;
+ 316   1      }
+ 317          
+ 318          /**
+ 319           * @fn        void osMsgFlush(msgCtrlFlush_t msgGrp)
+ 320           * @brief     osMsgFlush
+ 321           * @param     [in] msgGrp
+ 322           * @retval    NONE
+ 323           * @see       NULL
+ 324           * @author    Phil Lin
+ 325           * @since     2010-5-4
+ 326           * @todo      N/A
+ 327           * @bug       N/A
+ 328          */
+ 329          #pragma disable //disable interrupt
+ 330          void osMsgFlush (UINT8 msgGrp)
+ 331          {
+ 332   1              UINT8 status;
+ 333   1              MainMsgQue_t* pMsg;
+ 334   1              UINT8 i;
+ 335   1      
+ 336   1              ENTER_CRITICAL(status);
+ 337   1              
+ 338   1              for (i = 0; i < MSG_CTRL_TYPE_MAX; i++) {
+ 339   2                      pMsg = &msgQueCtrl[i];
+ 340   2                      
+ 341   2                      //In MSG lock mode, this operation will be abort!
+ 342   2                      if (pMsg->bLock || (msgGrp & (0x01 << i)) == 0x00) {
+ 343   3                              continue;
+ 344   3                      }
+ 345   2                      
+ 346   2                      pMsg->QueIn = pMsg->QueStart;
+ 347   2                      pMsg->QueOut = pMsg->QueStart;
+ 348   2                      pMsg->QueEntries = 0;
+ 349   2                      memset(pMsg->MsgBuf, 0, sizeof(msg_t) * (UINT32)MSG_BUF_MAX);
+ 350   2                      //isMsgNull[i] = TRUE;
+ 351   2              }
+ 352   1              
+ 353   1              EXIT_CRITICAL(status);
+ 354   1      }
+ 355          
+ 356          /**
+ 357           * @fn        UINT8 osMsgSeek(UINT16 msg)
+ 358           * @brief     osMsgSeek
+ 359           * @param     [in] msg
+ 360           * @retval    return = SUCCESS / FAIL
+ 361           * @see       NULL
+ 362           * @author    Phil Lin
+ 363           * @since     2010-5-4
+C51 COMPILER V8.12   OS_MSG                                                                12/29/2014 15:17:56 PAGE 7   
+
+ 364           * @todo      N/A
+ 365           * @bug       N/A
+ 366          */
+ 367          UINT8 osMsgSeek(UINT16 msg)
+ 368          {
+ 369   1              UINT8 i, j;
+ 370   1      
+ 371   1              for (i = 0; i < MSG_CTRL_TYPE_MAX; i++) {
+ 372   2                      for (j = 0; j < MSG_BUF_MAX; j++) {
+ 373   3                              if (msgBuf[i][j] == msg) {
+ 374   4                                      return TRUE;
+ 375   4                              }
+ 376   3                      }
+ 377   2              }
+ 378   1      
+ 379   1              return FALSE;
+ 380   1      }
+ 381          
+ 382          /**
+ 383           * @fn        UINT8 osMsgIntrSeek(UINT16 msg)
+ 384           * @brief     osMsgSeek
+ 385           * @param     [in] msg
+ 386           * @retval    return = SUCCESS / FAIL
+ 387           * @see       NULL
+ 388           * @author    Phil Lin
+ 389           * @since     2010-5-4
+ 390           * @todo      N/A
+ 391           * @bug       N/A
+ 392          */
+ 393          UINT8 osMsgIntrSeek(UINT16 msg)
+ 394          {
+ 395   1              UINT8 i, j;
+ 396   1      
+ 397   1              for (i = 0; i < MSG_CTRL_TYPE_MAX; i++) {
+ 398   2                      for (j = 0; j < MSG_BUF_MAX; j++) {
+ 399   3                              if (msgBuf[i][j] == msg) {
+ 400   4                                      return TRUE;
+ 401   4                              }
+ 402   3                      }
+ 403   2              }
+ 404   1      
+ 405   1              return FALSE;
+ 406   1      }
+ 407          
+ 408          
+ 409          /**
+ 410           * @fn        void osMsgLock(UINT8 bLock, msgCtrlFlush_t msgGrp)
+ 411           * @brief     osMsgLock
+ 412           * @param     [in] bLock
+ 413           * @param     [in] msgGrp
+ 414           * @retval    NONE
+ 415           * @see       NULL
+ 416           * @author    Phil Lin
+ 417           * @since     2010-5-4
+ 418           * @todo      N/A
+ 419           * @bug       N/A
+ 420          */
+ 421          void osMsgLock(UINT8 bLock, msgCtrlFlush_t msgGrp)
+ 422          {
+ 423   1              UINT8 i;
+ 424   1              
+ 425   1              for (i = 0; i < MSG_CTRL_TYPE_MAX; i++) {
+C51 COMPILER V8.12   OS_MSG                                                                12/29/2014 15:17:56 PAGE 8   
+
+ 426   2                      //In MSG lock mode, this operation will be abort!
+ 427   2                      if ((msgGrp & (0x01 << i)) != 0x00) {
+ 428   3                              msgQueCtrl[i].bLock = bLock;
+ 429   3                      }
+ 430   2              }
+ 431   1      }
+ 432          
+ 433          /**
+ 434           * @fn        void osMsgRcv(void)
+ 435           * @brief     osMsgRcv
+ 436           * @param     NONE
+ 437           * @retval    NONE
+ 438           * @see       NULL
+ 439           * @author    Phil Lin
+ 440           * @since     2010-5-4
+ 441           * @todo      N/A
+ 442           * @bug       N/A
+ 443          */
+ 444          void osMsgRcv(void)
+ 445          {
+ 446   1              pFuncMsg* pf = &funcMsgRcvArray[0];
+ 447   1      
+ 448   1              /* call the messsage receive controller */
+ 449   1              if (*pf != NULL) {
+ 450   2                      (*pf)();
+ 451   2              }
+ 452   1      }
+ 453          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1515    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    129      44
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

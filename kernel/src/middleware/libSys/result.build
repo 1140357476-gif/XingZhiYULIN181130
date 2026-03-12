@@ -1,0 +1,22 @@
+Build target 'sysboot'
+compiling sys_svc_def.c...
+compiling main.c...
+main.c(53): warning C318: can't open file 'cmd_func_fpga.h'
+compiling sys_mem_init.c...
+compiling sys_ver.c...
+creating library .\obj\sysboot.LIB...
+TRANSFER
+".\obj\sys_svc_def.obj",
+".\obj\main.obj",
+".\obj\sys_mem_init.obj",
+".\obj\sys_ver.obj" 
+TO ".\obj\sysboot.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\postLib.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libSys>copy .\obj\sysboot.lib ..\..\..\lib\libSysBoot.LIB 
+已复制         1 个文件。
+".\obj\sysboot.LIB" - 0 Error(s), 1 Warning(s).

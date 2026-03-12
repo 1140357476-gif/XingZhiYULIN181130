@@ -1,0 +1,141 @@
+C51 COMPILER V8.08   SYS_SVC_DEF                                                           07/29/2019 16:04:29 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE SYS_SVC_DEF
+OBJECT MODULE PLACED IN .\obj\sys_svc_def.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE sys_svc_def.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..
+                    -\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\cust
+                    -omization) DEFINE(LIB_RELEASE) PRINT(.\obj\sys_svc_def.lst) OBJECT(.\obj\sys_svc_def.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21           
+  22          /**
+  23           * @file      File name
+  24           * @brief     Brief
+  25           * @author    Author's name
+  26           * @since     2010-01-01
+  27           * @date      2010-01-01
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #define __FILE   __FILE_ID_SYS_SVC_DEF__
+  34          #include "general.h" 
+  35          #define SYS_SRC_INTERNAL //for libSys internal use only
+  36          #include "sys_svc_def.h" 
+  37          #include "cmd.h" 
+  38          #include "dbg_def.h" 
+  39          #include "sp1k_front_api.h"
+  40          #include "utility.h"
+  41          
+  42          /**************************************************************************
+  43           *                           C O N S T A N T S                            *
+  44           **************************************************************************/
+  45          
+  46          /**************************************************************************
+  47           *                              M A C R O S                               *
+  48           **************************************************************************/
+  49           
+  50          /**************************************************************************
+  51           *                          D A T A    T Y P E S                          *
+  52           **************************************************************************/
+  53          
+C51 COMPILER V8.08   SYS_SVC_DEF                                                           07/29/2019 16:04:29 PAGE 2   
+
+  54          /**************************************************************************
+  55           *                         G L O B A L    D A T A                         *
+  56           **************************************************************************/
+  57           
+  58          /**************************************************************************
+  59           *                 E X T E R N A L    R E F E R E N C E S                 *
+  60           **************************************************************************/
+  61          extern void usbSvcProc(void * ptr);
+  62          /**************************************************************************
+  63           *               F U N C T I O N    D E C L A R A T I O N S               *
+  64           **************************************************************************/
+  65          
+  66          /*
+  67            Note: The array size can't be lager than FUNC_SYS_SVC_MAX 
+  68          */
+  69          SYS_SVC_DCL const sysSvc_t code sysSvcArray[] = {
+  70                  {"cmd", cmdMonitor},
+  71                  {"usb", usbSvcProc},
+  72                  {"vd", vdSvcProc},
+  73                  {"cs", csSvcProc}, /* For code sentry use */
+  74                  {NULL, NULL},
+  75          };
+  76          
+  77          /**
+  78           * @brief     sysSvcSched
+  79           * @param     [in] ptr
+  80           * @retval    NONE
+  81           * @see       none
+  82           * @author    Phil Lin
+  83           * @since     2010-01-01
+  84           * @todo      N/A
+  85           * @bug       N/A
+  86          */
+  87          void 
+  88          sysSvcSched(
+  89                  void* ptr
+  90          )
+  91          {
+  92   1              sysSvc_t code* pSvc;
+  93   1              UINT8 svcCnt;
+  94   1      
+  95   1              /* system service switch to idle */
+  96   1              pSvc = &sysSvcArray[0];
+  97   1              svcCnt = 0;
+  98   1      
+  99   1              /* system service */
+ 100   1              while(pSvc->svcProc) {
+ 101   2                      pSvc->svcProc(ptr);
+ 102   2                      pSvc++;
+ 103   2                      if (++svcCnt >= FUNC_SYS_SVC_MAX) {
+ 104   3                              /* sysSvcArray configure error */ 
+ 105   3                              ASSERT(0, 0);
+ 106   3                      }
+ 107   2              }
+ 108   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    102    ----
+   CONSTANT SIZE    =     34    ----
+   XDATA SIZE       =   ----       6
+   PDATA SIZE       =   ----    ----
+C51 COMPILER V8.08   SYS_SVC_DEF                                                           07/29/2019 16:04:29 PAGE 3   
+
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

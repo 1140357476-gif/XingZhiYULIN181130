@@ -1,0 +1,113 @@
+C51 COMPILER V8.08   DOSD_VER                                                              12/31/2019 16:17:30 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE DOSD_VER
+OBJECT MODULE PLACED IN .\obj\dosD_ver.obj
+COMPILER INVOKED BY: e:\Keil\C51\BIN\C51.EXE D\dosD_ver.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\
+                    -..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\custo
+                    -mization) DEFINE(LIB_RELEASE) DEBUG PRINT(.\lst\dosD_ver.lst) OBJECT(.\obj\dosD_ver.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2002-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           *      v01, 20111024 wangjg
+  22           *              a. initialize version
+  23           *      v02,20111031 renhy
+  24           *              a.assign folder for timelapse video file
+  25           *      v03,20111118 dongdong.wang
+  26           *              a. add dcf smart init
+  27           *      v04,20111122 hy.ren
+  28           *              a.add function for set avi name :dcfAviNameSet
+  29           *              b.modify get fileName function: dcfMediaNameGet
+  30           *      v05,20111123 dongdong.wang
+  31           *              a.modify for strtoul'base
+  32           *      v06,20111209 dongdong.wang
+  33           *              a.clean waring
+  34           *    v07,20111209 xianxin
+  35           *              a.fix dcfFileDramFdbParameterRead() error(pb file order error), 
+  36           *    v08,20111222 wangjg
+  37           *              a. correct dcfDeleteFile for seamless rec.
+  38           *    v09,20120105 xianxin
+  39           *              a. add dcfFileDramFdbUpdate() to dcfFileAttrSet(),
+  40           *    v0a,20120119 jg.wang
+  41           *              a. correct dcfdel readonly
+  42           *    v0b,20120221 rf.wang
+  43           *              a. Abort bg write when set file attr 
+  44           *    v0c,20120906 xianxin
+  45           *              a. fdb.size error in dcfFileInitialize() 
+  46           *    v0d,20121116 xianxin
+  47           *              a. fix dcfFileReadOnlyAttrSet() error (FDB buffer info update)
+  48           **************************************************************************/
+  49          
+  50          /**************************************************************************
+  51           *                            H E A D E R   F I L E S
+  52           **************************************************************************/
+  53          #include "general.h"
+C51 COMPILER V8.08   DOSD_VER                                                              12/31/2019 16:17:30 PAGE 2   
+
+  54          
+  55          /**************************************************************************
+  56           *                            G L O B A L   D A T A
+  57           **************************************************************************/
+  58          static UINT8 code verStr[] = "$od0d";
+  59          
+  60          /**************************************************************************
+  61           *
+  62           *  Function Name: audLibVerGet
+  63           *
+  64           *  Purposes: Get current libaray's version.
+  65           *
+  66           *  Descriptions:
+  67           *
+  68           *  Arguments:
+  69           *
+  70           *  Returns:
+  71           *
+  72           *  See also:
+  73           *
+  74           **************************************************************************/
+  75          UINT8 *
+  76          libDosDVerGet(
+  77                  void
+  78          )
+  79          {
+  80   1              return (verStr + 3);
+  81   1      }
+  82          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

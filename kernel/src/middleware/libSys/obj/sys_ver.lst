@@ -1,0 +1,112 @@
+C51 COMPILER V8.08   SYS_VER                                                               07/29/2019 16:04:30 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE SYS_VER
+OBJECT MODULE PLACED IN .\obj\sys_ver.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE sys_ver.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\
+                    -inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiz
+                    -ation) DEFINE(LIB_RELEASE) PRINT(.\obj\sys_ver.lst) OBJECT(.\obj\sys_ver.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2008-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           *  Author: Phil.lin
+  22           *
+  23           *  Change Log:
+  24           *
+  25           *      sb01, 20111024 Guoqiang.li
+  26           *              a. modify number of version
+  27           *      sb01, 20111031 rf.wang
+  28           *              a. fixed HD PV size=1280*720
+  29           *      sb02, 20111031 Phil.lin
+  30           *              a. add dram size and clock information print out
+  31           *      sb03, 20111031 rf.wang
+  32           *              a. fixed HD pv size = 6/8
+  33           *      sb03, 20111104 jg.wang
+  34           *              a. add video cmd for switch bg
+  35           *      sb04, 20111110 LinJieCheng
+  36           *              a. add Dzoom non-blocking flow
+  37           *              b. removed old Dzoom non-blocking flow
+  38           *      sb05, 20111125 rf.wang
+  39           *              a. add 1st path size and buf check function
+  40           *      sb06, 20120316 peng.tan
+  41           *              a. add 3 global variable to support still image snap
+  42           *      sb07, 20120727 rf.wang
+  43           *              a. add blocking zoom and nonblocking zoom
+  44           *      sb08, 20130318 linjie.cheng
+  45           *           a. add panorama function 
+  46           *           b. adjust motion detect flow
+  47           **************************************************************************/
+  48          
+  49          /**************************************************************************
+  50           *                            H E A D E R   F I L E S
+  51           **************************************************************************/
+  52          #include "general.h"
+  53          
+C51 COMPILER V8.08   SYS_VER                                                               07/29/2019 16:04:30 PAGE 2   
+
+  54          /**************************************************************************
+  55           *                            G L O B A L   D A T A
+  56           **************************************************************************/
+  57          static UINT8 code verStr[] = "$sb08";
+  58          
+  59          /**************************************************************************
+  60           *
+  61           *  Function Name: sysLibVerGet
+  62           *
+  63           *  Purposes: Get current libaray's version.
+  64           *
+  65           *  Descriptions:
+  66           *
+  67           *  Arguments:
+  68           *
+  69           *  Returns:
+  70           *
+  71           *  See also:
+  72           *
+  73           **************************************************************************/
+  74          UINT8 *
+  75          libSysVerGet(
+  76                  void
+  77          )
+  78          {
+  79   1              return (verStr + 3);
+  80   1      }
+  81          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

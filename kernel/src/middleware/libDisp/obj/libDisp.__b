@@ -1,0 +1,10 @@
+TRANSFER
+".\obj\disp_win.obj",
+".\obj\disp_enable.obj",
+".\obj\disp_lcm.obj",
+".\obj\disp_logi.obj",
+".\obj\disp_misc.obj",
+".\obj\disp_para.obj",
+".\obj\disp_wait.obj",
+".\obj\disp_ver.obj" 
+TO ".\obj\libDisp.LIB"

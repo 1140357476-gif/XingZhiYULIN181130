@@ -1,0 +1,169 @@
+C51 COMPILER V8.08   HAL_FRONT_PARA                                                        09/21/2019 10:52:17 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE HAL_FRONT_PARA
+OBJECT MODULE PLACED IN .\obj\hal_front_para.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE hal_front_para.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..
+                    -\..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\c
+                    -ustomization) DEFINE(LIB_RELEASE) PRINT(.\obj\hal_front_para.lst) OBJECT(.\obj\hal_front_para.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21           
+  22          /**
+  23           * @file      hal_front_para.c
+  24           * @brief     hal front parameter setting function table
+  25           * @author    Will Chiu
+  26           * @since     2010-01-01
+  27           * @date      2010-01-01
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #include "general.h"
+  34          #include "hal_front.h"
+  35          //#include "hal_front_internal.h" 
+  36          /**************************************************************************
+  37           *                           C O N S T A N T S                            *
+  38           **************************************************************************/
+  39           
+  40          /**************************************************************************
+  41           *                              M A C R O S                               *
+  42           **************************************************************************/
+  43           
+  44          /**************************************************************************
+  45           *                          D A T A    T Y P E S                          *
+  46           **************************************************************************/
+  47          typedef void (code *HAL_FrontParaSetFunc_t)(SINT16 *paraAry, UINT8 upd);
+  48                  
+  49          typedef struct {
+  50                  HAL_FrontParaSetFunc_t func;
+  51          } HAL_FrontParaSetFuncEntry_t;
+  52          
+  53          /* the order and totla of entries in HAL_FrontParaSetFuncTbl[] must be
+C51 COMPILER V8.08   HAL_FRONT_PARA                                                        09/21/2019 10:52:17 PAGE 2   
+
+  54             the same to HAL_FrontParaId_e. */
+  55          static code HAL_FrontParaSetFuncEntry_t HAL_FrontParaSetFuncTbl[] = {
+  56                  {HAL_FrontParaMClkCfgSet                },
+  57                  {HAL_FrontParaPClkCfgSet                },
+  58                  {HAL_FrontParaSyncInvertEnableSet       },
+  59                  {HAL_FrontParaByPassEnableSet           },
+  60                  {HAL_FrontParaReshapeEnableSet          },
+  61                  {HAL_FrontParaReshapeRegionSet          },
+  62                  {HAL_FrontParaCropRegionSet             },
+  63                  {HAL_FrontParaFrontToCdspGatingEnableSet},
+  64                  {HAL_FrontParaTgTotalRegionSet          },
+  65                  {HAL_FrontParaTgSyncGeneratorEnableSet  },
+  66                  {HAL_FrontParaYuvOutputSequenceCfgSet   },
+  67                  {HAL_FrontParaYuvCcirModeSet            },
+  68                  {HAL_FrontParaYuvSub128EnableSet        },
+  69                  {HAL_FrontParaYuvInputEnableSet         },
+  70          };
+  71           
+  72          /**************************************************************************
+  73           *                         G L O B A L    D A T A                         *
+  74           **************************************************************************/
+  75           
+  76          /**************************************************************************
+  77           *                 E X T E R N A L    R E F E R E N C E S                 *
+  78           **************************************************************************/
+  79           
+  80          /**************************************************************************
+  81           *               F U N C T I O N    D E C L A R A T I O N S               *
+  82           **************************************************************************/
+  83          
+  84          /**
+  85           * @fn        UINT8 HAL_FrontParaSet(UINT8 id, SINT16 para1, SINT16 para2, SINT16 para3, SINT16 para4, UIN
+             -T8 upd)
+  86           * @brief     set hal front misc parameters
+  87           * @param     [in] id
+  88           * @param     [in] para1 :parameter #1
+  89           * @param     [in] para2 :parameter #2
+  90           * @param     [in] para3 :parameter #3
+  91           * @param     [in] para4 :parameter #4
+  92           * @param     [in] upd : 
+  93           *                                              0: immediately update
+  94           *                                              1: sync to vsync falling
+  95           * @retval    return = SUCCESS / FAIL
+  96           * @see       NULL
+  97           * @author    Will Chiu
+  98           * @since     2010-4-30
+  99           * @todo      N/A
+ 100           * @bug       N/A
+ 101          */
+ 102          UINT8
+ 103          HAL_FrontParaSet(
+ 104                  UINT8 id,
+ 105                  SINT16 para1,
+ 106                  SINT16 para2,
+ 107                  SINT16 para3,
+ 108                  SINT16 para4,
+ 109                  UINT8 upd
+ 110          )
+ 111          {
+ 112   1              SINT16 paraAry[4];
+ 113   1              UINT8 temp = 0;
+ 114   1      
+C51 COMPILER V8.08   HAL_FRONT_PARA                                                        09/21/2019 10:52:17 PAGE 3   
+
+ 115   1              if ( id < HAL_FRONT_PARA_MAX_ID && HAL_FrontParaSetFuncTbl[id].func != NULL ) {
+ 116   2                      /* call sub-function in function table. */
+ 117   2                      paraAry[0] = para1;
+ 118   2                      paraAry[1] = para2;
+ 119   2                      paraAry[2] = para3;
+ 120   2                      paraAry[3] = para4;
+ 121   2                      (HAL_FrontParaSetFuncTbl[id].func)(paraAry, upd);
+ 122   2                      
+ 123   2                      /* dummy code for function call tree correction s */
+ 124   2                      if (temp) {
+ 125   3                              temp = (UINT8)HAL_FrontParaSetFuncTbl;
+ 126   3                      }
+ 127   2                      /* dummy code for function call tree correction e */
+ 128   2      
+ 129   2                      return SUCCESS;
+ 130   2              }
+ 131   1              else {
+ 132   2                      return FAIL;
+ 133   2              }
+ 134   1      }
+ 135          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    137    ----
+   CONSTANT SIZE    =     28    ----
+   XDATA SIZE       =   ----      19
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,1 @@
+copy .\obj\global.lib ..\..\..\lib\libSysGlobal.LIB

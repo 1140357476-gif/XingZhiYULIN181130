@@ -1,0 +1,23 @@
+Build target 'audio'
+compiling audio_alc.c...
+compiling audio_pb.c...
+compiling audio_record.c...
+compiling voicePlay.c...
+compiling aud_ver.c...
+creating library .\obj\audio.LIB...
+TRANSFER
+".\obj\audio_alc.obj",
+".\obj\audio_pb.obj",
+".\obj\audio_record.obj",
+".\obj\voicePlay.obj",
+".\obj\aud_ver.obj" 
+TO ".\obj\audio.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libAudio>copy obj\audio.LIB ..\..\..\lib\libAudio.LIB 
+已复制         1 个文件。
+".\obj\audio.LIB" - 0 Error(s), 0 Warning(s).

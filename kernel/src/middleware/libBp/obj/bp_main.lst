@@ -1,0 +1,943 @@
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE BP_MAIN
+OBJECT MODULE PLACED IN .\obj\bp_main.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE bp_main.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\
+                    -inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiz
+                    -ation) DEFINE(LIB_RELEASE) PRINT(.\obj\bp_main.lst) OBJECT(.\obj\bp_main.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2008-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           **************************************************************************/
+  22          
+  23          /**
+  24           * @file                bp_main.c
+  25           * @brief               badpixel handle function
+  26           * @author      Phil Lin
+  27           * @since               2008-11-19
+  28           * @date                2008-11-18
+  29           */
+  30           
+  31          /**************************************************************************
+  32          *                                                  H E A D E R   F I L E S
+  33          **************************************************************************/
+  34          #include "general.h" 
+  35          #include "initio.h" 
+  36          #include "main.h" 
+  37          
+  38          #include "bp_private.h" 
+  39          #include "bp_api.h"
+  40          
+  41          #include "sp1k_rsvblk_api.h"
+  42          #include "front_logi.h"
+  43          #include "app_still_view.h"
+  44          #include "dbg_file_list.h"
+  45          #include "hal_cdsp.h"
+  46          #include "dbg_def.h"
+  47          #include "hal_gprm.h"
+  48          #include "hal.h"
+  49          #include "hal_global.h"
+  50          #include "reg_cdsp.h"
+  51          #include "pv_task.h"
+  52          #if MODULE_BP_OPT 
+  53          /**************************************************************************
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 2   
+
+  54           *                                               C O N S T A N T S                                                *
+  55           **************************************************************************/
+  56          
+  57          /**************************************************************************
+  58           *                                                      M A C R O S                                                       *
+  59           **************************************************************************/
+  60          #define __FILE  __FILE_ID_BP_MAIN__
+  61          
+  62          #define DBG_BP_EN       0
+  63          
+  64          /* the high/low byte switch in capture badpixel compensation */
+  65          #define BP_BYTE_SW_EN   0
+  66          
+  67          /**************************************************************************
+  68           *                                              D A T A    T Y P E S                                              *
+  69           **************************************************************************/
+  70          
+  71          /**************************************************************************
+  72           *                                         G L O B A L    D A T A                                         *
+  73           **************************************************************************/
+  74          
+  75          static resBpCb_t xdata resBp[RES_BP_MAX];
+  76          static bpPara_t* xdata pBpPara;
+  77          
+  78          UINT8 xdata g_planeWidth;
+  79          UINT8 xdata g_planeHeight;
+  80          UINT16 xdata g_stripWidth;
+  81          UINT8 xdata g_stripHeight;
+  82          UINT8 xdata g_threshold;
+  83          UINT32 xdata g_badPixelCnt;
+  84          UINT32 xdata g_bpNumMaxPrv_HD;
+  85          UINT32 xdata g_bpNumMaxPrv;
+  86          UINT32 xdata g_bpNumMaxCap;
+  87          UINT32 xdata* xdata gp_bpNumMax;
+  88          
+  89          #if TAG_TODO
+              extern xdata UINT16 snapSensorXSize,snapSensorYSize;
+              extern xdata UINT16 snapSensorCropXSize,snapSensorCropYSize;
+              extern xdata UINT16 snapRawXSize;
+              extern xdata UINT16 snapXSize;
+              extern appPvZoom_t xdata PvZoomCtrl;
+              #else
+  96          xdata UINT16 snapSensorXSize,snapSensorYSize;
+  97          xdata UINT16 snapSensorCropXSize,snapSensorCropYSize;
+  98          xdata UINT16 snapRawXSize;
+  99          xdata UINT16 snapXSize;
+ 100          extern appPvZoom_t xdata PvZoomCtrl;
+ 101          #endif
+ 102          /**************************************************************************
+ 103           *                         E X T E R N A L    R E F E R E N C E S                         *
+ 104           **************************************************************************/
+ 105          
+ 106          /**************************************************************************
+ 107           *                       F U N C T I O N        D E C L A R A T I O N S                           *
+ 108           **************************************************************************/
+ 109          static UINT8 bpRawRead(UINT32 addr, UINT32 width, UINT32 xPos, UINT32 yPos, UINT16* prgb);
+ 110          static UINT8 bpRawWrite(UINT32 addr, UINT32 width, UINT32 xPos, UINT32 yPos, UINT16 prgb);
+ 111          
+ 112          //-----------------------------------------------------------------------------
+ 113          //bpRawRead
+ 114          //-----------------------------------------------------------------------------
+ 115          /**
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 3   
+
+ 116           * @brief               read specified pixel of raw image
+ 117           * @param       addr: raw data source address
+ 118                                  width: the width of raw image
+ 119                                  xPos: the horizontal offset of raw image
+ 120                                  yPos: the vertical offset of raw image
+ 121                                  prgb: the value of the specified pixel
+ 122           * @retval      0: success
+ 123                                  1: fail
+ 124           * @see         none
+ 125           * @author      Phil Lin
+ 126           * @since               2008-11-19
+ 127           * @todo                Something need to be done.
+ 128           * @bug                 a bug need to be resolved.
+ 129          */
+ 130          static UINT8 bpRawRead(UINT32 addr, UINT32 width, UINT32 xPos, UINT32 yPos, UINT16* prgb)
+ 131          {
+ 132   1              UINT32 offset;
+ 133   1              const UINT16 bytePerPixel = 1; /* the data length raw is 8bits */
+ 134   1      
+ 135   1              if (!prgb) {
+ 136   2                      return FAIL;
+ 137   2              }
+ 138   1      
+ 139   1              offset = (yPos * width + xPos) * bytePerPixel;
+ 140   1              addr += (offset >> 1);
+ 141   1      
+ 142   1      #if BP_ASSERT_EN
+ 143   1              if (addr <= K_SDRAM_CommonEndAddr || addr >= K_SDRAM_TotalSize) {
+ 144   2      printf("xPos: %lx\n", (UINT32)xPos);
+ 145   2      printf("yPos: %lx\n", (UINT32)yPos);
+ 146   2      printf("offset: %lx\n", (UINT32)offset);
+ 147   2      printf("addr: %lx\n", (UINT32)addr);
+ 148   2                      __ASSERT(__FILE, __LINE, 1);
+ 149   2                      return FAIL;
+ 150   2              }       
+ 151   1      #endif //BP_ASSERT_EN
+ 152   1      
+ 153   1              BP_DRAM_SetStartAddress(addr, 1);
+ 154   1      
+ 155   1              if (offset & 0x01) {
+ 156   2                      /* the raw data is in high byte */
+ 157   2                      BP_DRAM_ReadPword((UINT8 *) prgb, ((UINT8 *) prgb) + 1);
+ 158   2              } else {
+ 159   2                      /* the raw data is in low byte */
+ 160   2                      BP_DRAM_ReadPword(((UINT8 *) prgb) + 1, (UINT8 *) prgb);
+ 161   2              }
+ 162   1              WRITEP8(prgb, 0, 0);
+ 163   1              
+ 164   1      #if DBG_BP_EN
+                      printf("read X(%lu), Y(%lu) : %u\n", xPos, yPos, *prgb);
+              #endif
+ 167   1      
+ 168   1              return SUCCESS;
+ 169   1      }
+ 170          
+ 171          //-----------------------------------------------------------------------------
+ 172          //bpRawWrite
+ 173          //-----------------------------------------------------------------------------
+ 174          /**
+ 175           * @brief               write specified pixel of raw image
+ 176           * @param       addr: raw data source address
+ 177                                  width: the width of raw image
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 4   
+
+ 178                                  xPos: the horizontal offset of raw image
+ 179                                  yPos: the vertical offset of raw image
+ 180                                  prgb: the value of the specified pixel
+ 181           * @retval      0: success
+ 182                                  1: fail
+ 183           * @see         none
+ 184           * @author      Phil Lin
+ 185           * @since               2008-11-18
+ 186           * @todo                Something need to be done.
+ 187           * @bug         a bug need to be resolved.
+ 188          */
+ 189          static UINT8 bpRawWrite(UINT32 addr, UINT32 width, UINT32 xPos, UINT32 yPos, UINT16 prgb)
+ 190          {
+ 191   1              UINT32 offset;
+ 192   1              const UINT16 bytePerPixel = 1; /* the data length raw is 8bits */
+ 193   1              UINT16 raw;
+ 194   1      
+ 195   1              offset = (yPos * width + xPos) * bytePerPixel;
+ 196   1      
+ 197   1              addr += (offset >> 1);  
+ 198   1              
+ 199   1      #if BP_ASSERT_EN        
+ 200   1              if (addr <= K_SDRAM_CommonEndAddr || addr >= K_SDRAM_TotalSize) {
+ 201   2                      __ASSERT(__FILE, __LINE, 1);
+ 202   2                      return FAIL;
+ 203   2              }       
+ 204   1      #endif //BP_ASSERT_EN   
+ 205   1      
+ 206   1              BP_DRAM_SetStartAddress(addr, 1);       
+ 207   1              BP_DRAM_ReadPword(((UINT8 *) &raw) + 1, (UINT8 *) &raw);
+ 208   1      
+ 209   1              if (offset & 0x01) {
+ 210   2                      /* the raw data is in high byte */
+ 211   2                      WRITE8(raw, 0, READ8(prgb, 1));
+ 212   2              } else {
+ 213   2                      /* the raw data is in low byte */
+ 214   2                      WRITE8(raw, 1, READ8(prgb, 1));
+ 215   2              }
+ 216   1      
+ 217   1              BP_DRAM_SetStartAddress(addr, 0);
+ 218   1              BP_DRAM_WriteWord(READ8(raw, 1), READ8(raw, 0));
+ 219   1              
+ 220   1      #if DBG_BP_EN
+                      printf("write X(%lu), Y(%lu) : %x , %x\n", xPos, yPos, prgb, raw);
+              #endif
+ 223   1      
+ 224   1              return SUCCESS;
+ 225   1      }
+ 226          
+ 227          //-----------------------------------------------------------------------------
+ 228          //bpCfg
+ 229          //-----------------------------------------------------------------------------
+ 230          /**
+ 231           * @brief               configure threshold & max number of badpixel function
+ 232           * @param       pPara: point to the badpixel configuration parameter
+ 233           * @retval      0: success
+ 234                                  1: fail
+ 235                                  -1: param error
+ 236           * @see         none
+ 237           * @author      Phil Lin
+ 238           * @since       2008-11-24
+ 239           * @todo                Something need to be done.
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 5   
+
+ 240           * @bug         a bug need to be resolved.
+ 241          */
+ 242          UINT8 bpCfg(bpPara_t* pPara)
+ 243          {
+ 244   1              UINT32 rsvSize;
+ 245   1              resBpCb_t xdata* pResBp;
+ 246   1      
+ 247   1              if ( !pPara ) {
+ 248   2                      return UNKNOWN;
+ 249   2              }
+ 250   1      
+ 251   1              pBpPara = pPara;
+ 252   1              
+ 253   1              g_planeWidth = 8;       //g_planeWidth * g_planeHeight < 256
+ 254   1              g_planeHeight = 8;
+ 255   1              #if BP_USE_MOE
+ 256   1              g_stripWidth = 16;//1024 / (UINT16) g_planeHeight; // buf size = 1024, 
+ 257   1              #else
+                      g_stripWidth = 1024 / (UINT16) g_planeHeight; // buf size = 1024,       
+                      #endif
+ 260   1              g_stripHeight = g_planeHeight;
+ 261   1              g_badPixelCnt = 0;
+ 262   1              g_threshold = pPara->threshold_B; //modify 20091124
+ 263   1      
+ 264   1              /* 1 -> for resource file end mark */
+ 265   1              g_bpNumMaxPrv_HD = pPara->prvBpMax_HD - 1;
+ 266   1              g_bpNumMaxPrv = pPara->prvBpMax - 1;
+ 267   1              g_bpNumMaxCap = pPara->capBpMax - 1;
+ 268   1      
+ 269   1              /* check if the resoure file id had already been registed */
+ 270   1              //if (pResBp->resId == 0) {
+ 271   1              //      return FAIL;
+ 272   1              //}
+ 273   1              
+ 274   1              pResBp = &resBp[RES_BP_PRV_HD];
+ 275   1              if (sp1kDiskRsvSizeGet(pResBp->resId, NULL, &rsvSize) == TRUE) {
+ 276   2                      rsvSize >>= 2;
+ 277   2                      if ((UINT32)pPara->prvBpMax_HD > rsvSize) {
+ 278   3                              /* 
+ 279   3                                      preview badpixel max number defined is more large 
+ 280   3                                      than the size of resource file!
+ 281   3                              */
+ 282   3                              g_bpNumMaxPrv_HD = rsvSize - 1;
+ 283   3                      }
+ 284   2              }
+ 285   1      
+ 286   1              pResBp = &resBp[RES_BP_PRV_VGA];
+ 287   1              if (sp1kDiskRsvSizeGet(pResBp->resId, NULL, &rsvSize) == TRUE) {
+ 288   2                      rsvSize >>= 2;
+ 289   2                      if ((UINT32)pPara->prvBpMax > rsvSize) {
+ 290   3                              /* 
+ 291   3                                      preview badpixel max number defined is more large 
+ 292   3                                      than the size of resource file!
+ 293   3                              */
+ 294   3                              g_bpNumMaxPrv = rsvSize - 1;
+ 295   3                      }
+ 296   2              }
+ 297   1              
+ 298   1              pResBp = &resBp[RES_BP_CAP];
+ 299   1              if (sp1kDiskRsvSizeGet(pResBp->resId, NULL, &rsvSize) == TRUE) {
+ 300   2                      rsvSize >>= 1;  /*res is half size*/
+ 301   2                      if ((UINT32)pPara->capBpMax > rsvSize) {
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 6   
+
+ 302   3                              /* 
+ 303   3                                      capture badpixel max number defined is more large 
+ 304   3                                      than the size of resource file!
+ 305   3                              */
+ 306   3                              g_bpNumMaxCap = rsvSize - 1;
+ 307   3                      }
+ 308   2              }
+ 309   1      
+ 310   1              return SUCCESS;
+ 311   1      }
+ 312          
+ 313          UINT8 bpCfgGet(bpPara_t **ppPara)
+ 314          {
+ 315   1              if (!ppPara || !pBpPara) {
+ 316   2                      return FAIL;
+ 317   2              }
+ 318   1      
+ 319   1              *ppPara = pBpPara;
+ 320   1      
+ 321   1              return SUCCESS;
+ 322   1      }
+ 323          
+ 324          UINT8 bpParaSet(UINT8 tpye,UINT32 shutter,UINT8 gain)
+ 325          {
+ 326   1              bpPara_t *pPara = pBpPara;
+ 327   1      
+ 328   1              pPara->preAvg=0; 
+ 329   1              pPara->bpType = tpye;
+ 330   1              /*add 20091124*/
+ 331   1              if(tpye==0){
+ 332   2                      g_threshold = pPara->threshold_W;
+ 333   2              }else {
+ 334   2                      g_threshold = pPara->threshold_B;
+ 335   2              }
+ 336   1              /*add 20091124*/
+ 337   1              frontExposureTimeSet(0,shutter,1,0);
+ 338   1              frontGainSet(0,gain,1,0);       
+ 339   1              return SUCCESS;
+ 340   1      }
+ 341          //-----------------------------------------------------------------------------
+ 342          //bpDramBpFix
+ 343          //-----------------------------------------------------------------------------
+ 344          /**
+ 345           * @brief               badpixel compensation fix by f/w
+ 346           * @param       addr: raw image source address
+ 347                                  Hsize: the width of raw image
+ 348                                  xoff: the horizontal offset of badpixel
+ 349                                  yoff: the vertical offset of badpixel
+ 350           * @retval      0: success
+ 351                                  1: fail
+ 352           * @see         none
+ 353           * @author      Phil Lin
+ 354           * @since               2008-11-18
+ 355           * @todo                Something need to be done.
+ 356           * @bug         a bug need to be resolved.
+ 357          */
+ 358          UINT8 bpDramBpFix(UINT32 addr, UINT16 Hsize, UINT16 xoff, UINT16 yoff)
+ 359          {
+ 360   1              UINT8 ret = SUCCESS;
+ 361   1              UINT16 readvalue = 0;
+ 362   1      
+ 363   1              if ((xoff == 0) || (xoff == 1)) {
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 7   
+
+ 364   2                      if ((yoff == 0) || (yoff == 1)) {
+ 365   3                              //printf("left and top!\n");
+ 366   3                              ret = SUCCESS;
+ 367   3                      } else {
+ 368   3                              /* read */ /* Use the pixel above two line */
+ 369   3                              ret = bpRawRead(addr, Hsize, xoff, yoff - 2, &readvalue);
+ 370   3      
+ 371   3                              /* copy */
+ 372   3                              ret = bpRawWrite(addr, Hsize, xoff, yoff, readvalue);
+ 373   3                      }
+ 374   2              } else {
+ 375   2                      /* read */ /* Use the pixel left two column */
+ 376   2                      ret = bpRawRead(addr, Hsize, xoff - 2, yoff, &readvalue);
+ 377   2      
+ 378   2                      /* copy */
+ 379   2                      ret = bpRawWrite(addr, Hsize, xoff, yoff, readvalue);
+ 380   2              }
+ 381   1              
+ 382   1              return ret ;
+ 383   1      }
+ 384          
+ 385          //-----------------------------------------------------------------------------
+ 386          //bpPrvEn
+ 387          //-----------------------------------------------------------------------------
+ 388          /**
+ 389           * @brief       Enable/disable preview badpixel compensation function
+ 390           * @param       enable: 1: enable, 0: disable
+ 391           * @retval      none
+ 392           * @see         none
+ 393           * @author      Phil Lin
+ 394           * @since               2008-11-18
+ 395           * @todo                Something need to be done.
+ 396           * @bug         a bug need to be resolved.
+ 397          */
+ 398          void bpPrvEn(UINT8 enable)
+ 399          {
+ 400   1              UINT8 val = 0;
+ 401   1      
+ 402   1              /* local reset */
+ 403   1              //XBYTE[0x21f0] = 0x01; 
+ 404   1              //XBYTE[0x21f0] = 0x00;
+ 405   1          HAL_CdspRstBlock(CDSPRstCDSP);
+ 406   1      
+ 407   1              if (enable) {
+ 408   2                      val = 0x01;
+ 409   2              } else {
+ 410   2                      val = 0x00;
+ 411   2              }
+ 412   1      
+ 413   1              XBYTE[REG_Cdsp_badpixen] = val;
+ 414   1      }
+ 415          
+ 416          //-----------------------------------------------------------------------------
+ 417          //bpPrvAddrSet
+ 418          //-----------------------------------------------------------------------------
+ 419          /**
+ 420           * @brief               Set preview badpixel compensation data address in dram
+ 421           * @param       preview badpixel resource file address in dram (type of word)
+ 422           * @retval      0: success
+ 423                                  1: fail
+ 424           * @see         none
+ 425           * @author      Phil Lin
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 8   
+
+ 426           * @since               2008-11-18
+ 427           * @todo                Something need to be done.
+ 428           * @bug         a bug need to be resolved.
+ 429          */
+ 430          UINT8 bpPrvAddrSet(UINT32 addr)
+ 431          {
+ 432   1              /* param check */
+ 433   1              if (addr > (K_SDRAM_BadPixelCoordBufAddr + K_SDRAM_BadPixelCoordBufSize) || \
+ 434   2                      addr < K_SDRAM_BadPixelCoordBufAddr) {
+ 435   2                      return FAIL;
+ 436   2              }
+ 437   1      
+ 438   1              XBYTE[REG_Cdsp_badbaseaddr_byte0] = READ8(addr, 3);
+ 439   1              XBYTE[REG_Cdsp_badbaseaddr_byte1] = READ8(addr, 2);
+ 440   1              XBYTE[REG_Cdsp_badbaseaddr_byte2] = READ8(addr, 1);
+ 441   1              XBYTE[REG_Cdsp_badbaseaddr_byte3] = READ8(addr, 0);
+ 442   1              
+ 443   1              return SUCCESS;
+ 444   1      }
+ 445          
+ 446          //-----------------------------------------------------------------------------
+ 447          //bpResCfg
+ 448          //-----------------------------------------------------------------------------
+ 449          /**
+ 450           * @brief               badpixel compensation resource file configure
+ 451           * @param       resType: 0: preview mode 1: capture mode
+ 452                                  resId: the id of each resource file
+ 453           * @retval      0: success
+ 454                                  1: fail
+ 455           * @see         none 
+ 456           * @author      Phil Lin
+ 457           * @since               2008-11-18
+ 458           * @todo                Something need to be done.
+ 459           * @bug         a bug need to be resolved.
+ 460          */
+ 461          UINT8 bpResCfg(resBadPixel_t resType, UINT16 resId)
+ 462          {
+ 463   1              UINT8 ret = SUCCESS;
+ 464   1              resBpCb_t xdata* pResBp;
+ 465   1      
+ 466   1              /* the max number of resource file is 0x80 in disk A */ 
+ 467   1              if ( resId > 0x800 ) {
+ 468   2                      return FAIL;
+ 469   2              }
+ 470   1      
+ 471   1              switch (resType) {
+ 472   2              case RES_BP_PRV_HD:
+ 473   2                      pResBp = &resBp[RES_BP_PRV_HD];
+ 474   2                      break;
+ 475   2              case RES_BP_PRV_VGA:
+ 476   2                      pResBp = &resBp[RES_BP_PRV_VGA];
+ 477   2                      break;
+ 478   2              case RES_BP_CAP:
+ 479   2                      pResBp = &resBp[RES_BP_CAP];
+ 480   2                      break;
+ 481   2              default:
+ 482   2                      pResBp = NULL;
+ 483   2                      ret = FAIL;
+ 484   2                      //printf("invalid input param\n");
+ 485   2                      break;
+ 486   2              }
+ 487   1      
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 9   
+
+ 488   1              if ( pResBp ) {
+ 489   2                      pResBp->resId = resId;
+ 490   2              }
+ 491   1      
+ 492   1              return ret;
+ 493   1      }
+ 494          
+ 495          //-----------------------------------------------------------------------------
+ 496          //bpResLoad
+ 497          //-----------------------------------------------------------------------------
+ 498          /**
+ 499           * @brief               load badpixel compensation resource file
+ 500           * @param       resType: 0: preview mode 1: capture mode
+ 501                                  addr: the destination address in dram (word)
+ 502           * @retval      0: false
+ 503                                  others: resource file size
+ 504           * @see         none
+ 505           * @author      Phil Lin
+ 506           * @since               2008-11-18
+ 507           * @todo                Something need to be done.
+ 508           * @bug         a bug need to be resolved.
+ 509          */
+ 510          
+ 511          UINT32 bpResLoad(resBadPixel_t resType, UINT32 addr)
+ 512          {
+ 513   1              UINT32 offset, size = 0;
+ 514   1              resBpCb_t xdata* pResBp;
+ 515   1      
+ 516   1              /* param check */
+ 517   1              if (resType >= RES_BP_MAX) {
+ 518   2                      return FALSE;
+ 519   2              }
+ 520   1      
+ 521   1              pResBp = &resBp[resType];
+ 522   1      
+ 523   1              /* check if the resoure file id had already be registed */
+ 524   1              if (pResBp->resId == 0) {
+ 525   2                      return FALSE;
+ 526   2              }
+ 527   1      
+ 528   1              sp1kNandRsvRead(pResBp->resId, addr << 1);
+ 529   1              pResBp->resAddr = addr;
+ 530   1      
+ 531   1              sp1kNandRsvSizeGet(pResBp->resId, &offset, &size);
+ 532   1              if (size > (K_SDRAM_BadPixelCoordBufSize << 1)) {
+ 533   2                      /* the size of resource file is larger than mem buffer */
+ 534   2                      return FALSE;
+ 535   2              }
+ 536   1      
+ 537   1              return size;
+ 538   1      }
+ 539          
+ 540          //-----------------------------------------------------------------------------
+ 541          //bpResInfoGet
+ 542          //-----------------------------------------------------------------------------
+ 543          /**
+ 544           * @brief               get the badpixel resource file information
+ 545           * @param       resType: the type of badpixel resource file
+ 546                                  pRes: pointer to the resource file info struct pointer
+ 547           * @retval      0: success
+ 548                                  1: fail
+ 549           * @see         none
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 10  
+
+ 550           * @author      Phil Lin
+ 551           * @since               2008-11-21
+ 552           * @todo                Something need to be done.
+ 553           * @bug         a bug need to be resolved.
+ 554          */
+ 555          UINT8 bpResInfoGet(resBadPixel_t resType, resBpCb_t** pRes)
+ 556          {
+ 557   1              resBpCb_t xdata* pResBp;
+ 558   1      
+ 559   1              /* param check */
+ 560   1              if ( resType >= RES_BP_MAX ) {
+ 561   2                      return FAIL;
+ 562   2              }
+ 563   1      
+ 564   1              /* check if the resource file id had already been resgisted */
+ 565   1              pResBp = &resBp[resType];
+ 566   1              if ( pResBp->resId == 0 ) {
+ 567   2                      return FAIL;
+ 568   2              }
+ 569   1      
+ 570   1              *pRes = pResBp;
+ 571   1              return SUCCESS;
+ 572   1      }
+ 573          
+ 574          //-----------------------------------------------------------------------------
+ 575          //bpFix
+ 576          //-----------------------------------------------------------------------------
+ 577          /**
+ 578           * @brief               badpixel fix in capture mode
+ 579           * @param       addr: badpixel resource file address in dram
+ 580                                  rawWidth: the width of raw image
+ 581                                  rawHeight: the height of raw image
+ 582           * @retval      0: success
+ 583                                  1: fail
+ 584           * @see         none
+ 585           * @author      Phil Lin
+ 586           * @since               2008-11-18
+ 587           * @todo                Something need to be done.
+ 588           * @bug         a bug need to be resolved.
+ 589          */
+ 590          #if 0
+              UINT8 bpFix(UINT32 rawAddr, UINT16 rawWidth, UINT16 rawHeight)
+              {
+                      UINT8 ret;
+                      UINT16 xdata* data pData;
+                      UINT16 badpixthd = 0x10;
+                      UINT16 bpHtag;
+                      UINT16 bpVtag;
+                      UINT32 timeOut; 
+                      UINT32 resAddr;
+                      const UINT16 blkSize = 0x400;   /* dma to DMEM block size */
+                      //resBpCb_t xdata* pResBp = &resBp[RES_BP_CAP];
+              
+                      timeOut = ((K_SDRAM_BadPixel_CapScaleBufSize << 1) / (UINT32) blkSize) + 1;
+                      resAddr = K_SDRAM_BadPixelCoordBufAddr + K_SDRAM_BadPixel_PrvBufSize+K_SDRAM_BadPixel_CapBufSize;//pResBp
+             -->resAddr;
+              
+                      /* Word * Line */
+                      HAL_DRAMbpcfg(rawAddr, rawWidth >> 1, rawHeight);
+                      g_threshold = badpixthd;
+                      
+                      printf("bp fix start\n");
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 11  
+
+                      dbgTimerStart();
+                      
+                      while (--timeOut) {
+                              /* load part of badpixel resource file to DMEM */
+                              HAL_DmaSetSramAddr(0x0000);
+                              HAL_DmaSetDramAddr(resAddr);
+                              HAL_DmaDo(0, 1, blkSize, 0, 0);
+                              pData = (UINT16 xdata *) 0x3800;
+                              while (1) {
+                                      /* resource file parsing */
+                                      bpHtag = *pData;        /* 16 bits for x */
+                                      pData++;
+                                      bpVtag = *pData;        /* next 16 bits for y */
+                                      pData++;
+              
+                                      /* check end mark */
+                                      if ((bpHtag == 0xffff) || (bpVtag == 0xffff)) {
+                                              dbgTimerStop();                         
+                                              return SUCCESS;
+                                      }
+                                      
+              #if DBG_BP_EN
+                                      printf("bp-> Y: %lx, X: %lx\n", (UINT32)bpVtag, (UINT32)bpHtag);
+              #endif //DBG_BP_EN
+                                      /* call bad pixel compensation function */
+              #if (!BP_CMP_BY_FW)
+                                      HAL_DRAMbpfix(badpixthd, bpHtag, bpVtag, 1);
+              #else
+                                      /* for byte switch */
+              #if BP_BYTE_SW_EN
+              {
+                                      /* for high/low byte switch */
+                                      UINT8 tmp;
+                                      
+                                      tmp = READ8(bpHtag, 0);
+                                      WRITE8(bpHtag, 0, READ8(bpHtag, 1));
+                                      WRITE8(bpHtag, 1, tmp);
+                                      
+                                      tmp = READ8(bpVtag, 0);
+                                      WRITE8(bpVtag, 0, READ8(bpVtag, 1));
+                                      WRITE8(bpVtag, 1, tmp);
+              }
+              #endif //BP_BYTE_SW_EN
+                                      ret = bpDramBpFix(rawAddr, rawWidth, bpHtag, bpVtag);
+                                      if ( ret != SUCCESS ) {
+                                      /*
+                                              the badpixel data is invalid, exit the badpixel compensation process 
+                                      */
+                                              dbgTimerStop();
+                                              __ASSERT(__FILE, __LINE, 1);
+                                              return FAIL;
+                                      }
+              #endif //BP_CMP_BY_FW
+              
+                                      /* check if flush the next part of resource to DMEM */
+                                      if (pData >= (UINT16 xdata *) 0x2000) {
+                                              break;
+                                      }
+                                      //XBYTE[0x2030] ^= 0x01;        
+                              }
+              
+                              /* end marker */
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 12  
+
+                              if ((bpHtag == 0xffff) || (bpVtag == 0xffff)) {
+                                      dbgTimerStop();                 
+                                      return SUCCESS;
+                              }
+              
+                              resAddr += (UINT32) (blkSize >> 1);
+                      }
+                      
+                      dbgTimerStop(); 
+                      if (!timeOut) {
+                              ASSERT(timeOut, 1);
+                              return FAIL;
+                      } else {
+                              return SUCCESS;
+                      }
+              }
+              
+              UINT8 bpSnapCropScale(
+                      UINT16 sensorXSize,
+                      UINT16 sensorYSize,
+                      UINT16 cropXSize,
+                      UINT16 cropYSize,
+                      UINT16 rawXSize,
+                      UINT32 resSize,
+                      UINT32 srcaddr,
+                      UINT32 desaddr,
+                      UINT8  mode
+                      )
+              {
+                      UINT8   cropEn=0;
+                      UINT8   ScaleEn=0;
+                      UINT16 xoff,yoff,xcropend,ycropend;
+                      UINT16 cropxsize,cropysize;
+                      UINT32 factor1,tempfac;
+                      UINT16 factor;
+                      UINT16 einifactor,oinifactor;
+                      UINT16 coorx1,coorx2;
+                      UINT32 tempx1,tempx2;
+                      UINT16 oddflag;
+                      UINT8   nox2=1;
+                      UINT32 timeOut;
+                      const UINT16 blkSize = 0x400;   /* dma to DMEM block size */
+                      UINT16 xdata* data pData;
+                      UINT16 bpHtag;
+                      UINT16 bpVtag;
+                      UINT8   inum;
+              
+                      // mode: mode[0]:'0' disable crop,'1'enable crop; mode[1]:'0'disable H Scale,'1'enable H Scale
+                      printf("bp convert start\n");
+                      dbgTimerStart();
+                      timeOut = ((resSize << 1) / (UINT32) blkSize) + 1;
+              
+                      /*+++++++++++++ for crop coordinate correction ++++++++++++++*/
+                      cropEn = (sensorXSize>cropXSize) && (mode&0x01 == 0x01);
+                      xoff = (sensorXSize-cropXSize)>>1;
+                      yoff = (sensorYSize-cropYSize)>>1;
+                      cropxsize = (cropXSize+1) & ~1;
+                      cropysize = cropYSize;
+                      xoff = xoff & ~1;
+                      yoff = yoff & ~1;
+                      xcropend = xoff+cropxsize;
+                      ycropend = yoff+cropysize;
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 13  
+
+                      /*---------------------------------------------------------*/
+              
+                      /*+++++++++++++ for H Scale coordinate correction ++++++++++++*/
+                      ScaleEn = (cropXSize>rawXSize) && (mode&0x02 == 0x02);
+                      factor1 = ( ( ( UINT32 ) rawXSize << 16 ) / ( UINT32 ) cropXSize ) + 1;
+                      factor = ( UINT16 ) factor1;
+                      einifactor = ( factor / 2 ) + 0x8000;
+                      oinifactor = factor;
+                      /*---------------------------------------------------------*/
+              
+                      while (--timeOut) {
+                              /* load part of badpixel resource file to DMEM */
+                              HAL_DmaSetSramAddr(0x0000);
+                              HAL_DmaSetDramAddr(srcaddr);
+                              HAL_DmaDo(0, 1, blkSize, 0, 0);
+                              pData = (UINT16 xdata *) 0x3800;
+                              while (1) {
+                                      /* resource file parsing */
+                                      bpHtag = *pData;        /* 16 bits for x */
+                                      pData++;
+                                      bpVtag = *pData;        /* next 16 bits for y */
+                                      pData++;
+              
+                                      /* check end mark */
+                                      if ((bpHtag == 0xffff) || (bpVtag == 0xffff)) {
+                                              dbgTimerStop();         
+                                              BP_DRAM_SetStartAddress(desaddr, 0);
+                                              desaddr++;
+                                              BP_DRAM_WriteWord(READ8(bpHtag, 0), READ8(bpHtag, 1));
+                                              BP_DRAM_SetStartAddress(desaddr, 0);
+                                              desaddr++;
+                                              BP_DRAM_WriteWord(READ8(bpVtag, 0), READ8(bpVtag, 1));
+                                              return SUCCESS;
+                                      }
+                                      
+                                      if (cropEn){//TQ@20090820 for snap Zoom in, bp error issue
+                                              if (bpHtag<xoff || bpVtag<yoff || bpHtag>=xcropend || bpVtag>=ycropend){
+                                                      continue;
+                                                      }
+                                              bpHtag -= xoff;
+                                              bpVtag -= yoff;
+                                              }
+              
+                                      if (ScaleEn){// TQ@20090828 for snap H scale coordinate correction
+                                              if (bpHtag<2){
+                                                      tempx1 = 0;
+                                                      nox2 = 1;   // X2 is NA
+                                              }
+                                              else{
+                                                      oddflag = bpHtag & 0x0001;
+                                                      if (oddflag){
+                                                              tempfac = (((UINT32)bpHtag>>1)-1)*(UINT32)factor+(UINT32)oinifactor;
+                                                              tempx1 = (((tempfac+65535)>>16)<<1) | 0x00000001;
+                                                      }
+                                                      else{
+                                                              tempfac = (((UINT32)bpHtag>>1)-1)*(UINT32)factor+(UINT32)einifactor;
+                                                              tempx1 = (((tempfac+65535)>>16)<<1);
+                                                      }
+                                                      if (((tempfac%65536)<factor) && (tempx1>=2)){
+                                                                      tempx2 = tempx1 - 2;
+                                                                      nox2 = 0;
+                                                      }
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 14  
+
+                                                      else{
+                                                              nox2 = 1;
+                                                      }
+                                              }
+                                              coorx1 = (UINT16)tempx1;
+                                              coorx2 = (UINT16)tempx2;
+                                      }
+                                      else {
+                                              coorx1 = bpHtag;
+                                              nox2 = 1;
+                                      }
+                              
+                                      for (inum=0;inum<(2-nox2);inum++){// when have done H Scale, maybe fix two point
+                                              if (inum==0){
+                                                      bpHtag = coorx1;
+                                              }
+                                              else{
+                                                      bpHtag = coorx2;
+                                              }
+                                              
+              #if DBG_BP_EN
+                                      printf("bp-> X: %lx, Y: %lx\n", (UINT32)bpHtag, (UINT32)bpVtag);
+              #endif //DBG_BP_EN
+              
+                                      /* call bad pixel compensation function */
+                                      BP_DRAM_SetStartAddress(desaddr, 0);
+                                      desaddr++;
+                                      BP_DRAM_WriteWord(READ8(bpHtag, 0), READ8(bpHtag, 1));
+                                      BP_DRAM_SetStartAddress(desaddr, 0);
+                                      desaddr++;
+                                      BP_DRAM_WriteWord(READ8(bpVtag, 0), READ8(bpVtag, 1));
+              
+              }
+              
+                                      /* check if flush the next part of resource to DMEM */
+                                      if (pData >= (UINT16 xdata *) 0x2000) {
+                                              break;
+                                      }
+                                      //XBYTE[0x2030] ^= 0x01;        
+                              }
+              
+                              /* end marker */
+                              if ((bpHtag == 0xffff) || (bpVtag == 0xffff)) {
+                                      dbgTimerStop(); 
+                                      BP_DRAM_SetStartAddress(desaddr, 0);
+                                      desaddr++;
+                                      BP_DRAM_WriteWord(READ8(bpHtag, 0), READ8(bpHtag, 1));
+                                      BP_DRAM_SetStartAddress(desaddr, 0);
+                                      desaddr++;
+                                      BP_DRAM_WriteWord(READ8(bpVtag, 0), READ8(bpVtag, 1));
+                                      return SUCCESS;
+                              }
+              
+                              srcaddr += (UINT32) (blkSize >> 1);
+                      }
+                      
+                      return FAIL;
+              }
+              
+              UINT8 bpCoordConvert(void)
+              {
+                      UINT16 dzoomXSize16;
+C51 COMPILER V8.08   BP_MAIN                                                               10/17/2019 11:40:32 PAGE 15  
+
+                      UINT8 ret;
+                      
+                      frontSnapSizeGet(0, &snapSensorXSize, &snapSensorYSize);
+              
+                      ASSERT( ( PvZoomCtrl.factor != 0 ), 0 );
+              
+                      snapSensorCropXSize = (UINT16)( (UINT32)snapSensorXSize * (UINT32)100 / (UINT32)PvZoomCtrl.factor );
+                      snapSensorCropYSize = (UINT16)( (UINT32)snapSensorYSize * (UINT32)100 / (UINT32)PvZoomCtrl.factor );
+              
+                      // raw buffer x size must be 16 alignment.
+                      dzoomXSize16 = ( snapSensorCropXSize ) >> 4 << 4;
+                      snapRawXSize = ( snapXSize < dzoomXSize16 ) ? snapXSize : dzoomXSize16;
+                
+                      ret = bpSnapCropScale(snapSensorXSize, snapSensorYSize,
+                                                      snapSensorCropXSize, snapSensorCropYSize,
+                                                      snapRawXSize,
+                                                      (UINT32)16*(UINT32)1024,
+                                                      K_SDRAM_BadPixelCoordBufAddr + K_SDRAM_BadPixel_PrvBufSize,
+                                                      K_SDRAM_BadPixelCoordBufAddr + K_SDRAM_BadPixel_PrvBufSize+K_SDRAM_BadPixel_CapBufSize,
+                                                      (UINT8)3
+                                                      );
+              
+                      return ret;
+              
+              }
+              #endif
+ 885          #endif /* MODULE_BP_OPT */
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1757    ----
+   CONSTANT SIZE    =     46    ----
+   XDATA SIZE       =     57     106
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

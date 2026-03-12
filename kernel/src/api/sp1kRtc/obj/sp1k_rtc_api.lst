@@ -1,0 +1,142 @@
+C51 COMPILER V8.12   SP1K_RTC_API                                                          12/29/2014 15:19:29 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE SP1K_RTC_API
+OBJECT MODULE PLACED IN .\obj\sp1k_rtc_api.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE sp1k_rtc_api.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\.
+                    -.\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\cus
+                    -tomization) DEFINE(LIB_RELEASE) PRINT(.\obj\sp1k_rtc_api.lst) OBJECT(.\obj\sp1k_rtc_api.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *                                                                        *
+   3           *         Copyright (c) 2007 by Sunplus mMedia Inc.                      *
+   4           *                                                                        *
+   5           *  This software is copyrighted by and is the property of Sunplus        *
+   6           *  mMedia Inc. All rights are reserved by Sunplus mMedia Inc.  This      *
+   7           *  software may only be used in accordance with the corresponding        *
+   8           *  license agreement. Any unauthorized use, duplication, distribution,   *
+   9           *  or disclosure of this software is expressly forbidden.                *
+  10           *                                                                        *
+  11           *  This Copyright notice MUST not be removed or modified without prior   *
+  12           *  written consent of Sunplus mMedia Inc.                                *
+  13           *                                                                        *
+  14           *  Sunplus mMedia Inc. reserves the right to modify this software        *
+  15           *  without notice.                                                       *
+  16           *                                                                        *
+  17           *  Sunplus mMedia Inc.                                                   *
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  19           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  20           *                                                                        *
+  21           *  Author: sunyong                                                *
+  22           *                                                                        *
+  23           **************************************************************************/
+  24          /**
+  25           * @file                RTC.c
+  26           * @brief               sp1k API for RTC init.
+  27           * @author      sun yong
+  28           * @since               2008-03-01
+  29           * @date                2008-03-01
+  30           */
+  31          //=============================================================================
+  32          //Header file
+  33          //=============================================================================
+  34          #include "general.h"
+  35          #include "hal.h"
+  36          #include "hal_global.h"
+  37          
+  38          //=============================================================================
+  39          //Symbol
+  40          //=============================================================================
+  41          //-----------------------------------------------------------------------------
+  42          //Constant
+  43          //-----------------------------------------------------------------------------
+  44          
+  45          //-----------------------------------------------------------------------------
+  46          //Variable
+  47          //-----------------------------------------------------------------------------
+  48          xdata dateStc_t DATEINFO;
+  49          //=============================================================================
+  50          //Program       
+  51          //=============================================================================
+  52          //-----------------------------------------------------------------------------
+  53          //sp1kRTCDateInit
+C51 COMPILER V8.12   SP1K_RTC_API                                                          12/29/2014 15:19:29 PAGE 2   
+
+  54          //-----------------------------------------------------------------------------
+  55          /**
+  56           * @brief               Init RTC Date .
+  57           * @param       NONE
+  58           * @retval      NONE
+  59           * @see
+  60           * @author      kai.wang
+  61           * @since               2011-05-16
+  62           * @todo                Something need to be done.
+  63           * @bug         NONE.
+  64          */
+  65          void sp1kRTCDateInit(pDateStc_t DatePt)
+  66          {
+  67   1              
+  68   1              DATEINFO.Year = DatePt->Year;
+  69   1              DATEINFO.Month = DatePt->Month;
+  70   1              DATEINFO.Day = DatePt->Day;
+  71   1              DATEINFO.Hour = DatePt->Hour;
+  72   1              DATEINFO.Minute = DatePt->Minute;
+  73   1              DATEINFO.Second = DatePt->Second;
+  74   1      }
+  75          
+  76          //-----------------------------------------------------------------------------
+  77          //sp1kRTCInit
+  78          //-----------------------------------------------------------------------------
+  79          /**
+  80           * @brief               sp1k RTC init.
+  81           * @param       NONE
+  82           * @retval      NONE
+  83           * @see
+  84           * @author      sun yong
+  85           * @since               2008-03-01
+  86           * @todo                Something need to be done.
+  87           * @bug         NONE.
+  88          */
+  89          
+  90          void sp1kRTCInit(void) 
+  91          {
+  92   1              UINT8 reliableData;     
+  93   1      
+  94   1              HAL_GlobalRTCDrivingSet(0x02); //set RTC Driving @1.5uA
+  95   1              HAL_GlobalReadRTCData(0x02, &reliableData);
+  96   1      
+  97   1              if (reliableData != 0x5a)
+  98   1              {
+  99   2                      HAL_GlobalWriteRTC(&DATEINFO);
+ 100   2              }
+ 101   1                      
+ 102   1              //HAL_GlobalReadRTC(&DATEINFO);
+ 103   1              //printf("Time: 20%02bd, %02bd, %02bd\n",DATEINFO.Year, DATEINFO.Month, DATEINFO.Day); 
+ 104   1             //printf("%02bd : %02bd : %02bd\n",DATEINFO.Hour, DATEINFO.Minute, DATEINFO.Second); 
+ 105   1              
+ 106   1              return; 
+ 107   1      }               
+ 108          
+ 109          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     92    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      6       1
+C51 COMPILER V8.12   SP1K_RTC_API                                                          12/29/2014 15:19:29 PAGE 3   
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,358 @@
+C51 COMPILER V8.08   UART                                                                  06/16/2022 10:11:55 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE UART
+OBJECT MODULE PLACED IN .\obj\uart.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE uart.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\inc
+                    -\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customizati
+                    -on) DEFINE(LIB_RELEASE) PRINT(.\obj\uart.lst) OBJECT(.\obj\uart.obj)
+
+line level    source
+
+   1          
+   2          /**************************************************************************
+   3           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   4           *                                                                        *
+   5           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   6           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   7           *  Ltd. This software may only be used in accordance with the            *
+   8           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   9           *  distribution, or disclosure of this software is expressly forbidden.  *
+  10           *                                                                        *
+  11           *  This Copyright notice "M U S T" not be removed or modified without    *
+  12           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  13           *                                                                        *
+  14           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  15           *  software without notice.                                              *
+  16           *                                                                        *
+  17           *  i-Catch Technology Co., Ltd.                                          *
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  19           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  20           *                                                                        *
+  21           *************************************************************************/
+  22           
+  23          /**
+  24           * @file      uart.c
+  25           * @brief     Module related to Uart
+  26           * @author    Phil
+  27           * @since     2010-01-01
+  28           * @date      2010-01-01
+  29          */
+  30          
+  31          /**************************************************************************
+  32           *                        H E A D E R   F I L E S
+  33           **************************************************************************/
+  34          #include "general.h"
+  35          #include "uart.h"
+  36          #include "hal_global.h"//for uart baudset
+  37          #include "Common.h"
+  38          #include "Intr.h" 
+  39          /**************************************************************************
+  40           *                           C O N S T A N T S                            *
+  41           **************************************************************************/
+  42          #define UART_BUF_SIZE 32 
+  43          /**************************************************************************
+  44           *                              M A C R O S                               *
+  45           **************************************************************************/
+  46           
+  47          /**************************************************************************
+  48           *                          D A T A    T Y P E S                          *
+  49           **************************************************************************/
+  50           
+  51          /**************************************************************************
+  52           *                         G L O B A L    D A T A                         *
+  53           **************************************************************************/
+C51 COMPILER V8.08   UART                                                                  06/16/2022 10:11:55 PAGE 2   
+
+  54          UINT8  xdata Uartmode=0;         //kai++
+  55          UINT8  xdata UartSendEnable=0;  //kai++
+  56          UINT8  xdata Uartbuffer[UART_BUF_SIZE];
+  57          static UINT8  xdata UartAckmode;
+  58          extern UINT8 xdata testBtn;
+  59          /**************************************************************************
+  60           *                 E X T E R N A L    R E F E R E N C E S                 *
+  61           **************************************************************************/
+  62           
+  63          /**************************************************************************
+  64           *               F U N C T I O N    D E C L A R A T I O N S               *
+  65           **************************************************************************/
+  66          
+  67          
+  68          
+  69          //-----------------------------------------------------------------------------
+  70          //uartIntrRoutine
+  71          //-----------------------------------------------------------------------------
+  72          /**
+  73           * @fn        void uartIntrRoutine(void)
+  74           * @brief     uartIntrRoutine
+  75           * @param     NONE
+  76           * @retval    NONE
+  77           * @see       NULL
+  78           * @author    kai.wang
+  79           * @since     2010-5-18
+  80           * @todo      N/A
+  81           * @bug       N/A
+  82          */
+  83          void uartIntrRoutine(void)
+  84          {       
+  85   1              /* 
+  86   1                      Disable ES0, so the uart interrupt service handle 
+  87   1                      only once in each main loop 
+  88   1              */
+  89   1              ES0 = 0;
+  90   1              
+  91   1              if (RI) {
+  92   2                      RI = 0;
+  93   2      #if 0//CMD_BTN_TEST             
+                              testBtn = 1;
+              #endif
+  96   2              }
+  97   1      
+  98   1              /*
+  99   1                      The TI can't be cleared because the function "putchar"
+ 100   1                      will wait TI ready before char sending.
+ 101   1              */
+ 102   1              //TI = 0;
+ 103   1              
+ 104   1              //ES0 = 1;
+ 105   1      }
+ 106          
+ 107          /*kai++2009.02.26*/
+ 108          //-------------------------------------------------------------------------------
+ 109          //UART communication
+ 110          //-------------------------------------------------------------------------------
+ 111          #ifdef UART_FUNC
+              
+              /**
+               * @fn        void UartBaudrateSet(UINT32 Baudrate)
+               * @brief     set Uart Baudrate. there are three param to be chosen 
+C51 COMPILER V8.08   UART                                                                  06/16/2022 10:11:55 PAGE 3   
+
+               * @param     [in] Baudrate: 
+               *                              0: BAUDRATE_19200
+               *              1: BAUDRATE_57600
+               *              2: BAUDRATE_115200
+               *                              default: BAUDRATE_57600
+               * @retval    NONE
+               * @see       NULL
+               * @author    kai.wang
+               * @since     2010-5-18
+               * @todo      N/A
+               * @bug       N/A
+              */
+              void UartBaudrateSet(UINT32 Baudrate)
+              {
+                      UINT32 baudrate_temp;
+                              
+                      if ( Baudrate < BAUDRATE_MAX ) {
+                              if ( Baudrate == BAUDRATE_19200 ) {
+                                      baudrate_temp = 19200UL;
+                              }       
+                              else if ( Baudrate == BAUDRATE_57600 ) {
+                                      baudrate_temp = 57600UL;
+                              }       
+                              else if ( Baudrate == BAUDRATE_115200 ) {
+                                      baudrate_temp = 115200UL;
+                              }       
+                              else {
+                                      return;
+                              }       
+                      }
+                      else {
+                              return;
+                      }       
+                      
+                      TR2= 0;
+                      T2CON = 0x30;   //set Timer2 at mode 3
+                      HAL_GlobalBaudRateSet(baudrate_temp);   //set braudrat,reload Rcap2L
+                      RCAP2H = 0xFF;  
+                      TR2 = 1;
+              }
+              
+              //-------------------------------------------------------------------------------
+              //
+              //-------------------------------------------------------------------------------
+              
+              /**
+               * @fn        void UartModeSet(UINT8 mode)
+               * @brief     set Uart mode ,there are three modes to be chosen
+               * @param     [in] mode:  0; UART_MODE_DEBUG; 
+               *                            1; UART_MODE_COMMUNICATE;
+               *                            2; UATR_MODE_DISABLE;  
+               * @retval    NONE
+               * @see       NULL
+               * @author    kai.wang
+               * @since     2010-5-18
+               * @todo      N/A
+               * @bug       N/A
+              */
+              void UartModeSet(UINT8 mode)
+              {
+                      if (mode < UART_MODE_MAX)
+                              Uartmode = mode;
+C51 COMPILER V8.08   UART                                                                  06/16/2022 10:11:55 PAGE 4   
+
+                
+              }
+              
+              //-------------------------------------------------------------------------------
+              //
+              //-------------------------------------------------------------------------------
+              
+              /**
+               * @fn        void UartSend(char message_s)
+               * @brief     to output a character 
+               * @param     [in] message_s: the type should be in char
+               * @retval    NONE
+               * @see       NULL
+               * @author    kai.wang
+               * @since     2010-5-18
+               * @todo      N/A
+               * @bug       N/A
+              */
+              void UartSend(char message_s)
+              {
+                      UINT8 i;
+                      
+                      ENTER_CRITICAL(i);
+                      UartSendEnable = 1;
+                      
+                      putchar(message_s);
+              
+                      UartSendEnable = 0;
+                      EXIT_CRITICAL(i);
+              }
+              
+              //-------------------------------------------------------------------------------
+              //
+              //-------------------------------------------------------------------------------
+              
+              /**
+               * @fn        void UartSend_Str(UINT8 *P)
+               * @brief     to output  character string
+               * @param     [in] *p:  Pointer to the string buff
+               * @retval    NONE
+               * @see       NULL
+               * @author    kai.wang
+               * @since     2010-5-19
+               * @todo      N/A
+               * @bug       N/A
+              */
+              void UartSend_Str(UINT8 *P)
+              {
+                      UINT8 num = 0;
+                  
+                      while ( (P[num] !='\r') && (P[num] !='\0') )
+                      {
+                        UartSend(P[num] );
+                            
+                         num++;
+                              
+                      } 
+                      UartSend('\r');
+              }
+              
+              //-------------------------------------------------------------------------------
+              //
+C51 COMPILER V8.08   UART                                                                  06/16/2022 10:11:55 PAGE 5   
+
+              //-------------------------------------------------------------------------------
+              
+              /**
+               * @fn        UINT8 UartDataGet(void)
+               * @brief     get the comand buff address
+               *            the command must be end of '\r'
+               * @param     NONE
+               * @retval    return = SUCCESS / FAIL
+               * @see       NULL
+               * @author    kai.wang
+               * @since     2010-5-19
+               * @todo      N/A
+               * @bug       N/A
+              */
+              UINT8 * UartDataGet(void)
+              {
+                      UINT8  * add; 
+                      
+                      add = Uartbuffer;
+                      return  (add);
+              }
+              
+              //-------------------------------------------------------------------------------
+              //
+              //-------------------------------------------------------------------------------
+              
+              /**
+               * @fn        void UartAckModeSet(UINT8 mode)
+               * @brief     set the ACK mode,there are three modes to be chosen
+               * @param     [in] mode: 
+               *                                      0; ACK_MODE_NULL;
+               *                                      1; ACK_MODE_ENTER;
+               *                                      2; ACK_MODE_CHAR;
+               *                                      default: ACK_MODE_NULL
+               * @retval    NONE
+               * @see       NULL
+               * @author    kai.wang
+               * @since     2010-5-19
+               * @todo      N/A
+               * @bug       N/A
+              */
+              void UartAckModeSet(UINT8 mode)
+              {
+                      if ( mode < ACK_MODE_MAX ) 
+                              UartAckmode = mode;
+              }
+              
+              
+              //-------------------------------------------------------------------------------
+              //
+              //-------------------------------------------------------------------------------
+              
+              /**
+               * @fn        void UartAckProcess(char c)
+               * @brief     UartAckProcess
+               * @param     [in] c
+               * @retval    NONE
+               * @see       NULL
+               * @author    kai.wang
+               * @since     2010-5-19
+               * @todo      N/A
+               * @bug       N/A
+C51 COMPILER V8.08   UART                                                                  06/16/2022 10:11:55 PAGE 6   
+
+              */
+              void UartAckProcess(char c)
+              {
+                      switch ( UartAckmode ) {
+                      case ACK_MODE_NULL:
+                              break;
+                      case ACK_MODE_ENTER:
+                              UartSend('\r');
+                              break;
+                      case ACK_MODE_CHAR:
+                              UartSend(c);
+                              break;
+                      default:
+                              break;
+                      }
+              }
+              #endif
+ 319          /*kai--2009.02.26*/
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      8    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     35    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

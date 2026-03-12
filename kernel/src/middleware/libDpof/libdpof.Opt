@@ -1,0 +1,38 @@
+### uVision2 Project, (C) Keil Software
+### Do not modify !
+
+ cExt (*.c)
+ aExt (*.s*; *.src; *.a*)
+ oExt (*.obj)
+ lExt (*.lib)
+ tExt (*.txt; *.h; *.inc)
+ pExt (*.plm)
+ CppX (*.cpp)
+ DaveTm { 0,0,0,0,0,0,0,0 }
+
+Target (libdpof), 0x0000 // Tools: 'MCS-51'
+GRPOPT 1,(libdpof),1,0,0
+
+OPTFFF 1,1,1,0,0,0,0,0,<.\dpof.c><dpof.c> 
+OPTFFF 1,2,1,0,0,0,0,0,<.\dpof_ver.c><dpof_ver.c> 
+
+
+TARGOPT 1, (libdpof)
+ CLK51=18000000
+  OPTTT 1,1,1,0
+  OPTHX 0,65535,0,0,0
+  OPTLX 120,65,8,<.\obj\>
+  OPTOX 16
+  OPTLT 0,0,0,0,1,1,0,1,0,0,0,0
+  OPTXL 1,1,1,1,1,1,1,0,0
+  OPTFL 1,0,1
+  OPTAX 0
+  OPTBL 0,(Data Sheet)<DATASHTS\DALLAS\DS80C32X.PDF>
+  OPTBL 1,(High-Speed User's Guide)<DATASHTS\DALLAS\HIGHSPEED_UG.PDF>
+  OPTDL (S8051.DLL)()(DP51.DLL)(-p320)(S8051.DLL)()(TP51.DLL)(-p320)
+  OPTDBG 48125,0,()()()()()()()()()() (BIN\MON51.DLL)()()()
+  OPTDF 0x0
+  OPTLE <>
+  OPTLC <>
+EndOpt
+

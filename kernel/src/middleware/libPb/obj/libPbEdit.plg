@@ -1,0 +1,13 @@
+Build target 'libPbEdit'
+compiling pb_edit.c...
+compiling pb_photoFrame.c...
+creating library .\obj\libPbEdit.LIB...
+TRANSFER
+".\obj\pb_edit.obj",
+".\obj\pb_photoFrame.obj" 
+TO ".\obj\libPbEdit.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\postLib.bat edit
+已复制         1 个文件。
+".\obj\libPbEdit.LIB" - 0 Error(s), 0 Warning(s).

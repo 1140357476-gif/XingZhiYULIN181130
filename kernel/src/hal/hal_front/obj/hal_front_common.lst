@@ -1,0 +1,290 @@
+C51 COMPILER V8.08   HAL_FRONT_COMMON                                                      09/21/2019 10:52:16 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE HAL_FRONT_COMMON
+OBJECT MODULE PLACED IN .\obj\hal_front_common.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE hal_front_common.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;
+                    -..\..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc
+                    -\customization) DEFINE(LIB_RELEASE) PRINT(.\obj\hal_front_common.lst) OBJECT(.\obj\hal_front_common.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21           
+  22          /**
+  23           * @file      hal_front_common.c
+  24           * @brief     The common file for front driver
+  25           * @author    Will Chiu
+  26           * @since     2010-01-01
+  27           * @date      2010-01-01
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #include "general.h"
+  34          #include "front_logi.h"
+  35          #include "sensor_cdsp.h"
+  36          #include "ae_api.h"
+  37          #include "hal_front_common.h"
+  38          #include "hal.h"
+  39          #include "hal_global.h"
+  40           
+  41          /**************************************************************************
+  42           *                           C O N S T A N T S                            *
+  43           **************************************************************************/
+  44          static UINT8 waitFlag=0; 
+  45          /**************************************************************************
+  46           *                              M A C R O S                               *
+  47           **************************************************************************/
+  48           
+  49          /**************************************************************************
+  50           *                          D A T A    T Y P E S                          *
+  51           **************************************************************************/
+  52           
+  53          /**************************************************************************
+C51 COMPILER V8.08   HAL_FRONT_COMMON                                                      09/21/2019 10:52:16 PAGE 2   
+
+  54           *                         G L O B A L    D A T A                         *
+  55           **************************************************************************/
+  56           
+  57          /**************************************************************************
+  58           *                 E X T E R N A L    R E F E R E N C E S                 *
+  59           **************************************************************************/
+  60           extern UINT8 xdata Gt1Cnt;
+  61          /**************************************************************************
+  62           *               F U N C T I O N    D E C L A R A T I O N S               *
+  63           **************************************************************************/
+  64          
+  65          /**
+  66           * @fn        void HAL_FrontAeGet(UINT16 idx, UINT8 opt, UINT32 *shutter, UINT16 *gain)
+  67           * @brief     Get exposure time and gain 
+  68           * @param     [in] idx : AE table idx
+  69           * @param     [in] opt : 
+  70           *                                              60: 60hz AE table
+  71           *                                              50: 50hz AE table       
+  72           * @param     [in] shutter : exposure time (time= 10/value)
+  73           * @param     [in] gain : gain value of sensor
+  74           * @retval    NONE
+  75           * @see       NULL
+  76           * @author    Will Chiu
+  77           * @since     2010-4-30
+  78           * @todo      N/A
+  79           * @bug       N/A
+  80          */
+  81          void
+  82          HAL_FrontAeGet(
+  83                  UINT16 idx,
+  84                  UINT8 opt,
+  85                  UINT32 *shutter,
+  86                  UINT16 *gain
+  87          )
+  88          {
+  89   1              frontPrevCapabDesc_t *pcap;
+  90   1      
+  91   1              frontCapabilityGet(0, &pcap, NULL);
+  92   1              if ( opt == 60 ) {
+  93   2                      *shutter = pcap->ae60hzTbl[ idx ].shutter;
+  94   2                      *gain = pcap->ae60hzTbl[ idx ].gain;
+  95   2              }
+  96   1              else {
+  97   2                      *shutter = pcap->ae50hzTbl[ idx ].shutter;
+  98   2                      *gain = pcap->ae50hzTbl[ idx ].gain;
+  99   2              }
+ 100   1      
+ 101   1              return;
+ 102   1      }
+ 103          
+ 104          /**
+ 105           * @fn        void HAL_Front10UsWait(UINT32 time_wait)
+ 106           * @brief     wiat 
+ 107           * @param     [in] time_wait : time unit is 10 us
+ 108           * @retval    NONE
+ 109           * @see       NULL
+ 110           * @author    Will Chiu
+ 111           * @since     2010-4-30
+ 112           * @todo      N/A
+ 113           * @bug       N/A
+ 114          */
+ 115          void
+C51 COMPILER V8.08   HAL_FRONT_COMMON                                                      09/21/2019 10:52:16 PAGE 3   
+
+ 116          HAL_Front10UsWait(
+ 117                  UINT16 time_wait
+ 118          )
+ 119          {
+ 120   1      
+ 121   1              //HAL_GlobalTimerWait10us((UINT8)time_wait);  /* wait for kai to revise function */
+ 122   1      
+ 123   1      
+ 124   1              
+ 125   1              #if 0
+                              //UINT32 cnt;
+                              
+                              //cnt = (UINT32) 0xFFFFFFFF - time_wait;
+              
+                              XBYTE[0x20c7] = *((UINT8*)&time_wait + 3 );//read8(time_wait,3);//
+                              XBYTE[0x20c8] = *((UINT8*)&time_wait + 2 );//read8(time_wait,2);//
+                              XBYTE[0x20c9] = *((UINT8*)&time_wait + 1 );//read8(time_wait,1);//
+                              XBYTE[0x20ca] = *((UINT8*)&time_wait + 0 );//read8(time_wait,0);//
+                              
+                              HAL_GlobalTimer2Start();        /*start timer2*/ 
+              
+                              while(!waitFlag);
+                              //while((XBYTE[0x20c7] != 0x00) || (XBYTE[0x20c8] != 0x00) || (XBYTE[0x20c9] != 0)){
+                              //      printf("0x20c7=%bx\n",XBYTE[0x20c7]);
+                              //}
+                              
+                              //while(!HAL_GlobalTimer2IntEvtGet());
+                              
+                              //HAL_GlobalTimer2Stop();       /*start timer2*/ 
+                              waitFlag=0;
+                      #else
+ 147   1                      #if 1
+ 148   1                      while(time_wait>200){
+ 149   2                              HAL_GlobalTimerWait10us(200);
+ 150   2                              time_wait-=200;                                 
+ 151   2                      }
+ 152   1      
+ 153   1                      if (time_wait>0){
+ 154   2                              HAL_GlobalTimerWait10us((UINT8)(time_wait&0xff));               
+ 155   2                      }
+ 156   1      
+ 157   1                      
+ 158   1                      #endif
+ 159   1      
+ 160   1                      #if 0
+                              UINT8 sts;
+                              //UINT8 t1,t2,t3,t4;
+                              //UINT8 cnt;
+                              //t1=XBYTE[0x20c1];
+                              //t2=XBYTE[0x20c2];             
+                              ENTER_CRITICAL(sts);
+              
+                              XBYTE[0x20c6] = 0x02;   /*stop timer1 */   
+                              XBYTE[0x20C5] = 0x00;
+                              XBYTE[0x20d0] |= 0x04;
+                              //time_wait = (UINT32) 0xFFFFFFFF - time_wait;
+              
+                              XBYTE[0x20c1] = *((UINT8*)&time_wait + 3 );//read8(time_wait,3);//
+                              XBYTE[0x20c2] = *((UINT8*)&time_wait + 2 );//read8(time_wait,2);//
+                              XBYTE[0x20c3] = *((UINT8*)&time_wait + 1 );//read8(time_wait,1);//
+                              XBYTE[0x20c4] = 0;
+              
+C51 COMPILER V8.08   HAL_FRONT_COMMON                                                      09/21/2019 10:52:16 PAGE 4   
+
+                              //t3=XBYTE[0x20c1];
+                              //t4=XBYTE[0x20c2];
+              
+                              //printf("start=%bx,%bx\n",t1,t2);
+                              //printf("end=%bx,%bx\n",t3,t4);
+              
+                              XBYTE[0x20c6] = 0x04;   /*load timer1 value*/
+              
+                              XBYTE[0x20c6] = 0x01;   /*start timer1 */   
+                              //cnt=Gt1Cnt;
+                              //while((XBYTE[0x20c1] != 0x00) || (XBYTE[0x20c2] != 0x00) || (XBYTE[0x20c3] != 0x00));
+                              while(!(XBYTE[0x20c0]&0x04));
+              
+                              EXIT_CRITICAL(sts);
+              
+                              XBYTE[0x20C5] = 0x01;
+                              #endif
+ 195   1                      #if 0
+                              UINT8 sts;
+              
+                              ENTER_CRITICAL(sts);
+              
+                              XBYTE[0x2074] = 0x02;
+              
+                              time_wait = (UINT32) 0xFFFFFFFF - time_wait;
+              
+                              XBYTE[0x2070] = M_LoByteOfDword(time_wait);
+                              XBYTE[0x2071] = M_MidLoByteOfDword(time_wait);
+                              XBYTE[0x2072] = M_MidHiByteOfDword(time_wait);
+              
+                              XBYTE[0x2074] = 0x01;
+              
+                              while((XBYTE[0x2070] != 0x00) || (XBYTE[0x2071] != 0x00) || (XBYTE[0x2072] != 0));
+              
+                              EXIT_CRITICAL(sts);
+                              #endif
+ 214   1              #endif  
+ 215   1      }
+ 216          
+ 217          #if 0  // mattwang remove.
+              void
+              HalFrontAeSet(
+                      UINT16 idx,
+                      UINT8 opt
+              )
+              {
+                      UINT32 shutter;
+                      UINT16 gain;
+                      frontPrevCapabDesc_t *pcap;
+              
+              
+                      frontCapabilityGet(0, &pcap, NULL);
+                      if ( opt == 60 ) {
+                              shutter = pcap->ae60hzTbl[ idx ].shutter;
+                              gain = pcap->ae60hzTbl[ idx ].gain;
+                      }
+                      else {
+                              shutter = pcap->ae50hzTbl[ idx ].shutter;
+                              gain = pcap->ae50hzTbl[ idx ].gain;
+                      }
+              
+                      G_AEReady = 1;
+C51 COMPILER V8.08   HAL_FRONT_COMMON                                                      09/21/2019 10:52:16 PAGE 5   
+
+                      G_SHUTTER = shutter;
+                      G_GAIN = gain;
+              
+                      XBYTE[REG_Cdsp_Cdspinten_lo] = XBYTE[REG_Cdsp_Cdspinten_lo] | 0x04;//AE,AWB interrupt & CDSP Eof
+                      HAL_FrontIntrEnable(1, 0x41);
+              
+                      while( !( G_AEReady == 0 && G_AESetting == 0 ) );
+              
+                      XBYTE[REG_Cdsp_Cdspinten_lo] = XBYTE[REG_Cdsp_Cdspinten_lo] & 0xFB;//AE window done intr disable
+              
+                      return;
+              }
+              #endif
+ 253          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    212    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      1      14
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,4 @@
+TRANSFER
+".\obj\dos16_copydisk.obj",
+".\obj\dosC_ver.obj" 
+TO ".\obj\libDos32_C.LIB"

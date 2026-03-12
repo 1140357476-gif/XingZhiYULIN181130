@@ -1,0 +1,95 @@
+C51 COMPILER V8.12   OS_VER                                                                12/29/2014 15:17:56 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE OS_VER
+OBJECT MODULE PLACED IN .\obj\os_ver.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE os_ver.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\i
+                    -nc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customiza
+                    -tion) DEFINE(LIB_RELEASE) PRINT(.\obj\os_ver.lst) OBJECT(.\obj\os_ver.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *
+   3           *        Copyright (c) 2008-2008 by Sunplus mMedia Inc., Ltd.
+   4           *
+   5           *  This software is copyrighted by and is the property of Sunplus
+   6           *  mMedia Inc., Ltd. All rights are reserved by Sunplus mMedia
+   7           *  Inc., Ltd. This software may only be used in accordance with the
+   8           *  corresponding license agreement. Any unauthorized use, duplication,
+   9           *  distribution, or disclosure of this software is expressly forbidden.
+  10           *
+  11           *  This Copyright notice MUST not be removed or modified without prior
+  12           *  written consent of Sunplus mMedia Inc., Ltd.
+  13           *
+  14           *  Sunplus mMedia Inc., Ltd. reserves the right to modify this
+  15           *  software without notice.
+  16           *
+  17           *  Sunplus mMedia Inc., Ltd.
+  18           *  19-1, Innovation First Road, Science-Based Industrial Park,
+  19           *  Hsin-Chu, Taiwan, R.O.C.
+  20           *
+  21           *  Author: Phil.lin
+  22           *
+  23           *  Change Log:
+  24           *
+  25           *      os01, 20111024 Guoqiang.li
+  26           *              a. modify number of version
+  27           *      os02, 20111110 LinJieCheng
+  28           *              a. add Dzoom non-blocking flow
+  29           *              b. removed old Dzoom non-blocking flow
+  30           **************************************************************************/
+  31          
+  32          /**************************************************************************
+  33           *                            H E A D E R   F I L E S
+  34           **************************************************************************/
+  35          #include "general.h"
+  36          
+  37          /**************************************************************************
+  38           *                            G L O B A L   D A T A
+  39           **************************************************************************/
+  40          static UINT8 code verStr[] = "$os02";
+  41          
+  42          /**************************************************************************
+  43           *
+  44           *  Function Name: osLibVerGet
+  45           *
+  46           *  Purposes:
+  47           *
+  48           *  Descriptions:
+  49           *
+  50           *  Arguments:
+  51           *
+  52           *  Returns:
+  53           *
+C51 COMPILER V8.12   OS_VER                                                                12/29/2014 15:17:56 PAGE 2   
+
+  54           *  See also:
+  55           *
+  56           **************************************************************************/
+  57          UINT8 *
+  58          libOsVerGet(
+  59                  void
+  60          )
+  61          {
+  62   1              return (verStr + 3);
+  63   1      }
+  64          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      6    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

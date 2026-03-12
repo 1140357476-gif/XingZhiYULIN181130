@@ -1,0 +1,248 @@
+C51 COMPILER V8.12   GPIO                                                                  12/29/2014 15:17:42 PAGE 1   
+
+
+C51 COMPILER V8.12, COMPILATION OF MODULE GPIO
+OBJECT MODULE PLACED IN .\obj\gpio.obj
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE gpio.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\inc
+                    -\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customizati
+                    -on) DEFINE(LIB_RELEASE) PRINT(.\obj\gpio.lst) OBJECT(.\obj\gpio.obj)
+
+line level    source
+
+   1          /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21           
+  22          /**
+  23           * @file      gpio.c
+  24           * @brief     get chip package pin
+  25           * @author    kai.wang
+  26           * @since     2010-01-01
+  27           * @date      2010-01-01
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #include "general.h"
+  34          #include "gpio.h"
+  35          #include "gpio_api.h"
+  36          #include "app_dev_storage.h"
+  37          #include "app_dev_usb.h"
+  38          #include "app_dev_disp.h"
+  39          /**************************************************************************
+  40           *                           C O N S T A N T S                            *
+  41           **************************************************************************/
+  42          #define USE_PKG_DEDICATE_PIN  1  /* 0: old code, 1: new code. */
+  43           
+  44          /**************************************************************************
+  45           *                              M A C R O S                               *
+  46           **************************************************************************/
+  47           
+  48          /**************************************************************************
+  49           *                          D A T A    T Y P E S                          *
+  50           **************************************************************************/
+  51           
+  52          /**************************************************************************
+  53           *                         G L O B A L    D A T A                         *
+C51 COMPILER V8.12   GPIO                                                                  12/29/2014 15:17:42 PAGE 2   
+
+  54           **************************************************************************/
+  55          extern code pkgDedicateGpio_t pkgDedicateGpioTbl[];
+  56          extern code UINT8 pkgDedicateGpioTot;
+  57          extern code UINT16 pkgChipId; 
+  58          /**************************************************************************
+  59           *                 E X T E R N A L    R E F E R E N C E S                 *
+  60           **************************************************************************/
+  61           
+  62          /**************************************************************************
+  63           *               F U N C T I O N    D E C L A R A T I O N S               *
+  64           **************************************************************************/
+  65          /**
+  66           * @fn        UINT8 pkgDedicateGpioGet(UINT8 pinId, UINT8 *pbyteId, UINT8 *pbitMsk, UINT8 *ppolarity)
+  67           * @brief     get dedicate gpio pin in current chip package.
+  68           * @param     [in] pinId: pin id, one of pkgDedicateGpioPin_e.
+  69           * @param     [in] pbyteId: byte id, one of gpioByte_e.
+  70           * @param     [in] pbitMsk: bitmap mask.
+  71           * @retval    return = SUCCESS / FAIL
+  72           * @see       NULL
+  73           * @author    kai.wang
+  74           * @since     2010-5-17
+  75           * @todo        return values *pbyteId and *pbitMsk are used to call following api:
+  76           *
+  77           *          void  gpioByteFuncSet(UINT8 byteId, UINT8 msk, UINT8 func);
+  78           *          UINT8 gpioByteFuncGet(UINT8 byteId, UINT8 msk);
+  79           *          void  gpioByteDirSet(UINT8 byteId, UINT8 msk, UINT8 dir);
+  80           *          UINT8 gpioByteDirGet(UINT8 byteId, UINT8 msk);
+  81           *          void  gpioByteOutSet(UINT8 byteId, UINT8 msk, UINT8 val);
+  82           *          UINT8 gpioByteOutGet(UINT8 byteId, UINT8 msk);
+  83           *          void  gpioByteInGateSet(UINT8 byteId, UINT8 msk, UINT8 gate);
+  84           *          UINT8 gpioByteInGet(UINT8 byteId, UINT8 msk, UINT8 polarity);
+  85           * @bug       N/A
+  86          */
+  87          UINT8
+  88          pkgDedicateGpioGet(
+  89                  UINT8 pinId,
+  90                  UINT8 *pbyteId,
+  91                  UINT8 *pbitMsk,
+  92                  UINT8 *ppolarity
+  93          )
+  94          {
+  95   1              UINT8 idx;
+  96   1      
+  97   1      
+  98   1              /* search desired dedicate pin. */
+  99   1              for ( idx = 0; idx < pkgDedicateGpioTot; idx++ ){
+ 100   2                      if ( pinId == pkgDedicateGpioTbl[idx].pinId ) {
+ 101   3                              break;
+ 102   3                      }
+ 103   2              }
+ 104   1      
+ 105   1              if ( idx < pkgDedicateGpioTot ) {  /* found. */
+ 106   2                      *pbyteId = pkgDedicateGpioTbl[idx].byteId;
+ 107   2                      *pbitMsk = pkgDedicateGpioTbl[idx].bitMsk;
+ 108   2                      *ppolarity = pkgDedicateGpioTbl[idx].polarity;
+ 109   2              }
+ 110   1              else {  /* not found. */
+ 111   2                      *pbyteId = GPIO_BYTE_NULL;
+ 112   2                      *pbitMsk = (UINT8)NULL;
+ 113   2              }
+ 114   1      
+ 115   1              if ( *pbyteId == GPIO_BYTE_NULL || *pbitMsk == NULL ) {
+C51 COMPILER V8.12   GPIO                                                                  12/29/2014 15:17:42 PAGE 3   
+
+ 116   2                      *ppolarity = ACTIVE_HIGH;
+ 117   2                      return FAIL;
+ 118   2              }
+ 119   1              else {
+ 120   2                      return SUCCESS;
+ 121   2              }
+ 122   1      }
+ 123          #if USE_PKG_DEDICATE_PIN
+ 124          /**
+ 125           * @fn        void pkgDedicateGpioCfg(UINT8 pinId, UINT8 *pbyteId, UINT8 *pbitMsk, UINT8*ppolarity, UINT8 
+             -dir)
+ 126           * @brief     configure package gpio 
+ 127           * @param     [in] pinId
+ 128           * @param     [in] pbyteId
+ 129           * @param     [in] pbitMsk
+ 130           * @param     [in] dir
+ 131           * @retval    NONE
+ 132           * @see       NULL
+ 133           * @author    kai.wang
+ 134           * @since     2010-5-17
+ 135           * @todo      N/A
+ 136           * @bug       N/A
+ 137          */
+ 138          void
+ 139          pkgDedicateGpioCfg(
+ 140                  UINT8 pinId,
+ 141                  UINT8 *pbyteId,
+ 142                  UINT8 *pbitMsk,
+ 143                  UINT8 *ppolarity,
+ 144                  UINT8 dir
+ 145          )
+ 146          {
+ 147   1              UINT8 byteId, bitMsk, polarity;
+ 148   1      
+ 149   1              pkgDedicateGpioGet(pinId, &byteId, &bitMsk,&polarity);
+ 150   1              //gpioByteFuncSet(byteId, bitMsk, 0xFF);
+ 151   1              gpioByteDirSet(byteId, bitMsk, dir?0xFF:0x00);
+ 152   1      
+ 153   1              *pbyteId = byteId;
+ 154   1              *pbitMsk = bitMsk;
+ 155   1              *ppolarity = polarity;
+ 156   1      }
+ 157          #endif
+ 158          
+ 159          
+ 160          //-----------------------------------------------------------------------------
+ 161          //chipPackageIdGet
+ 162          //-----------------------------------------------------------------------------
+ 163          /*
+ 164          UINT8 
+ 165          pkgChipIdGet(
+ 166          void
+ 167          )
+ 168          {
+ 169                  return XBYTE[0x22E7];
+ 170          }
+ 171          
+ 172          */
+ 173          
+ 174          /**
+ 175           * @fn        UINT16 pkgChipIdGet(void)
+ 176           * @brief     get chip id in current chip package.
+C51 COMPILER V8.12   GPIO                                                                  12/29/2014 15:17:42 PAGE 4   
+
+ 177           * @param     NONE
+ 178           * @retval    chip id, 0x1525, 0x1526 or 0x1528.
+ 179           * @see       NULL
+ 180           * @author    Matt Wang
+ 181           * @since     2010-5-17
+ 182           * @todo      N/A
+ 183           * @bug       N/A
+ 184          */
+ 185          UINT16
+ 186          pkgChipIdGet(
+ 187                  void
+ 188          )
+ 189          {
+ 190   1              return pkgChipId;
+ 191   1      }
+ 192          
+ 193          
+ 194          /**
+ 195           * @fn        UINT16 pkgChipIdGet_Intr(void)
+ 196           * @brief     get chip id in current chip package.
+ 197           * @param     NONE
+ 198           * @retval    chip id, 0x1525, 0x1526 or 0x1528.
+ 199           * @see       NULL
+ 200           * @author    Matt Wang
+ 201           * @since     2010-5-17
+ 202           * @todo      N/A
+ 203           * @bug       N/A
+ 204          */
+ 205          UINT16
+ 206          pkgChipIdGet_Intr(
+ 207                  void
+ 208          )
+ 209          {
+ 210   1              return pkgChipId;
+ 211   1      }
+ 212          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    273    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      24
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

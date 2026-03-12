@@ -1,0 +1,19 @@
+Build target 'libPbGlobal'
+compiling pb_init.c...
+compiling pb_info.c...
+compiling pb_decode.c...
+compiling pb_ver.c...
+creating library .\obj\libPbGlobal.LIB...
+TRANSFER
+".\obj\pb_init.obj",
+".\obj\pb_info.obj",
+".\obj\pb_decode.obj",
+".\obj\pb_ver.obj" 
+TO ".\obj\libPbGlobal.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\postLib.bat global
+已复制         1 个文件。
+".\obj\libPbGlobal.LIB" - 0 Error(s), 0 Warning(s).

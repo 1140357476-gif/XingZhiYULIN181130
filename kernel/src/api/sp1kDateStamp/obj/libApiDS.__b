@@ -1,0 +1,4 @@
+TRANSFER
+".\obj\sp1k_datastamp_api.obj",
+".\obj\api_ds_ver.obj" 
+TO ".\obj\libApiDS.LIB"

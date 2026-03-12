@@ -1,0 +1,14 @@
+Build target 'libHalGpio'
+compiling hal_gpio.c...
+compiling halGpio_ver.c...
+creating library .\obj\libHalGpio.LIB...
+TRANSFER
+".\obj\hal_gpio.obj",
+".\obj\halGpio_ver.obj" 
+TO ".\obj\libHalGpio.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+E:\WORK\HuiRui\CDOZ3\210908\CDAF\kernel\src\hal\hal_gpio>copy obj\libHalGpio.LIB ..\..\..\lib\libHalGpio.LIB 
+已复制         1 个文件。
+".\obj\libHalGpio.LIB" - 0 Error(s), 0 Warning(s).

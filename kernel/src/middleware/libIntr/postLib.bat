@@ -1,0 +1,1 @@
+copy .\obj\libIntr.lib ..\..\..\lib\libIntr.lib

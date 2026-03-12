@@ -1,0 +1,1 @@
+copy .\obj\sysboot.lib ..\..\..\lib\libSysBoot.LIB

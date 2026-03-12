@@ -1,0 +1,20 @@
+Build target 'libStorage_spi'
+compiling sf.c...
+compiling sf_rw.c...
+compiling spi.c...
+spi\spi.c(33): message C320: "Load disk driver SPI"
+compiling spi_ver.c...
+creating library .\obj\libStorage_spi.LIB...
+TRANSFER
+".\obj\sf.obj",
+".\obj\sf_rw.obj",
+".\obj\spi.obj",
+".\obj\spi_ver.obj" 
+TO ".\obj\libStorage_spi.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat spi
+已复制         1 个文件。
+".\obj\libStorage_spi.LIB" - 0 Error(s), 0 Warning(s).

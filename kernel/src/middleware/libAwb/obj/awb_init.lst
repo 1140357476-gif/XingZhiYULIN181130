@@ -1,0 +1,511 @@
+C51 COMPILER V8.08   AWB_INIT                                                              07/16/2022 19:06:34 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE AWB_INIT
+OBJECT MODULE PLACED IN .\obj\awb_init.obj
+COMPILER INVOKED BY: c:\Keil\C51\BIN\C51.EXE awb_init.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..
+                    -\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customi
+                    -zation) DEFINE(LIB_RELEASE) PRINT(.\obj\awb_init.lst) OBJECT(.\obj\awb_init.obj)
+
+line level    source
+
+   1           /**************************************************************************
+   2           *         Copyright(c) 2010 by i-Catch Technology Co., Ltd.              *
+   3           *                                                                        *
+   4           *  This software is copyrighted by and is the property of i-Catch Tech-  *
+   5           *  nology Co., Ltd. All rights are reserved by i-Catch Technology Co.,   *
+   6           *  Ltd. This software may only be used in accordance with the            *
+   7           *  corresponding license agreement. Any unauthorized use, duplication,   *
+   8           *  distribution, or disclosure of this software is expressly forbidden.  *
+   9           *                                                                        *
+  10           *  This Copyright notice "M U S T" not be removed or modified without    *
+  11           *  prior written consent of i-Catch Technology Co., Ltd.                 *
+  12           *                                                                        *
+  13           *  i-Catch Technology Co., Ltd. reserves the right to modify this        *
+  14           *  software without notice.                                              *
+  15           *                                                                        *
+  16           *  i-Catch Technology Co., Ltd.                                          *
+  17           *  19-1, Innovation First Road, Science-Based Industrial Park,           *
+  18           *  Hsin-Chu, Taiwan, R.O.C.                                              *
+  19           *                                                                        *
+  20           *************************************************************************/
+  21          
+  22          /**
+  23           * @file      File name
+  24           * @brief     Brief
+  25           * @author    Author's name
+  26           * @since     2010-01-01
+  27           * @date      2010-01-01
+  28          */
+  29          
+  30          /**************************************************************************
+  31           *                        H E A D E R   F I L E S
+  32           **************************************************************************/
+  33          #include "awb_func.h"
+  34          #include "awb_ver.h"
+  35          //#include "sp1k_fd_api.h"
+  36          //#include "sp1k_ae_api.h"
+  37          
+  38          #include "hal_gprm.h"
+  39          #include "reg_def.h"
+  40          
+  41          #include "initio.h"
+  42          #include "intr.h"
+  43          
+  44          #include "cardlink.h"
+  45          #include "Sp1k_vfs_api.h"
+  46          #include "os_api.h"
+  47          #include "pv_task.h"
+  48          #include "cmd.h"
+  49          /**************************************************************************
+  50           *                           C O N S T A N T S                            *
+  51           **************************************************************************/
+  52          extern code UINT8 awbQueueTbl[1024*8] ;
+  53          #define pawbParaTbl ((UINT32)awbQueueTbl+1024*7)
+C51 COMPILER V8.08   AWB_INIT                                                              07/16/2022 19:06:34 PAGE 2   
+
+  54          const awb_ctt_t * pawbctc = (const awb_t *)(pawbParaTbl+AWB_INFO_CTT_Offset);
+  55          const awb_t * pawb = (const awb_t *)(pawbParaTbl+AWB_CTT_PARAM_Offset);
+  56          const awb_addr_t * pawbaddr = (const awb_t *)(pawbParaTbl+AWB_INFO_ADDR_Offset);
+  57          /**************************************************************************
+  58           *                              M A C R O S                               *
+  59           **************************************************************************/
+  60          #define AWB_WRBACK_FW   0
+  61          /**************************************************************************
+  62           *                          D A T A    T Y P E S                          *
+  63           **************************************************************************/
+  64          
+  65          /**************************************************************************
+  66           *                         G L O B A L    D A T A                         *
+  67           **************************************************************************/
+  68          
+  69          /**************************************************************************
+  70           *                 E X T E R N A L    R E F E R E N C E S                 *
+  71           **************************************************************************/
+  72          
+  73          /**************************************************************************
+  74           *               F U N C T I O N    D E C L A R A T I O N S               *
+  75           **************************************************************************/
+  76          void awbInit(){
+  77   1              awb_addr_t addr;
+  78   1      
+  79   1              //printf("QueueInit\n");
+  80   1              //printf("%lx,%lx\n",(UINT32)awbQueueTbl,(UINT32)sizeof(awb_moe_normal_t)+sizeof(awb_moe_outdoor_t));
+  81   1              //printf("%lx,%lx,%lx\n",(UINT32)AWB_INFO_CTT_Offset,(UINT32)AWB_CTT_PARAM_Offset,(UINT32)AWB_INFO_ADDR_O
+             -ffset);
+  82   1              //printf("%lx,%lx,%lx,%lx,%lx\n",(UINT32)awbQueueTbl,(UINT32)pawbctc,(UINT32)pawb,(UINT32)pawbaddr,(UINT3
+             -2)sizeof(pawbaddr));
+  83   1              //UINT32 t0,t1;
+  84   1              //HAL_GlobalTimerRead10us(&t0);
+  85   1              awbInitStatus(&addr);
+  86   1              if(awbInitCheck(&addr)){
+  87   2                      printf(BLUE("Code\n"));
+  88   2                      memcpy(&awb,pawb,sizeof(awb_t));
+  89   2                      //memcpy(&awbAddr,pawbaddr,sizeof(awb_addr_t));
+  90   2              }else{
+  91   2                      XBYTE[REG_Dram_AddressErr] &= ~0x01;
+  92   2                      sp1kNandRsvRead(AWB_ID_Queue,addr.que<<1);
+  93   2                      //HAL_GprmDramDmaAdv(pawbaddr->moe<<1, pawbaddr->que<<1, 1024*8, 1);
+  94   2                      if(awbInitCheck(&addr)){
+  95   3                              printf(BLUE("Load\n"));
+  96   3                              memcpy(&awb,pawb,sizeof(awb_t));
+  97   3                      }else{
+  98   3                              //UINT8 xdata* buf = G_ucStorData;
+  99   3                              UINT8 buf[256+64];
+ 100   3                              printf(BLUE("Create\n"));
+ 101   3                              HAL_DramWriteBytesAddr(addr.addr,&addr,sizeof(awb_addr_t),0);
+ 102   3                              awbInitCtt(buf,AWB_ID_Ctt,NULL);//,0xff);
+ 103   3                              awbMoeQueueCreate(pawbctc);
+ 104   3      
+ 105   3                              //awbInitCheck(&addr);
+ 106   3                              sp1kNandRsvWrite(AWB_ID_Queue,pawbaddr->que<<1);
+ 107   3                      }
+ 108   2                      //dumpData(1024*8, addr.que, 1);
+ 109   2      #if AWB_WRBACK_FW
+                              codeWriteBack(0,(UINT16)awbQueueTbl,pawbaddr->que,1024*8);
+              #endif
+ 112   2                      //dramFileSave("AWB.BIN",pawbaddr->que,8*1024);
+ 113   2                      XBYTE[REG_Dram_AddressErr] |= 0x01; //address_err_enable
+C51 COMPILER V8.08   AWB_INIT                                                              07/16/2022 19:06:34 PAGE 3   
+
+ 114   2              }
+ 115   1              //HAL_GlobalTimerRead10us(&t1);
+ 116   1              //printf("Init:%lx\n",t1-t0);
+ 117   1      }
+ 118          
+ 119          UINT8 awbInitCheck(awb_addr_t* paddr){
+ 120   1      
+ 121   1              /*printf(BLUE("AwbCheck(%lx,%lx)(%lx,%lx)(%lx,%lx)(%lx,%lx)(%bx,%bx,%bx)(%bx,%bx)\n"),
+ 122   1                      pawbaddr->buf,paddr->buf
+ 123   1                      , pawbaddr->que , paddr->que
+ 124   1                      , pawbaddr->wnd,paddr->wnd
+ 125   1                      , pawbaddr->moe,paddr->moe
+ 126   1                      , pawb->queueCreate, awb.queueCreate,0x5a
+ 127   1                      , pawb->rawFmt, awb.rawFmt
+ 128   1                      );*/
+ 129   1      
+ 130   1              return!(        pawbaddr->buf!=paddr->buf
+ 131   1                      || pawbaddr->queue[0] != paddr->queue[0]
+ 132   1                      || pawbaddr->wnd!=paddr->wnd
+ 133   1                      || pawbaddr->moe!=paddr->moe
+ 134   1                      || pawb->queueCreate != awb.queueCreate
+ 135   1                      || pawb->queueCreate != 0x5a
+ 136   1                      || pawb->rawFmt != awb.rawFmt
+ 137   1                      );
+ 138   1      }
+ 139          void awbInitStatus(awb_addr_t* paddr){
+ 140   1              UINT16 bayerpv,bayersn;
+ 141   1      
+ 142   1              ///////////////////////////////////////////////////////////////////////////
+ 143   1              // init sensor bayer
+ 144   1              frontDeviceInfoGet(0,FRONT_DEV_INFO_BAYER_FMT,&bayerpv,&bayersn);
+ 145   1              awb.rawFmt = (bayersn<<4) | (bayerpv & 0x0f);
+ 146   1      
+ 147   1              //////////////////////////////////////////////////////////////////////////
+ 148   1              // init status
+ 149   1              awb.queueCreate = 0x5a;
+ 150   1      
+ 151   1              ///////////////////////////////////////////////////////////////////////////
+ 152   1              // init dram addr
+ 153   1              paddr->que = (32ul*1024*(0+1) + ((UINT16)awbQueueTbl - 0x8000)) >> 1;
+ 154   1              paddr->buf=K_SDRAM_DPSStartAddr;
+ 155   1              paddr->queue[AWB_SCENE_Normal]          = paddr->que;
+ 156   1              paddr->queue[AWB_SCENE_Outdoor]         = paddr->queue[AWB_SCENE_Normal]        +sizeof(awb_moe_normal_t)/2;
+ 157   1              paddr->queue[AWB_SCENE_RectOne]         = paddr->queue[AWB_SCENE_Outdoor]       +sizeof(awb_moe_outdoor_t)/2;
+ 158   1              paddr->wnd=K_SDRAM_PvAwbWndAddr;
+ 159   1              paddr->moe=K_SDRAM_PvMoeTmpAddr;
+ 160   1      
+ 161   1              paddr->ctc= paddr->que + ((UINT16)pawbctc-(UINT16)awbQueueTbl)/2;
+ 162   1              paddr->para= paddr->que + ((UINT16)pawb-(UINT16)awbQueueTbl)/2;
+ 163   1              paddr->addr= paddr->que + ((UINT16)pawbaddr-(UINT16)awbQueueTbl)/2;
+ 164   1      
+ 165   1      #if 0
+              {
+                      UINT8 i;
+                      UINT32 xdata* ptdata = (UINT32 xdata*)paddr;
+                      UINT32 code* ptcode = (UINT32 code*)pawbaddr;
+                      printf("initAddr\n");
+                      for(i=0;i<12;i++)printf("%bx-%lx,%lx-%ld\n",i,*ptcode,*ptdata,(SINT32)*ptcode++ - *ptdata++);
+              }
+              #endif
+ 174   1      }
+ 175          /**
+C51 COMPILER V8.08   AWB_INIT                                                              07/16/2022 19:06:34 PAGE 4   
+
+ 176           * @fn        UINT32 awbCttSet(awb_ctt_t* ctt, UINT8 fileId, UINT8* fname, UINT8 opt)
+ 177           * @brief    set awb ctt
+ 178           * @param     [in] buf          :source sram
+ 179           * @param     [in] fileId               :source awbctt.bin
+ 180           * @param     [in] fname        :source file
+ 181           * @param     [in] opt          :[0]update moe
+ 182           *                                              :[1]update awb struct
+ 183           *
+ 184           * @retval    return = SUCCESS / FAIL
+ 185           * @see       NULL
+ 186           * @author    wangjg
+ 187           * @since     2010-7-12
+ 188           * @todo      N/A
+ 189           * @bug       N/A
+ 190          */
+ 191          UINT32
+ 192          awbInitCtt(
+ 193                  UINT8* buf,
+ 194                  UINT8 fileId,
+ 195                  UINT8* fname//,
+ 196                  //UINT8 opt     //[0] update moe//[1] update awb
+ 197                  )
+ 198          {
+ 199   1              //UINT8 buf[sizeof(awb_ctt_t)+8];
+ 200   1              //UINT8 xdata* buf = G_ucStorData;
+ 201   1              awb_ctt_t xdata* ptCtt = (awb_ctt_t xdata*)(buf+8);//ctt?ctt:(buf+8);
+ 202   1              UINT8 xdata* pt=(UINT8 xdata*)ptCtt;
+ 203   1              UINT16 xdata* rects = ptCtt->rect;
+ 204   1              UINT8 xdata* ratios = ptCtt->ratio;
+ 205   1              UINT16 xdata* ctc = ptCtt->ctc;
+ 206   1              UINT16 xdata* cal = ptCtt->cal;
+ 207   1              UINT16 xdata* rect = rects;
+ 208   1              UINT8 xdata* ratio = ratios;
+ 209   1              awb_t xdata* para = &(ptCtt->param);
+ 210   1              UINT16 r,b,i;
+ 211   1              UINT16 xdata* pt16=(UINT16 xdata*)pt;
+ 212   1              UINT32 xdata* pt32 =(UINT32 xdata*)buf;
+ 213   1      
+ 214   1              UINT8 pvBayer,snapBayer;
+ 215   1              UINT16 para1, para2;
+ 216   1              //code UINT32 buf[]={0x55aa0000,0x55aaffff};
+ 217   1      
+ 218   1              //ctt = ctt;
+ 219   1              if(fileId!=0xff){
+ 220   2                      sp1kNandRsvRead(fileId, AWB_ADDR_Ctt<<1);
+ 221   2              }
+ 222   1              else if(fname){
+ 223   2                      UINT32 size;
+ 224   2                      dramFileLoad(fname,AWB_ADDR_Ctt,&size);
+ 225   2                      printf("%s\n",fname);
+ 226   2              }
+ 227   1      
+ 228   1              //if(!ctt){
+ 229   1                      //pt=G_ucStorData;
+ 230   1                      //UINT16 xdata* pt16=(UINT16 xdata*)pt;
+ 231   1                      //memset(pt,0,256);
+ 232   1                      //HAL_DramReadBytesAddr(AWB_ADDR_Ctt,pt,AWB_SIZE_Ctt,0);
+ 233   1                      HAL_DramDmaRead(pt,AWB_ADDR_Ctt,AWB_SIZE_Ctt,1);
+ 234   1                      if(pt16[0]!=0 && pt16[1]==0){//1528 awbctt.bin
+ 235   2                              UINT8 xdata* pt8=(UINT8 xdata*)ctc;
+ 236   2                              memset(pt+16,0,sizeof(awb_ctt_t)-16);
+ 237   2                              pt8[1]=pt[4];
+C51 COMPILER V8.08   AWB_INIT                                                              07/16/2022 19:06:34 PAGE 5   
+
+ 238   2                              pt8[0]=pt[5];
+ 239   2                              pt8[9]=pt[6];
+ 240   2                              pt8[8]=pt[7];
+ 241   2                              pt8[3]=pt[8];
+ 242   2                              pt8[2]=pt[9];
+ 243   2                              pt8[11]=pt[10];
+ 244   2                              pt8[10]=pt[11];
+ 245   2                              pt8[5]=pt[12];
+ 246   2                              pt8[4]=pt[13];
+ 247   2                              pt8[13]=pt[14];
+ 248   2                              pt8[12]=pt[15];
+ 249   2                              memset(pt,0,16);
+ 250   2      
+ 251   2                      }
+ 252   1              pt32[5] = awbVersion;
+ 253   1              //}
+ 254   1      
+ 255   1              //ctc
+ 256   1              if(!ctc[0])
+ 257   1              {
+ 258   2                      #if 0
+                                      code UINT16 pt[]={
+                                              0x105,0x185,0x1c0,0,
+                                              0x213,0x1a9,0x10d,0
+                                      };
+                              #else
+ 264   2                              code UINT16 pt[]={
+ 265   2                                      242,323,419,419,
+ 266   2                                      436,363,269,269
+ 267   2                              };
+ 268   2                      #endif
+ 269   2                      memcpy(ctc,pt,16);
+ 270   2              }
+ 271   1      
+ 272   1              if(cal[0] && cal[1] && cal[2] && cal[4] && cal[5] && cal[6])
+ 273   1              {
+ 274   2                      memcpy(ctc,cal,16);
+ 275   2              }
+ 276   1              else if(cal[3] && cal[7] && ctc[3]&& ctc[7])
+ 277   1              {
+ 278   2                      r=cal[3]-ctc[3];
+ 279   2                      b=cal[7]-ctc[7];
+ 280   2      
+ 281   2                      for(i=0;i<3;i++){
+ 282   3                              ctc[i]  +=r;
+ 283   3                              ctc[i+4]        +=b;
+ 284   3                      }
+ 285   2              }
+ 286   1      
+ 287   1      
+ 288   1              //scene
+ 289   1              ratio = ratios + 16*AWB_SCENE_Normal;
+ 290   1              if(!ratio[1])
+ 291   1              {
+ 292   2                      code UINT8 pt[]={
+ 293   2                              108,140,110,142,110,155,0,0     //rg
+ 294   2                              ,118,140,115,142,112,155,0,0,   //bg
+ 295   2                              };
+ 296   2                      memcpy(ratio,pt,16);
+ 297   2              }
+ 298   1      
+ 299   1              ratio = ratios + 16*AWB_SCENE_Outdoor;
+C51 COMPILER V8.08   AWB_INIT                                                              07/16/2022 19:06:34 PAGE 6   
+
+ 300   1              if(!ratio[1])
+ 301   1              {
+ 302   2                      code UINT8 pt[]={
+ 303   2                              //118,135,105,128,100,136,0,0   //rg
+ 304   2                              //,118,135,110,128,125,150,0,0, //bg
+ 305   2                              //128,128,105,128,100,155,0,0   //rg
+ 306   2                              //,128,128,110,128,125,129,0,0, //bg
+ 307   2                               128,128,105,128,95,135,0,0     //rg
+ 308   2                              ,128,128,110,128,100,150,0,0,   //bg
+ 309   2                              };
+ 310   2                      memcpy(ratio,pt,16);
+ 311   2              }
+ 312   1              //rect
+ 313   1              rect = rects+AWB_RECT_Flash*4;
+ 314   1              if(!rect[1])
+ 315   1              {
+ 316   2                      rect[0]=(ctc[0]*0.8);//<<6)>>7; //left
+ 317   2                      rect[1]=(ctc[2]*1.3);//<<6)>>5; //right
+ 318   2                      rect[2]=(ctc[6]*0.7);//<<6)>>7; //down
+ 319   2                      rect[3]=(ctc[5]*0.9);//<<6)>>5; //up
+ 320   2                      memcpy(awbRectRange,rect,8);
+ 321   2              }
+ 322   1              rect = rects+AWB_RECT_Sward*4;
+ 323   1              if(!rect[1])
+ 324   1              {
+ 325   2                      rect[0]=ctc[1];//(ctc[0]+ ctc[1])>>1;
+ 326   2                      rect[1]=(ctc[2]*1.2);//<<6)/53;
+ 327   2                      rect[2]=(ctc[5]);//<<6)>>6;
+ 328   2                      rect[3]=(ctc[4]*1.2);//<<6)/53;
+ 329   2              }
+ 330   1              rect = rects+AWB_RECT_Sky*4;
+ 331   1              if(!rect[1])
+ 332   1              {
+ 333   2                      rect[0]=ctc[2]*0.8;     //left
+ 334   2                      rect[1]=ctc[2]*1.2;     //right
+ 335   2                      rect[2]=ctc[6]*0.5;     //down
+ 336   2                      rect[3]=ctc[6]*0.95;    //up
+ 337   2              }
+ 338   1              rect = rects+AWB_RECT_Office*4;
+ 339   1              if(!rect[1])
+ 340   1              {
+ 341   2                      rect[0]=ctc[2]; //left
+ 342   2                      rect[1]=ctc[2]*1.28;    //right
+ 343   2                      rect[2]=ctc[6]*0.95;    //down
+ 344   2                      rect[3]=(ctc[6]+ctc[5]*2)/3;    //up
+ 345   2                      /*
+ 346   2                      rect[0]=ctc[2]*1.05;    //left
+ 347   2                      rect[1]=ctc[2]*1.28;    //right
+ 348   2                      rect[2]=(ctc[6]*4+ctc[5])/5;    //down
+ 349   2                      rect[3]=(ctc[6]+ctc[5]*2)/3;    //up
+ 350   2                      */
+ 351   2              }
+ 352   1              rect = rects+AWB_RECT_Calibration*4;
+ 353   1              if(!rect[1])
+ 354   1              {
+ 355   2                      rect[0]=100;    //left
+ 356   2                      rect[1]=1600;   //right
+ 357   2                      rect[2]=100;    //down
+ 358   2                      rect[3]=1600;   //up
+ 359   2              }
+ 360   1              //if(opt&0x02)//param awb
+ 361   1              //{
+C51 COMPILER V8.08   AWB_INIT                                                              07/16/2022 19:06:34 PAGE 7   
+
+ 362   1                      //jumpMax
+ 363   1                      if(!para->jumpMax)
+ 364   1                      {
+ 365   2                              //para->jumpIdx = 1;
+ 366   2                              para->jumpMax = 48;
+ 367   2                              para->jumpStable = 12;
+ 368   2                              para->jumpErr = 128;
+ 369   2                      }
+ 370   1                      //globeGain
+ 371   1                      if(!para->spotThr)              {para->spotThr=5;}
+ 372   1                      //aeinfo
+ 373   1                      if(!para->brightGid)    {para->brightGid = 56;}
+ 374   1                      if(!para->darkGid)      {para->darkGid = 1;}
+ 375   1                      if(!para->brightLuma)   {para->brightLuma = 160;}
+ 376   1                      if(!para->darkLuma)     {para->darkLuma = 20;}
+ 377   1                      if(!para->brightContrast){para->brightContrast = 180;}
+ 378   1                      if(!para->darkContrast){para->darkContrast = 140;}
+ 379   1      
+ 380   1                      //if(!para->rangeRg0){para->rangeRg0=100;}
+ 381   1                      //if(!para->rangeRg1){para->rangeRg1=800;}
+ 382   1                      //if(!para->rangeBg0){para->rangeBg0=100;}
+ 383   1                      //if(!para->rangeBg1){para->rangeRg0=800;}
+ 384   1      
+ 385   1                      memcpy(para->ctcRg,ctc,16);
+ 386   1                      //para->avgRg = para->setRg = para->fixRg = para->ctcRg[1];
+ 387   1                      //para->avgBg = para->setBg = para->fixBg = para->ctcBg[1];
+ 388   1                      //para->setRg = para->fixRg>>2;
+ 389   1                      //para->setBg = para->fixBg>>2;
+ 390   1                      //printf("awb fix:%u,%u\n",awb.setRg,awb.setBg);
+ 391   1                      //para->rawFmt = XBYTE[0x2110];
+ 392   1                      para->queueCreate = 0x5a;
+ 393   1      
+ 394   1                      //if(!para->aLightMode) para->aLightMode=AWB_FUNC_Disable;
+ 395   1                      //if(!para->cmMode)
+ 396   1                      //if(!para->cmEn)               para->cmEn = AWB_FUNC_Disable;
+ 397   1                      //if(!para->satEnDark)  para->satEnDark = AWB_FUNC_Disable;
+ 398   1                      //if(!para->satEnAlight)        para->satEnAlight = AWB_FUNC_Disable;
+ 399   1                      //if(!para->obEn)               para->obEn = AWB_FUNC_Disable;
+ 400   1                      //bayer ptn
+ 401   1                      frontDeviceInfoGet(0,FRONT_DEV_INFO_BAYER_FMT,&para1,&para2);
+ 402   1                      pvBayer = (UINT8)para1;
+ 403   1                      snapBayer = (UINT8)para2;
+ 404   1                      para->rawFmt = (snapBayer<<4) | (pvBayer & 0x0f);
+ 405   1                      if(pvBayer!=snapBayer){printf(RED("RawFmtErr!%bx\n"),para->rawFmt);}
+ 406   1                      //printf("awb ptn:%bx\n",awb.rawFmt);
+ 407   1                      //update awb
+ 408   1                      //para->mode = AWB_MODE_Force;
+ 409   1      
+ 410   1                      if(!para->spotDelayCnt){para->spotDelayCnt=2;}
+ 411   1                      //if(!para->ctmin){para->ctmin=2000;}
+ 412   1                      //if(!para->ctmax){para->ctmax=7500;}
+ 413   1                      memcpy(&awb,para,sizeof(awb_t));
+ 414   1      
+ 415   1                      //auto ob
+ 416   1                      //if(!para->obThr)para->obThr = 8;
+ 417   1                      //if(awb.obEn)
+ 418   1                      //{
+ 419   1                      //      para->obEn = 0;//init Auto Ob
+ 420   1                      //      sp1kAwbAutoObSet(1,para->obThr);
+ 421   1                      //}
+ 422   1                      //memcpy(para,&awb,sizeof(awb_t));
+ 423   1              //}
+C51 COMPILER V8.08   AWB_INIT                                                              07/16/2022 19:06:34 PAGE 8   
+
+ 424   1      
+ 425   1              //HAL_DramWriteBytesAddr(AWB_ADDR_Ctt,pt,AWB_SIZE_Ctt,0);
+ 426   1              //HAL_DramDmaWrite(pt,AWB_ADDR_Ctt,AWB_SIZE_Ctt,0);
+ 427   1              pt32[0] = 0x55aa0000;
+ 428   1              pt32[1] = 0x55aaffff;
+ 429   1              HAL_DramDmaWrite(buf,AWB_ADDR_Flag,AWB_SIZE_Ctt+8,1);
+ 430   1              HAL_DramDmaWrite(buf, pawbaddr->ctc-4, AWB_SIZE_Ctt+8, 1);
+ 431   1              //HAL_DramWriteBytesAddr(AWB_ADDR_Addr,&awbAddr,AWB_SIZE_Addr,0);
+ 432   1              //HAL_DramDmaWrite(&awbAddr,AWB_ADDR_Addr,AWB_SIZE_Addr,0);
+ 433   1      
+ 434   1              //if(opt&0x01)
+ 435   1              //{
+ 436   1                      //awbMoeQueueCreate(ptCtt);
+ 437   1              //}
+ 438   1      #if 0
+              {
+                      UINT16 i;
+                      UINT8 code* ptcode = ((UINT8 code*)pawbctc)-8;
+                      UINT8 xdata* ptdata = buf;
+                      for(i=0;i<300;i++){
+                              printf("%u-%bx,%bx-%d\n",i,*ptdata,*ptcode,(SINT16)*ptdata++ - *ptcode++);
+                      }
+                      ptcode = ((UINT8 code*)pawb);
+                      ptdata = &awb;
+                      for(i=0;i<sizeof(awb);i++){
+                              printf("%u-%bx,%bx-%d\n",i,*ptdata,*ptcode,(SINT16)*ptdata++ - *ptcode++);
+                      }
+              }
+              #endif
+ 453   1      #if AWB_Debug_Print
+              {
+                      UINT8 i=0;
+                      for(i=0;i<4;i+=1){
+                              printf("-%bx-(%x,%x)\n",i,ctc[i],ctc[i+4]);
+                      }
+                      for(i=0;i<48;i+=4){
+                              printf("-%bx-(%x,%x,%x,%x)\n",i/4,rects[i],rects[i+1],rects[i+2],rects[i+3]);
+                      }
+              }
+              #endif
+ 464   1      return AWB_ADDR_Ctt;
+ 465   1      
+ 466   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2875    ----
+   CONSTANT SIZE    =    119    ----
+   XDATA SIZE       =      9     419
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

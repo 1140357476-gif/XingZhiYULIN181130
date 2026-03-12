@@ -1,0 +1,1 @@
+copy .\obj\libSpe.lib ..\..\..\lib\libSpe.lib

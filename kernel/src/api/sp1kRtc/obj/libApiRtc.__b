@@ -1,0 +1,4 @@
+TRANSFER
+".\obj\sp1k_rtc_api.obj",
+".\obj\api_rtc_ver.obj" 
+TO ".\obj\libApiRtc.LIB"

@@ -1,0 +1,1 @@
+copy .\obj\libZoom.lib ..\..\..\lib\libZoom.LIB

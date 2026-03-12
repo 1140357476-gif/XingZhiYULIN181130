@@ -1,0 +1,1 @@
+"hal_disp_paraapi.c" LARGE OMF2 OPTIMIZE (9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\customization) DEFINE (LIB_RELEASE) PRINT(.\obj\hal_disp_paraapi.lst) OBJECT(.\obj\hal_disp_paraapi.obj)

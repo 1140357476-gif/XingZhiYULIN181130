@@ -1,0 +1,6 @@
+TRANSFER
+".\obj\sp1k_pv_api.obj",
+".\obj\pv_photoframe.obj",
+".\obj\pv_task.obj",
+".\obj\pv_ver.obj" 
+TO ".\obj\libpv.LIB"

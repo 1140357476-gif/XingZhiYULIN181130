@@ -1,0 +1,189 @@
+C51 COMPILER V8.08   FILEINDEX                                                             12/31/2019 16:17:30 PAGE 1   
+
+
+C51 COMPILER V8.08, COMPILATION OF MODULE FILEINDEX
+OBJECT MODULE PLACED IN .\obj\FileIndex.obj
+COMPILER INVOKED BY: e:\Keil\C51\BIN\C51.EXE D\FileIndex.c LARGE OMF2 OPTIMIZE(9,SIZE) NOAREGS INCDIR(..\..\..\inc;..\..
+                    -\..\inc\os;..\..\..\inc\hal;..\..\..\inc\middleware;..\..\..\inc\sp1k;..\..\..\..\host\inc\app;..\..\..\..\host\inc\cust
+                    -omization) DEFINE(LIB_RELEASE) DEBUG PRINT(.\lst\FileIndex.lst) OBJECT(.\obj\FileIndex.obj)
+
+line level    source
+
+   1          /*
+   2          
+   3          Copyright (c) 2007 Sunplus Technology Co., Ltd.
+   4          
+   5          Module Name:
+   6          
+   7                        fileindex.c
+   8          
+   9          Abstract:
+  10          
+  11                        Module related to playback
+  12          
+  13          Environment:
+  14          
+  15                        Keil C51 Compiler
+  16          
+  17          Revision History:
+  18          
+  19                        09/20/2007           suny   created
+  20          
+  21          */
+  22          
+  23          //=============================================================================
+  24          //Header file
+  25          //=============================================================================
+  26          #include "general.h"
+  27          #include "dosusr.h"
+  28          #include "common.h"
+  29          #include "initio.h"
+  30          #include "fileindex.h"
+  31          #include "sdramhw.h"
+  32          #include "pb_api.h"
+  33          #include "hal_dram.h"
+  34          #include "hal_gprm.h"
+  35          //=============================================================================
+  36          //Constant
+  37          //=============================================================================
+  38          
+  39          //#define Dprint printf
+  40          
+  41          //=============================================================================
+  42          //Variable
+  43          //=============================================================================
+  44          //xdata UINT16 LastFileIdx;
+  45          //xdata UINT16 FirstFileIdx;
+  46          
+  47          extern xdata UINT16 G_USR_SearchNextFileIndex;
+  48          extern xdata UINT16 G_USR_FileCount;
+  49          //extern xdata UINT32 G_DOS_FileSize;
+  50          
+  51          //=============================================================================
+  52          // DOS_FileOrderTblInit         经过思考觉得只要保存 file true index就可以了,
+  53          //                                      没有必要保存file-order index
+C51 COMPILER V8.08   FILEINDEX                                                             12/31/2019 16:17:30 PAGE 2   
+
+  54          //=============================================================================
+  55          void DOS_FileOrderTblInit(void) USING_0
+  56          {
+  57   1              UINT16 i, j;
+  58   1              UINT16 fileCnt;
+  59   1      
+  60   1              //dbgTimerStart();
+  61   1              if (!G_USR_FileCount) {
+  62   2                      return;
+  63   2              }
+  64   1              
+  65   1              //CPrintf1("G_USR_FileCount is %u", G_USR_FileCount);
+  66   1              fileCnt = G_USR_FileCount;
+  67   1              j = 0;
+  68   1              
+  69   1              HAL_DramStartAddrSet(K_SDRAM_FileOrderTableAddr, K_SDRAM_NoPrefetch);
+  70   1      
+  71   1              for (i = 1; i < 10000; i++) {
+  72   2                      if (pbFileInfoGet(i, NULL) == SUCCESS) {
+  73   3                              //printf("-> %u\n", i);
+  74   3                              HAL_DramStartAddrSet(K_SDRAM_FileOrderTableAddr + (UINT32)(j++), K_SDRAM_NoPrefetch);
+  75   3                              HAL_DramWordDataWrite(READ8(i, 1), READ8(i, 0));
+  76   3                              if (!(--fileCnt)) {
+  77   4                                      break;
+  78   4                              }
+  79   3                      }
+  80   2              }
+  81   1              //dbgTimerStop();
+  82   1      }
+  83          
+  84          //=============================================================================
+  85          // DOS_FIleOrderRst
+  86          //=============================================================================
+  87          void DOS_FIleOrderRst(UINT16 index) USING_0
+  88          {
+  89   1              UINT32 addr;
+  90   1      
+  91   1              if (index <1 || index >G_USR_FileCount) {
+  92   2                      return;
+  93   2              }
+  94   1      
+  95   1              addr = K_SDRAM_FileOrderTableAddr + (index-1);
+  96   1              HAL_GprmDramDma((addr +1)<<1, addr<<1, (G_USR_FileCount +1 -index)<<1, 1);
+  97   1      
+  98   1              //Dprint("exit reset fileorder\n");
+  99   1      }
+ 100          
+ 101          //=============================================================================
+ 102          // DOS_FileOrderWrite
+ 103          //=============================================================================
+ 104          void DOS_FileOrderWrite(UINT16 OrderIndex, UINT16 FileTrueIndex) USING_0
+ 105          {
+ 106   1              UINT32 addr;
+ 107   1      
+ 108   1              addr = K_SDRAM_FileOrderTableAddr + /*9999 +*/ (OrderIndex - 1);
+ 109   1              HAL_DramStartAddrSet(addr , K_SDRAM_NoPrefetch);
+ 110   1              HAL_DramWordDataWrite((UINT8) FileTrueIndex & 0xff , (UINT8)(FileTrueIndex>>8) & 0xff); 
+ 111   1              //Dprint("exit write fileindex\n");
+ 112   1      }
+ 113          
+ 114          //=============================================================================
+ 115          // DOS_FileIndexGet
+C51 COMPILER V8.08   FILEINDEX                                                             12/31/2019 16:17:30 PAGE 3   
+
+ 116          //=============================================================================
+ 117          UINT16 DOS_FileIndexGet(UINT16 order) USING_0
+ 118          {
+ 119   1              UINT16 index;
+ 120   1              UINT32 addr;
+ 121   1              UINT8 tmp1,tmp2;
+ 122   1      
+ 123   1              if(order > G_USR_FileCount) {
+ 124   2                      return 0;
+ 125   2              }
+ 126   1              //printf("order :%d\n",order);
+ 127   1              
+ 128   1              addr = K_SDRAM_FileOrderTableAddr +/* 9999 + */(order - 1);
+ 129   1              HAL_DramStartAddrSet(addr, K_SDRAM_Prefetch);
+ 130   1              HAL_DramWordDataRead(&tmp1, &tmp2);
+ 131   1              index = (UINT16)(((UINT16)tmp2) <<8) +( (UINT16)tmp1);
+ 132   1      
+ 133   1              //printf("fileindextrue :%d\n",index);
+ 134   1              return index;//
+ 135   1      }
+ 136          
+ 137          //=============================================================================
+ 138          // DOS_FileLastIndexClear
+ 139          //=============================================================================
+ 140          void DOS_FileLastIndexClear(void)USING_0
+ 141          {
+ 142   1              UINT32 addr;
+ 143   1      
+ 144   1              addr = K_SDRAM_FileOrderTableAddr + /*9999 + */(G_USR_FileCount + 1 - 1);
+ 145   1              HAL_DramStartAddrSet(addr , K_SDRAM_NoPrefetch);
+ 146   1              HAL_DramWordDataWrite( 0, 0);   
+ 147   1      }
+ 148          
+ 149          //=============================================================================
+ 150          // DOS_FileIndexClearAll
+ 151          //=============================================================================
+ 152          void DOS_FileIndexClearAll(void) USING_0
+ 153          {
+ 154   1              HAL_GprmDramFill(K_SDRAM_FileOrderTableAddr /*+ 9999*/, (9999L<<1), 0);
+ 155   1      }
+ 156          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    590    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      20
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+   EDATA SIZE       =   ----    ----
+   HDATA SIZE       =   ----    ----
+   XDATA CONST SIZE =   ----    ----
+   FAR CONST SIZE   =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

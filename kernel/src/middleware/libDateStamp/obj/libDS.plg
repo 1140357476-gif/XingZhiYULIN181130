@@ -1,0 +1,106 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+F:\Code\1627\M03\测试写日戳画点(有用)\CDAF\kernel\src\middleware\libDateStamp\libDS.uv2
+Project File Date:  03/04/2026
+
+<h2>Output:</h2>
+Build target 'libDS'
+compiling date_stamp.c...
+compiling ds_ver.c...
+compiling stamp.c...
+STAMP.C(274): warning C280: 'h': unreferenced local variable
+creating library .\obj\libDS.LIB...
+TRANSFER
+".\obj\date_stamp.obj",
+".\obj\ds_ver.obj",
+".\obj\stamp.obj" 
+TO ".\obj\libDS.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Code\1627\M03\测试写日戳画点(有用)\CDAF\kernel\src\middleware\libDateStamp>copy obj\libDS.LIB ..\..\..\lib\libDS.LIB 
+已复制         1 个文件。
+".\obj\libDS.LIB" - 0 Error(s), 1 Warning(s).
+Build target 'libDS'
+compiling date_stamp.c...
+compiling ds_ver.c...
+compiling stamp.c...
+STAMP.C(274): warning C280: 'h': unreferenced local variable
+creating library .\obj\libDS.LIB...
+TRANSFER
+".\obj\date_stamp.obj",
+".\obj\ds_ver.obj",
+".\obj\stamp.obj" 
+TO ".\obj\libDS.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Code\1627\M03\测试写日戳画点(有用)\CDAF\kernel\src\middleware\libDateStamp>copy obj\libDS.LIB ..\..\..\lib\libDS.LIB 
+已复制         1 个文件。
+".\obj\libDS.LIB" - 0 Error(s), 1 Warning(s).
+Build target 'libDS'
+compiling date_stamp.c...
+compiling ds_ver.c...
+compiling stamp.c...
+STAMP.C(274): warning C280: 'h': unreferenced local variable
+creating library .\obj\libDS.LIB...
+TRANSFER
+".\obj\date_stamp.obj",
+".\obj\ds_ver.obj",
+".\obj\stamp.obj" 
+TO ".\obj\libDS.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Code\1627\M03\测试写日戳画点(有用)\CDAF\kernel\src\middleware\libDateStamp>copy obj\libDS.LIB ..\..\..\lib\libDS.LIB 
+已复制         1 个文件。
+".\obj\libDS.LIB" - 0 Error(s), 1 Warning(s).
+Build target 'libDS'
+compiling date_stamp.c...
+compiling ds_ver.c...
+compiling stamp.c...
+STAMP.C(274): warning C280: 'h': unreferenced local variable
+creating library .\obj\libDS.LIB...
+TRANSFER
+".\obj\date_stamp.obj",
+".\obj\ds_ver.obj",
+".\obj\stamp.obj" 
+TO ".\obj\libDS.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Code\1627\M03\测试写日戳画点(有用)\CDAF\kernel\src\middleware\libDateStamp>copy obj\libDS.LIB ..\..\..\lib\libDS.LIB 
+已复制         1 个文件。
+".\obj\libDS.LIB" - 0 Error(s), 1 Warning(s).
+Build target 'libDS'
+compiling date_stamp.c...
+compiling ds_ver.c...
+compiling stamp.c...
+STAMP.C(274): warning C280: 'h': unreferenced local variable
+STAMP.C(672): error C132: '_stampCombine': not in formal parameter list
+STAMP.C(672): error C141: syntax error near '{'
+STAMP.C(673): error C136: 'i': 'void' on variable
+STAMP.C(673): error C132: 'i': not in formal parameter list
+STAMP.C(674): error C141: syntax error near 'if'
+STAMP.C(674): error C141: syntax error near '&&', expected ')'
+STAMP.C(674): error C129: missing ';' before '&&'
+Target not created
+Build target 'libDS'
+compiling date_stamp.c...
+compiling ds_ver.c...
+compiling stamp.c...
+creating library .\obj\libDS.LIB...
+TRANSFER
+".\obj\date_stamp.obj",
+".\obj\ds_ver.obj",
+".\obj\stamp.obj" 
+TO ".\obj\libDS.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\post.bat
+F:\Code\1627\M03\测试写日戳画点(有用)\CDAF\kernel\src\middleware\libDateStamp>copy obj\libDS.LIB ..\..\..\lib\libDS.LIB 
+已复制         1 个文件。
+".\obj\libDS.LIB" - 0 Error(s), 0 Warning(s).

@@ -1,0 +1,21 @@
+Build target 'libpv'
+compiling sp1k_pv_api.c...
+compiling pv_photoframe.c...
+compiling pv_task.c...
+compiling pv_ver.c...
+creating library .\obj\libpv.LIB...
+TRANSFER
+".\obj\sp1k_pv_api.obj",
+".\obj\pv_photoframe.obj",
+".\obj\pv_task.obj",
+".\obj\pv_ver.obj" 
+TO ".\obj\libpv.LIB"
+
+
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+User command #1: .\libpv_post.bat
+
+E:\1626_CODE\New1626\fw\Release_V2.2.0\kernel\src\middleware\libPv>copy obj\libpv.LIB ..\..\..\lib\libPv.LIB 
+已复制         1 个文件。
+".\obj\libpv.LIB" - 0 Error(s), 0 Warning(s).

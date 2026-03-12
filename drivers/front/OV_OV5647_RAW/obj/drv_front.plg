@@ -1,0 +1,17 @@
+<html>
+<body>
+<pre>
+<h1>礦ision3 Build Log</h1>
+<h2>Project:</h2>
+F:\Code\1627\M03\测试写日戳画点(有用)\CDAF\drivers\front\OV_OV5647_RAW\drv_front.uv2
+Project File Date:  03/12/2026
+
+<h2>Output:</h2>
+Build target 'prj'
+creating library .\obj\drv_front.LIB...
+TRANSFER
+".\obj\front_OV_OV5647_RAW.obj" 
+TO ".\obj\drv_front.LIB"
+LIBX51 LIBRARY MANAGER V4.24
+COPYRIGHT KEIL ELEKTRONIK GmbH 1987 - 2002
+".\obj\drv_front.LIB" - 0 Error(s), 0 Warning(s).

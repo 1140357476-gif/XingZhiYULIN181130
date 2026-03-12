@@ -1,0 +1,43 @@
+### uVision2 Project, (C) Keil Software
+### Do not modify !
+
+ cExt (*.c)
+ aExt (*.s*; *.src; *.a*)
+ oExt (*.obj)
+ lExt (*.lib)
+ tExt (*.txt; *.h; *.inc)
+ pExt (*.plm)
+ CppX (*.cpp)
+ DaveTm { 0,0,0,0,0,0,0,0 }
+
+Target (libCmdFunc), 0x0000 // Tools: 'MCS-51'
+GRPOPT 1,(libCmdFunc),1,0,0
+
+OPTFFF 1,1,1,0,0,0,0,0,<.\func_base\cmd_mem.c><cmd_mem.c> 
+OPTFFF 1,2,1,0,0,0,0,0,<.\func_base\cmd_ver.c><cmd_ver.c> 
+OPTFFF 1,3,1,0,0,0,0,0,<.\func_base\func_base_def.c><func_base_def.c> 
+OPTFFF 1,4,1,0,0,0,0,0,<.\func_ext\cmd_dos.c><cmd_dos.c> 
+OPTFFF 1,5,1,0,0,0,0,0,<.\func_ext\cmd_usb.c><cmd_usb.c> 
+OPTFFF 1,6,1,0,0,0,0,0,<.\func_ext\func_ext_def.c><func_ext_def.c> 
+OPTFFF 1,7,1,0,0,0,0,0,<.\func_test\cmd_test.c><cmd_test.c> 
+OPTFFF 1,8,1,553648128,0,0,0,0,<.\func_test\func_test_def.c><func_test_def.c> 
+OPTFFF 1,9,1,0,0,0,0,0,<.\func_test\cmd_disp.c><cmd_disp.c> 
+
+
+TARGOPT 1, (libCmdFunc)
+ CLK51=18000000
+  OPTTT 0,1,1,0
+  OPTHX 0,65535,0,0,0
+  OPTLX 120,65,8,<.\obj\>
+  OPTOX 16
+  OPTLT 1,1,1,0,1,1,0,1,0,0,0,0
+  OPTXL 1,1,1,1,1,1,1,0,0
+  OPTFL 1,0,1
+  OPTAX 0
+  OPTDL (S8051.DLL)()(DP51.DLL)(-p320)(S8051.DLL)()(TP51.DLL)(-p320)
+  OPTDBG 48125,0,()()()()()()()()()() (BIN\MON51.DLL)()()()
+  OPTDF 0x0
+  OPTLE <>
+  OPTLC <>
+EndOpt
+
